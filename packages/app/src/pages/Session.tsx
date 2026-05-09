@@ -881,7 +881,7 @@ export default function Session() {
 
           {repRecords.length > 0 && (
             <div style={{ marginTop: '20px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '0.85rem', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const, fontSize: '0.7rem' as unknown as string }}>Rep by Rep Breakdown</div>
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const, fontSize: '0.7rem' }}>Rep by Rep Breakdown</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-elevated)' }}>
