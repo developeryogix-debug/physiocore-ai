@@ -694,12 +694,15 @@ export default function Session() {
   const vb = VIEW_BADGE[viewMode];
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-      <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '16px' }}>Exercise Session</h1>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 48px' }}>
+      <div style={{ marginBottom: 28 }}>
+        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Live Session</p>
+        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 0 }}>Exercise Session</h1>
+      </div>
 
       {mode === 'idle' && (
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <select value={exercise} onChange={(e) => { setExercise(e.target.value as SessionKey); }} style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', minWidth: '260px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap' }}>
+          <select value={exercise} onChange={(e) => { setExercise(e.target.value as SessionKey); }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '0.85rem', minWidth: '260px', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', fontFamily: "'Figtree', sans-serif" }}>
             <optgroup label="Exercises">
               {EXERCISES.map((ex) => <option key={ex} value={ex}>{ex.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
             </optgroup>
@@ -714,14 +717,14 @@ export default function Session() {
               })}
             </optgroup>
           </select>
-          <button onClick={() => { void startSession(); }} style={{ padding: '10px 28px', borderRadius: '8px', background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>
+          <button onClick={() => { void startSession(); }} className="btn-primary">
             Start Session
           </button>
         </div>
       )}
 
-      {isStarting && <p style={{ marginBottom: '16px', color: '#64748b' }}>Requesting camera and loading MediaPipe model (~5 MB)…</p>}
-      {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#ef4444', fontSize: '0.9rem' }}>{error}</div>}
+      {isStarting && <p style={{ marginBottom: '16px', color: 'var(--text-secondary)', fontFamily: "'Space Mono', monospace", fontSize: '0.8rem' }}>Requesting camera and loading MediaPipe model (~5 MB)…</p>}
+      {error && <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.25)', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: 'var(--danger)', fontSize: '0.85rem' }}>{error}</div>}
 
       {(isRunning || isStarting || mode === 'stopping') && (
         <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -762,56 +765,56 @@ export default function Session() {
             )}
           </div>
 
-          <div style={{ flex: '0 0 188px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ flex: '0 0 188px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {isYogaMode ? (
-              <div style={{ background: '#fff', border: `2px solid ${holdComplete ? '#22c55e' : '#a78bfa'}`, borderRadius: '12px', padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Hold Time</div>
-                <div style={{ fontSize: '3.2rem', fontWeight: 900, lineHeight: 1, color: holdComplete ? '#22c55e' : '#7c3aed' }}>{holdTime}s</div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>Target {yogaCfgUI?.holdTarget ?? 30}s</div>
-                <div style={{ marginTop: '8px', height: 6, background: '#ede9fe', borderRadius: 3 }}>
-                  <div style={{ width: `${Math.min(100, (holdTime / (yogaCfgUI?.holdTarget ?? 30)) * 100)}%`, height: '100%', background: holdComplete ? '#22c55e' : '#7c3aed', borderRadius: 3, transition: 'width 0.3s' }} />
+              <div className="metric-card" style={{ border: `1px solid ${holdComplete ? 'var(--success)' : 'rgba(167,139,250,0.3)'}`, textAlign: 'center' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Hold Time</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 700, lineHeight: 1, color: holdComplete ? 'var(--success)' : '#a78bfa' }}>{holdTime}s</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>Target {yogaCfgUI?.holdTarget ?? 30}s</div>
+                <div style={{ marginTop: '10px', height: 4, background: 'var(--bg-overlay)', borderRadius: 2 }}>
+                  <div style={{ width: `${Math.min(100, (holdTime / (yogaCfgUI?.holdTarget ?? 30)) * 100)}%`, height: '100%', background: holdComplete ? 'var(--success)' : '#7c3aed', borderRadius: 2, transition: 'width 0.3s' }} />
                 </div>
-                {holdComplete && <div style={{ marginTop: '5px', fontSize: '0.72rem', fontWeight: 700, color: '#22c55e' }}>✓ Complete!</div>}
+                {holdComplete && <div style={{ marginTop: '6px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--success)', fontFamily: "'Space Mono', monospace" }}>COMPLETE</div>}
               </div>
             ) : isPlankMode ? (
-              <div style={{ background: '#fff', border: `2px solid ${plankScore >= 80 ? '#22c55e' : plankScore >= 60 ? '#f59e0b' : '#ef4444'}`, borderRadius: '12px', padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Alignment</div>
-                <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1, color: plankScore >= 80 ? '#22c55e' : plankScore >= 60 ? '#f59e0b' : '#ef4444' }}>{plankScore}</div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>/100 · {plankSeconds}s held</div>
-                <div style={{ marginTop: '8px', height: 6, background: '#f1f5f9', borderRadius: 3 }}>
-                  <div style={{ width: `${plankScore}%`, height: '100%', background: plankScore >= 80 ? '#22c55e' : plankScore >= 60 ? '#f59e0b' : '#ef4444', borderRadius: 3, transition: 'width 0.5s' }} />
+              <div className="metric-card" style={{ border: `1px solid ${plankScore >= 80 ? 'rgba(0,230,118,0.3)' : plankScore >= 60 ? 'rgba(255,184,48,0.3)' : 'rgba(255,68,68,0.3)'}`, textAlign: 'center' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Alignment</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 700, lineHeight: 1, color: plankScore >= 80 ? 'var(--success)' : plankScore >= 60 ? 'var(--warning)' : 'var(--danger)' }}>{plankScore}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>/100 · {plankSeconds}s held</div>
+                <div style={{ marginTop: '10px', height: 4, background: 'var(--bg-overlay)', borderRadius: 2 }}>
+                  <div style={{ width: `${plankScore}%`, height: '100%', background: plankScore >= 80 ? 'var(--success)' : plankScore >= 60 ? 'var(--warning)' : 'var(--danger)', borderRadius: 2, transition: 'width 0.5s' }} />
                 </div>
               </div>
             ) : isPilatesMode && pilateCfgUI ? (
-              <div style={{ background: '#fff', border: '2px solid #fbcfe8', borderRadius: '12px', padding: '20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Reps</div>
-                <div style={{ fontSize: '4.5rem', fontWeight: 900, lineHeight: 1, color: '#be185d' }}>{repCount}</div>
-                <div style={{ fontSize: '0.72rem', color: '#db2777', marginTop: '4px', fontWeight: 600 }}>Target: {pilateCfgUI.targetLabel}</div>
+              <div className="metric-card" style={{ border: '1px solid rgba(244,114,182,0.3)', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Reps</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: '#f472b6' }}>{repCount}</div>
+                <div style={{ fontSize: '0.7rem', color: '#f472b6', marginTop: '4px' }}>Target: {pilateCfgUI.targetLabel}</div>
               </div>
             ) : (
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Reps</div>
-                <div style={{ fontSize: '4.5rem', fontWeight: 900, lineHeight: 1, color: '#0f172a' }}>{repCount}</div>
+              <div className="metric-card" style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Reps</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: 'var(--text-primary)' }}>{repCount}</div>
               </div>
             )}
-            <div style={{ background: '#fff', border: `2px solid ${angleColor}`, borderRadius: '12px', padding: '18px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>{cfg.label}</div>
-              <div style={{ fontSize: '2.8rem', fontWeight: 800, lineHeight: 1, color: angleColor }}>{liveAngle !== null ? `${liveAngle}°` : '—'}</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '5px' }}>Target {cfg.targetRange[0]}°–{cfg.targetRange[1]}°</div>
-              <div style={{ marginTop: '8px', padding: '3px 8px', borderRadius: '4px', background: inRange ? '#dcfce7' : '#fee2e2', color: inRange ? '#16a34a' : '#dc2626', fontSize: '0.72rem', fontWeight: 700 }}>
-                {liveAngle === null ? 'DETECTING...' : inRange ? 'IN RANGE ✓' : 'ADJUST'}
+            <div className="metric-card" style={{ border: `1px solid ${inRange ? 'rgba(0,230,118,0.3)' : 'rgba(255,68,68,0.3)'}`, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>{cfg.label}</div>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '2.5rem', fontWeight: 700, lineHeight: 1, color: inRange ? 'var(--success)' : 'var(--danger)' }}>{liveAngle !== null ? `${liveAngle}°` : '—'}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '5px' }}>Target {cfg.targetRange[0]}°–{cfg.targetRange[1]}°</div>
+              <div style={{ marginTop: '8px', padding: '3px 8px', borderRadius: '4px', background: inRange ? 'rgba(0,230,118,0.1)' : 'rgba(255,68,68,0.1)', color: inRange ? 'var(--success)' : 'var(--danger)', fontSize: '0.68rem', fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>
+                {liveAngle === null ? 'DETECTING' : inRange ? 'IN RANGE ✓' : 'ADJUST'}
               </div>
             </div>
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
+            <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '12px', textAlign: 'center' as const }}>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                 {isYogaMode ? yogaCfgUI!.englishName : exercise.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}
               </div>
-              {isYogaMode && <div style={{ fontSize: '0.72rem', color: '#7c3aed', fontStyle: 'italic', marginTop: '2px' }}>{yogaCfgUI!.sanskritName}</div>}
-              {isPilatesMode && pilateCfgUI && !isPlankMode && <div style={{ fontSize: '0.72rem', color: '#db2777', fontWeight: 600, marginTop: '2px' }}>Target: {pilateCfgUI.targetLabel}</div>}
-              {isPlankMode && <div style={{ fontSize: '0.72rem', color: '#db2777', fontWeight: 600, marginTop: '2px' }}>Alignment scored per second</div>}
+              {isYogaMode && <div style={{ fontSize: '0.7rem', color: '#a78bfa', fontStyle: 'italic', marginTop: '2px', fontFamily: "'Noto Serif', serif" }}>{yogaCfgUI!.sanskritName}</div>}
+              {isPilatesMode && pilateCfgUI && !isPlankMode && <div style={{ fontSize: '0.7rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Target: {pilateCfgUI.targetLabel}</div>}
+              {isPlankMode && <div style={{ fontSize: '0.7rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Alignment scored/sec</div>}
             </div>
             {isRunning && (
-              <button onClick={() => { void stopSession(); }} style={{ padding: '12px', borderRadius: '8px', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>
+              <button onClick={() => { void stopSession(); }} style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(255,68,68,0.3)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s' }}>
                 Stop Session
               </button>
             )}
@@ -820,11 +823,14 @@ export default function Session() {
       )}
 
       {(feedbackResult !== null || loadingFeedback) && (
-        <div style={{ marginTop: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Session Report</h2>
+        <div style={{ marginTop: '36px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap' as const, gap: '12px' }}>
+            <div>
+              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 4 }}>Session Complete</p>
+              <h2 className="font-display" style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Session Report</h2>
+            </div>
             {repRecords.length > 0 && (
-              <button onClick={() => exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode)} style={{ padding: '8px 18px', borderRadius: '8px', background: '#0f172a', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>
+              <button onClick={() => exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode)} className="btn-ghost" style={{ fontSize: '0.82rem' }}>
                 Export for Physiotherapist ↓
               </button>
             )}
@@ -839,9 +845,9 @@ export default function Session() {
                 ['Time Under Tension', `${tension.toFixed(0)}s`],
                 ['Duration', fmtDur(sessionDuration)],
               ] as [string, string][]).map(([label, value]) => (
-                <div key={label} style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0369a1' }}>{value}</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>{label}</div>
+                <div key={label} className="metric-card" style={{ textAlign: 'center' as const }}>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: 'var(--teal-500)', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>{label}</div>
                 </div>
               ))}
             </div>
@@ -853,46 +859,48 @@ export default function Session() {
             isLoading={loadingFeedback}
             renderData={(data) => (
               <div>
-                <p style={{ fontSize: '0.9rem', marginBottom: '12px' }}>{data.summary}</p>
+                <p style={{ fontSize: '0.88rem', marginBottom: '14px', lineHeight: 1.7, color: 'var(--text-primary)' }}>{data.summary}</p>
                 {data.safetyWarnings.length > 0 && (
-                  <div style={{ background: '#fef2f2', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px', color: '#ef4444', fontWeight: 500, fontSize: '0.85rem' }}>
+                  <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px', color: 'var(--danger)', fontWeight: 500, fontSize: '0.82rem' }}>
                     <strong>Safety warnings:</strong>
                     <ul style={{ paddingLeft: '16px', marginTop: '4px' }}>{data.safetyWarnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
                   </div>
                 )}
                 {data.formCorrections.map((c, i) => (
-                  <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.875rem' }}>
-                    <span style={{ fontWeight: 700, color: priorityColor(c.priority) }}>[{c.priority.toUpperCase()}]</span>{' '}
-                    <strong>{c.bodyPart.replace(/_/g,' ')}</strong>{' — '}{c.instruction}
+                  <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.84rem' }}>
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '0.72rem', color: priorityColor(c.priority) }}>[{c.priority.toUpperCase()}]</span>{' '}
+                    <strong style={{ color: 'var(--text-primary)' }}>{c.bodyPart.replace(/_/g,' ')}</strong>
+                    <span style={{ color: 'var(--text-secondary)' }}>{' — '}{c.instruction}</span>
                   </div>
                 ))}
-                <p style={{ marginTop: '14px', fontStyle: 'italic', color: '#10b981', fontSize: '0.9rem' }}>{data.motivationalMessage}</p>
-                {data.nextSteps.length > 0 && <ul style={{ marginTop: '10px', paddingLeft: '18px', fontSize: '0.85rem', color: '#64748b' }}>{data.nextSteps.map((s, i) => <li key={i}>{s}</li>)}</ul>}
+                <p style={{ marginTop: '14px', fontStyle: 'italic', color: 'var(--teal-500)', fontSize: '0.88rem' }}>{data.motivationalMessage}</p>
+                {data.nextSteps.length > 0 && <ul style={{ marginTop: '10px', paddingLeft: '18px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{data.nextSteps.map((s, i) => <li key={i} style={{ marginBottom: 4 }}>{s}</li>)}</ul>}
               </div>
             )}
           />
 
           {repRecords.length > 0 && (
-            <div style={{ marginTop: '24px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.9rem' }}>Rep by Rep Breakdown</div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <div style={{ marginTop: '20px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '0.85rem', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const, fontSize: '0.7rem' as unknown as string }}>Rep by Rep Breakdown</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc' }}>
+                  <tr style={{ background: 'var(--bg-elevated)' }}>
                     {['Rep', 'Angle', 'Score', 'Time', 'Quality'].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#64748b' }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left' as const, fontWeight: 600, color: 'var(--text-tertiary)', fontSize: '0.7rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {repRecords.map((r, i) => (
-                    <tr key={r.num} style={{ borderTop: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={{ padding: '9px 14px', fontWeight: 600 }}>Rep {r.num}</td>
-                      <td style={{ padding: '9px 14px' }}>{r.angle}°</td>
+                    <tr key={r.num} style={{ borderTop: '1px solid var(--border-subtle)', background: 'transparent' }}>
+                      <td style={{ padding: '9px 14px', fontWeight: 600, fontFamily: "'Space Mono', monospace", fontSize: '0.78rem' }}>Rep {r.num}</td>
+                      <td style={{ padding: '9px 14px', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)' }}>{r.angle}°</td>
                       <td style={{ padding: '9px 14px' }}>
-                        <span style={{ fontWeight: 700, color: r.score >= 80 ? '#16a34a' : r.score >= 60 ? '#92400e' : '#dc2626' }}>{r.score}</span>/100
+                        <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: r.score >= 80 ? 'var(--success)' : r.score >= 60 ? 'var(--warning)' : 'var(--danger)' }}>{r.score}</span>
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>/100</span>
                       </td>
-                      <td style={{ padding: '9px 14px' }}>{r.duration}s</td>
-                      <td style={{ padding: '9px 14px' }}>{r.flag === 'good' ? '✅ Good' : r.flag === 'too_fast' ? '⚠️ Too fast' : '⚠️ Shallow'}</td>
+                      <td style={{ padding: '9px 14px', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)' }}>{r.duration}s</td>
+                      <td style={{ padding: '9px 14px', color: r.flag === 'good' ? 'var(--success)' : 'var(--warning)', fontSize: '0.78rem' }}>{r.flag === 'good' ? '✓ Good' : r.flag === 'too_fast' ? '⚠ Too fast' : '⚠ Shallow'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -901,22 +909,22 @@ export default function Session() {
           )}
 
           {repRecords.length > 0 && (
-            <div style={{ marginTop: '24px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.9rem' }}>Next Session Prescription</div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <div style={{ marginTop: '16px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '0.7rem', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>Next Session Prescription</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc' }}>
+                  <tr style={{ background: 'var(--bg-elevated)' }}>
                     {['Exercise', 'Sets × Reps', 'Focus'].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#64748b' }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left' as const, fontWeight: 600, color: 'var(--text-tertiary)', fontSize: '0.7rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {prescription.map((p, i) => (
-                    <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={{ padding: '9px 14px', fontWeight: 600 }}>{p.name}</td>
-                      <td style={{ padding: '9px 14px' }}>{p.sets}</td>
-                      <td style={{ padding: '9px 14px', color: '#64748b' }}>{p.focus}</td>
+                    <tr key={i} style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                      <td style={{ padding: '9px 14px', fontWeight: 600, color: 'var(--teal-500)' }}>{p.name}</td>
+                      <td style={{ padding: '9px 14px', fontFamily: "'Space Mono', monospace", fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{p.sets}</td>
+                      <td style={{ padding: '9px 14px', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{p.focus}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -924,7 +932,7 @@ export default function Session() {
             </div>
           )}
 
-          <button onClick={() => { setFeedbackResult(null); setRepCount(0); setRepRecords([]); }} style={{ marginTop: '16px', padding: '10px 20px', borderRadius: '8px', background: '#f1f5f9', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}>
+          <button onClick={() => { setFeedbackResult(null); setRepCount(0); setRepRecords([]); }} className="btn-ghost" style={{ marginTop: '16px', fontSize: '0.85rem' }}>
             New Session
           </button>
         </div>

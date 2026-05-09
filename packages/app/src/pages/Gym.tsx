@@ -246,7 +246,7 @@ export default function Gym() {
   const nextDayLabel = program.days[(gymSt.dayIdx + 1) % program.days.length]?.label ?? '';
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 16px 80px' }}>
+    <div style={{ maxWidth: 680, margin: '0 auto', padding: '100px 16px 80px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>

@@ -178,51 +178,112 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
         onClick={() => setOpen(o => !o)}
         aria-label="Ask AI"
         style={{
-          position: 'fixed', bottom: 28, right: 28, zIndex: 1000,
-          width: 56, height: 56, borderRadius: '50%',
-          background: open ? '#4338ca' : '#6366f1',
-          color: '#fff', border: 'none', cursor: 'pointer',
-          boxShadow: '0 4px 20px rgba(99,102,241,0.45)',
-          fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'background 0.15s, transform 0.15s',
+          position: 'fixed',
+          bottom: 28,
+          right: 28,
+          zIndex: 1000,
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: open
+            ? 'rgba(8,13,20,0.95)'
+            : 'linear-gradient(135deg, var(--teal-500), var(--blue-500))',
+          color: open ? 'var(--text-secondary)' : '#000',
+          border: open ? '1px solid var(--border-teal)' : 'none',
+          cursor: 'pointer',
+          boxShadow: open
+            ? '0 0 0 1px var(--border-teal), 0 8px 32px rgba(0,0,0,0.5)'
+            : '0 4px 20px rgba(0,212,170,0.35)',
+          fontSize: open ? '1rem' : '1.1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.2s',
           transform: open ? 'rotate(45deg)' : 'none',
+          fontFamily: "'Space Mono', monospace",
         }}
       >
-        {open ? '✕' : '💬'}
+        {open ? '✕' : '✦'}
       </button>
 
       {/* Drawer */}
       {open && (
         <div
           style={{
-            position: 'fixed', bottom: 96, right: 28, zIndex: 999,
-            width: 360, maxHeight: '70vh',
-            background: '#fff', borderRadius: 16,
-            boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-            border: '1px solid #e2e8f0',
-            display: 'flex', flexDirection: 'column',
+            position: 'fixed',
+            bottom: 92,
+            right: 28,
+            zIndex: 999,
+            width: 360,
+            maxHeight: '70vh',
+            background: 'var(--bg-elevated)',
+            borderRadius: 16,
+            boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px var(--border-default)',
+            border: '1px solid var(--border-default)',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
             animation: 'slideUp 0.18s ease-out',
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--border-subtle)',
+            background: 'var(--bg-overlay)',
+            flexShrink: 0,
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.1rem' }}>🤖</span>
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>Ask PhysioCore AI</span>
+              <span className="live-dot" />
+              <span style={{
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                color: 'var(--text-primary)',
+              }}>
+                PhysioCore AI
+              </span>
+              <span style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: '0.62rem',
+                color: 'var(--teal-500)',
+                letterSpacing: '0.06em',
+              }}>
+                ONLINE
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button
                 onClick={() => setVoiceOut(v => !v)}
                 title={voiceOut ? 'Voice output on' : 'Voice output off'}
-                style={{ background: voiceOut ? '#ede9fe' : 'transparent', border: '1px solid ' + (voiceOut ? '#a5b4fc' : '#e2e8f0'), borderRadius: 6, padding: '3px 7px', cursor: 'pointer', fontSize: '0.8rem', color: voiceOut ? '#6366f1' : '#94a3b8' }}
+                style={{
+                  background: voiceOut ? 'var(--teal-dim)' : 'transparent',
+                  border: `1px solid ${voiceOut ? 'var(--border-teal)' : 'var(--border-default)'}`,
+                  borderRadius: 6,
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  color: voiceOut ? 'var(--teal-500)' : 'var(--text-tertiary)',
+                  transition: 'all 0.15s',
+                }}
               >
-                🔊
+                ♪
               </button>
               <button
                 onClick={() => { setMessages([]); }}
                 title="Clear chat"
-                style={{ background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 6, padding: '3px 7px', cursor: 'pointer', fontSize: '0.75rem', color: '#94a3b8' }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 6,
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  color: 'var(--text-tertiary)',
+                }}
               >
                 Clear
               </button>
@@ -230,16 +291,51 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
           </div>
 
           {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}>
             {messages.length === 0 && quickPrompts.length > 0 && (
               <div>
-                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 10px', textAlign: 'center' }}>Quick questions</p>
+                <p style={{
+                  fontSize: '0.68rem',
+                  color: 'var(--text-tertiary)',
+                  margin: '0 0 10px',
+                  textAlign: 'center',
+                  fontFamily: "'Space Mono', monospace",
+                  letterSpacing: '0.06em',
+                }}>
+                  QUICK QUESTIONS
+                </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {quickPrompts.map(q => (
                     <button
                       key={q}
                       onClick={() => void sendMessage(q)}
-                      style={{ textAlign: 'left', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: '0.8rem', color: '#334155', cursor: 'pointer', lineHeight: 1.4 }}
+                      style={{
+                        textAlign: 'left',
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 8,
+                        padding: '9px 12px',
+                        fontSize: '0.78rem',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        lineHeight: 1.4,
+                        transition: 'border-color 0.15s, color 0.15s',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-teal)';
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-default)';
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+                      }}
                     >
                       {q}
                     </button>
@@ -249,18 +345,39 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
             )}
 
             {messages.length === 0 && quickPrompts.length === 0 && (
-              <p style={{ fontSize: '0.82rem', color: '#94a3b8', textAlign: 'center', margin: 'auto 0' }}>Ask anything about your session, exercises, or health goals.</p>
+              <p style={{
+                fontSize: '0.78rem',
+                color: 'var(--text-tertiary)',
+                textAlign: 'center',
+                margin: 'auto 0',
+                lineHeight: 1.6,
+              }}>
+                Ask anything about your session, exercises, or health goals.
+              </p>
             )}
 
             {messages.map((m, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              <div key={i} style={{
+                display: 'flex',
+                justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
+              }}>
                 <div style={{
-                  maxWidth: '85%', padding: '8px 12px', borderRadius: m.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                  background: m.role === 'user' ? '#6366f1' : '#f1f5f9',
-                  color: m.role === 'user' ? '#fff' : '#1e293b',
-                  fontSize: '0.82rem', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  maxWidth: '85%',
+                  padding: '9px 13px',
+                  borderRadius: m.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                  background: m.role === 'user'
+                    ? 'linear-gradient(135deg, var(--teal-600), var(--teal-500))'
+                    : 'var(--bg-surface)',
+                  color: m.role === 'user' ? '#000' : 'var(--text-primary)',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  borderLeft: m.role === 'assistant' ? '2px solid var(--teal-600)' : 'none',
                 }}>
-                  {m.content || (streaming && i === messages.length - 1 ? <span style={{ opacity: 0.5 }}>▌</span> : '')}
+                  {m.content || (streaming && i === messages.length - 1
+                    ? <span style={{ opacity: 0.5, fontFamily: "'Space Mono', monospace" }}>▌</span>
+                    : '')}
                 </div>
               </div>
             ))}
@@ -268,7 +385,15 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
           </div>
 
           {/* Input */}
-          <div style={{ padding: '10px 12px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, alignItems: 'flex-end', background: '#fff' }}>
+          <div style={{
+            padding: '10px 12px',
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            gap: 8,
+            alignItems: 'flex-end',
+            background: 'var(--bg-surface)',
+            flexShrink: 0,
+          }}>
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -276,10 +401,23 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
               placeholder="Ask a question…"
               rows={1}
               style={{
-                flex: 1, resize: 'none', border: '1px solid #e2e8f0', borderRadius: 8,
-                padding: '8px 10px', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit',
-                lineHeight: 1.4, maxHeight: 80, overflowY: 'auto',
+                flex: 1,
+                resize: 'none',
+                border: '1px solid var(--border-default)',
+                borderRadius: 8,
+                padding: '8px 10px',
+                fontSize: '0.8rem',
+                outline: 'none',
+                fontFamily: "'Figtree', inherit",
+                lineHeight: 1.4,
+                maxHeight: 80,
+                overflowY: 'auto',
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-primary)',
+                transition: 'border-color 0.15s',
               }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--border-teal)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
             />
             <button
               onClick={() => {
@@ -288,7 +426,20 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
                 listening ? stopVoice() : startVoice();
               }}
               title={listening ? 'Stop recording' : 'Voice input'}
-              style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + (listening ? '#f97316' : '#e2e8f0'), background: listening ? '#fff7ed' : '#f8fafc', cursor: 'pointer', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                border: `1px solid ${listening ? 'var(--warning)' : 'var(--border-default)'}`,
+                background: listening ? 'rgba(255,184,48,0.1)' : 'var(--bg-elevated)',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                color: listening ? 'var(--warning)' : 'var(--text-tertiary)',
+              }}
             >
               {listening ? '⏹' : '🎤'}
             </button>
@@ -299,10 +450,22 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
               }}
               disabled={!input.trim() && !streaming}
               style={{
-                width: 34, height: 34, borderRadius: '50%', border: 'none',
-                background: streaming ? '#f97316' : (!input.trim() ? '#e2e8f0' : '#6366f1'),
-                color: '#fff', cursor: (!input.trim() && !streaming) ? 'default' : 'pointer',
-                fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                border: 'none',
+                background: streaming
+                  ? 'rgba(255,68,68,0.2)'
+                  : (!input.trim() ? 'var(--bg-overlay)' : 'var(--teal-500)'),
+                color: streaming ? 'var(--danger)' : (!input.trim() ? 'var(--text-tertiary)' : '#000'),
+                cursor: (!input.trim() && !streaming) ? 'default' : 'pointer',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontWeight: 700,
+                transition: 'all 0.15s',
               }}
             >
               {streaming ? '⏹' : '↑'}
@@ -310,13 +473,6 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </>
   );
 }

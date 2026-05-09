@@ -6,7 +6,7 @@ import type { BehaviorInput, SessionSummary } from '../lib/agents/behaviorClient
 import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
 
-const pageStyle: React.CSSProperties = { maxWidth: '960px', margin: '0 auto', padding: '32px 24px' };
+const pageStyle: React.CSSProperties = { maxWidth: '960px', margin: '0 auto', padding: '100px 24px 48px' };
 const headingStyle: React.CSSProperties = { fontSize: '1.75rem', fontWeight: 700, marginBottom: '8px' };
 const subheadStyle: React.CSSProperties = { color: 'var(--color-text-muted)', marginBottom: '28px', fontSize: '0.9rem' };
 const primaryBtnStyle: React.CSSProperties = { padding: '10px 28px', borderRadius: 'var(--radius-md)', background: 'var(--color-primary)', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.9rem', marginBottom: '28px', cursor: 'pointer' };

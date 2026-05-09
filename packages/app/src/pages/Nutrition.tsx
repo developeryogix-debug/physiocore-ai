@@ -41,10 +41,10 @@ interface LabTest {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GRADE_META: Record<EvidenceGrade, { label: string; bg: string; color: string }> = {
-  A: { label: 'Grade A', bg: '#dcfce7', color: '#15803d' },
-  B: { label: 'Grade B', bg: '#dbeafe', color: '#1e40af' },
-  C: { label: 'Grade C', bg: '#fef9c3', color: '#92400e' },
-  D: { label: 'Grade D', bg: '#f1f5f9', color: '#64748b' },
+  A: { label: 'Grade A', bg: 'rgba(0,230,118,0.1)',  color: '#00E676' },
+  B: { label: 'Grade B', bg: 'rgba(77,184,255,0.1)', color: '#4DB8FF' },
+  C: { label: 'Grade C', bg: 'rgba(255,184,48,0.1)', color: '#FFB830' },
+  D: { label: 'Grade D', bg: 'rgba(74,85,104,0.15)', color: '#8892A4' },
 };
 
 const ACTIVITY_MULTIPLIERS: Record<string, number> = {
@@ -228,24 +228,24 @@ function DonutChart({ protein, carbs, fat }: { protein: number; carbs: number; f
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
       <svg width={140} height={140} viewBox="0 0 140 140">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={16} />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#6366f1" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...pA} />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#22c55e" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...cA} />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f59e0b" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...fA} />
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize={11} fill="#64748b">kcal</text>
-        <text x={cx} y={cy + 10} textAnchor="middle" fontSize={13} fontWeight="700" fill="#1e293b">{total}</text>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={16} />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--teal-500)" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...pA} />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--blue-400)" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...cA} />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--amber-400)" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...fA} />
+        <text x={cx} y={cy - 6} textAnchor="middle" fontSize={10} fill="var(--text-tertiary)" fontFamily="Space Mono, monospace">KCAL</text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fontSize={13} fontWeight="700" fill="var(--text-primary)" fontFamily="Space Mono, monospace">{total}</text>
       </svg>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {[
-          { color: '#6366f1', label: 'Protein', g: protein, kcal: protein * 4, pct: pPct },
-          { color: '#22c55e', label: 'Carbs', g: carbs, kcal: carbs * 4, pct: cPct },
-          { color: '#f59e0b', label: 'Fat', g: fat, kcal: fat * 9, pct: fPct },
+          { color: 'var(--teal-500)',  label: 'Protein', g: protein, kcal: protein * 4, pct: pPct },
+          { color: 'var(--blue-400)', label: 'Carbs',   g: carbs,   kcal: carbs * 4,   pct: cPct },
+          { color: 'var(--amber-400)',label: 'Fat',     g: fat,     kcal: fat * 9,     pct: fPct },
         ].map(({ color, label, g, kcal, pct }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem' }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-            <span style={{ color: '#64748b', minWidth: 52 }}>{label}</span>
-            <span style={{ fontWeight: 700 }}>{g}g</span>
-            <span style={{ color: '#94a3b8' }}>{kcal}kcal · {Math.round(pct * 100)}%</span>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+            <span style={{ color: 'var(--text-secondary)', minWidth: 52 }}>{label}</span>
+            <span style={{ fontWeight: 700, fontFamily: "'Space Mono', monospace", color: 'var(--text-primary)' }}>{g}g</span>
+            <span style={{ color: 'var(--text-tertiary)', fontFamily: "'Space Mono', monospace", fontSize: '0.72rem' }}>{kcal}kcal · {Math.round(pct * 100)}%</span>
           </div>
         ))}
       </div>
@@ -264,17 +264,17 @@ function GradeBadge({ grade }: { grade: EvidenceGrade }) {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const page: React.CSSProperties = { maxWidth: 1000, margin: '0 auto', padding: '32px 24px' };
-const h1: React.CSSProperties = { fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 };
-const muted: React.CSSProperties = { color: 'var(--color-text-muted)', fontSize: '0.875rem' };
-const card: React.CSSProperties = { background: 'var(--color-surface)', border: '1px solid #e2e8f0', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, boxShadow: 'var(--shadow-sm)' };
-const sectionH: React.CSSProperties = { fontSize: '1.1rem', fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 };
-const btn: React.CSSProperties = { padding: '9px 20px', borderRadius: 'var(--radius-md)', background: 'var(--color-primary)', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' };
-const btnSm: React.CSSProperties = { padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 500 };
-const tag: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 99, fontSize: '0.75rem', fontWeight: 600 };
-const formulaBox: React.CSSProperties = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 16px', fontFamily: 'monospace', fontSize: '0.8rem', color: '#334155', marginBottom: 14, lineHeight: 1.7 };
+const page: React.CSSProperties = { maxWidth: 1000, margin: '0 auto', padding: '100px 24px 48px' };
+const h1: React.CSSProperties = { fontFamily: "'Syne', sans-serif", fontSize: 'var(--text-3xl)', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 };
+const muted: React.CSSProperties = { color: 'var(--text-secondary)', fontSize: '0.82rem' };
+const card: React.CSSProperties = { background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 16, padding: '20px 24px', marginBottom: 20 };
+const sectionH: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontFamily: "'Space Mono', monospace" };
+const btn: React.CSSProperties = { padding: '8px 18px', borderRadius: 8, background: 'var(--teal-500)', color: '#000', border: 'none', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' };
+const btnSm: React.CSSProperties = { padding: '5px 12px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--bg-elevated)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 500, color: 'var(--text-secondary)' };
+const tag: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 99, fontSize: '0.72rem', fontWeight: 600, fontFamily: "'Space Mono', monospace" };
+const formulaBox: React.CSSProperties = { background: 'var(--bg-void)', border: '1px solid var(--border-default)', borderRadius: 8, padding: '14px 18px', fontFamily: "'Space Mono', monospace", fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.9 };
 const row: React.CSSProperties = { display: 'flex', gap: 16, flexWrap: 'wrap' as const };
-const statBlock: React.CSSProperties = { background: '#f0f9ff', borderRadius: 10, padding: '12px 18px', minWidth: 120, textAlign: 'center' as const };
+const statBlock: React.CSSProperties = { background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: '12px 18px', minWidth: 120, textAlign: 'center' as const };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -495,43 +495,43 @@ export default function Nutrition() {
 
         <div style={{ ...row, marginBottom: 20 }}>
           <div style={statBlock}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#6366f1' }}>{targetKcal}</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Daily kcal target</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--teal-500)' }}>{targetKcal}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Daily kcal target</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0284c7' }}>{proteinG}g</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Protein ({proteinPerKg}g/kg)</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--teal-400)' }}>{proteinG}g</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Protein ({proteinPerKg}g/kg)</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#22c55e' }}>{carbG}g</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Carbohydrates</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--blue-400)' }}>{carbG}g</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Carbohydrates</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f59e0b' }}>{fatG}g</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Fat</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--amber-400)' }}>{fatG}g</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Fat</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#06b6d4' }}>{hydrationMl}</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Hydration (ml/day)</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--info)' }}>{hydrationMl}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Hydration (ml/day)</div>
           </div>
-          <div style={{ ...statBlock, background: '#f0fdf4' }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#15803d' }}>{hydrationMl} + 500/session</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>35ml/kg + 500ml per session</div>
+          <div style={{ ...statBlock, border: '1px solid var(--border-teal)', background: 'var(--teal-dim)' }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal-500)' }}>{hydrationMl} + 500</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: 4 }}>35ml/kg + 500ml/session</div>
           </div>
         </div>
 
         {hasRenal && (
-          <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 8, padding: '8px 14px', marginBottom: 14, fontSize: '0.8rem', color: '#92400e' }}>
+          <div style={{ background: 'rgba(255,184,48,0.08)', border: '1px solid rgba(255,184,48,0.2)', borderRadius: 8, padding: '8px 14px', marginBottom: 14, fontSize: '0.8rem', color: 'var(--warning)' }}>
             ⚠ Renal condition detected — protein limited to 1.2g/kg. Consult your nephrologist before exceeding.
           </div>
         )}
         {hasDiabetes && (
-          <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 8, padding: '8px 14px', marginBottom: 14, fontSize: '0.8rem', color: '#92400e' }}>
+          <div style={{ background: 'rgba(255,184,48,0.08)', border: '1px solid rgba(255,184,48,0.2)', borderRadius: 8, padding: '8px 14px', marginBottom: 14, fontSize: '0.8rem', color: 'var(--warning)' }}>
             ⚠ Diabetes detected — carbohydrate quality matters more than quantity. Focus on low-GI sources (oats, legumes, vegetables). Monitor post-meal glucose.
           </div>
         )}
         {hasHTN && (
-          <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 8, padding: '8px 14px', marginBottom: 14, fontSize: '0.8rem', color: '#92400e' }}>
+          <div style={{ background: 'rgba(255,184,48,0.08)', border: '1px solid rgba(255,184,48,0.2)', borderRadius: 8, padding: '8px 14px', marginBottom: 14, fontSize: '0.8rem', color: 'var(--warning)' }}>
             ⚠ Hypertension detected — target sodium &lt;2300mg/day. Increase potassium (bananas, sweet potato, leafy greens). DASH diet pattern recommended.
           </div>
         )}
@@ -612,45 +612,68 @@ export default function Nutrition() {
         {suppError && <div style={{ color: 'var(--color-danger)', fontSize: '0.85rem', marginBottom: 10 }}>Error: {suppError}</div>}
         {loadingSupp && <div style={{ padding: '24px 0', textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>Searching examine.com, PubMed, Labdoor...</div>}
 
-        {!loadingSupp && displaySupplements.map((s, i) => (
-          <div key={i} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 18px', marginBottom: 12, background: stack.some(x => x.name === s.name) ? '#f5f3ff' : '#fafafa' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' as const, marginBottom: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
-                <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{s.name}</span>
-                <GradeBadge grade={s.grade as EvidenceGrade} />
-              </div>
-              <button style={{ ...btnSm, background: stack.some(x => x.name === s.name) ? '#7c3aed' : '#f8fafc', color: stack.some(x => x.name === s.name) ? '#fff' : '#334155' }} onClick={() => { toggleStack(s); }}>
-                {stack.some(x => x.name === s.name) ? '✓ In stack' : '+ Add to stack'}
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px 24px', fontSize: '0.8rem', color: '#334155' }}>
-              <div><span style={muted}>Mechanism: </span>{s.mechanism}</div>
-              <div><span style={muted}>Dose: </span><strong>{s.dose}</strong></div>
-              <div><span style={muted}>Timing: </span>{s.timing}</div>
-              <div><span style={muted}>Cost: </span>{s.cost}</div>
-              {s.contraindications && (
-                <div style={{ gridColumn: '1 / -1' }}><span style={muted}>Contraindications: </span>{s.contraindications}</div>
+        {!loadingSupp && displaySupplements.map((s, i) => {
+          const inStack = stack.some(x => x.name === s.name);
+          return (
+            <div key={i} style={{
+              border: `1px solid ${inStack ? 'var(--border-teal)' : 'var(--border-subtle)'}`,
+              borderRadius: 12,
+              padding: '14px 18px',
+              marginBottom: 10,
+              background: inStack ? 'var(--teal-dim)' : 'var(--bg-elevated)',
+              position: 'relative' as const,
+              overflow: 'hidden',
+            }}>
+              {inStack && (
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, var(--teal-500), transparent)' }} />
               )}
-              {s.interactions && (
-                <div style={{ gridColumn: '1 / -1', color: s.interactions.includes('⚠') || s.interactions.includes('SIGNIFICANT') ? '#b45309' : '#334155' }}>
-                  <span style={muted}>Interactions: </span>{s.interactions}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' as const, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{s.name}</span>
+                  <GradeBadge grade={s.grade as EvidenceGrade} />
+                </div>
+                <button
+                  style={{
+                    ...btnSm,
+                    background: inStack ? 'var(--teal-500)' : 'var(--bg-overlay)',
+                    color: inStack ? '#000' : 'var(--text-secondary)',
+                    border: inStack ? 'none' : '1px solid var(--border-default)',
+                    fontWeight: inStack ? 700 : 500,
+                  }}
+                  onClick={() => { toggleStack(s); }}
+                >
+                  {inStack ? '✓ In stack' : '+ Add to stack'}
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '5px 24px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                <div><span style={muted}>Mechanism: </span>{s.mechanism}</div>
+                <div><span style={muted}>Dose: </span><strong style={{ color: 'var(--text-primary)', fontFamily: "'Space Mono', monospace" }}>{s.dose}</strong></div>
+                <div><span style={muted}>Timing: </span>{s.timing}</div>
+                <div><span style={muted}>Cost: </span><span style={{ color: 'var(--teal-500)', fontFamily: "'Space Mono', monospace" }}>{s.cost}</span></div>
+                {s.contraindications && (
+                  <div style={{ gridColumn: '1 / -1' }}><span style={muted}>Contraindications: </span>{s.contraindications}</div>
+                )}
+                {s.interactions && (
+                  <div style={{ gridColumn: '1 / -1', color: s.interactions.includes('⚠') || s.interactions.includes('SIGNIFICANT') ? 'var(--warning)' : 'var(--text-secondary)' }}>
+                    <span style={muted}>Interactions: </span>{s.interactions}
+                  </div>
+                )}
+                {s.product && (
+                  <div><span style={muted}>Product: </span>
+                    <a href={s.productUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal-500)', textDecoration: 'none', fontWeight: 500 }}>{s.product}</a>
+                  </div>
+                )}
+              </div>
+
+              {s.citation && (
+                <div style={{ marginTop: 8, fontSize: '0.7rem', color: 'var(--text-tertiary)', fontStyle: 'italic', fontFamily: "'Space Mono', monospace" }}>
+                  {s.citation}
                 </div>
               )}
-              {s.product && (
-                <div><span style={muted}>Recommended product: </span>
-                  <a href={s.productUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}>{s.product}</a>
-                </div>
-              )}
             </div>
-
-            {s.citation && (
-              <div style={{ marginTop: 8, fontSize: '0.73rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                Evidence from: {s.citation}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
 
         <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
           {Object.entries(GRADE_META).map(([g, m]) => (
@@ -679,37 +702,37 @@ export default function Nutrition() {
           <p style={muted}>Add supplements from the protocol above to build your stack. Interactions are checked automatically.</p>
         ) : (
           <>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginBottom: 14 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginBottom: 16 }}>
               {stack.map(s => (
-                <div key={s.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 99, padding: '5px 12px', fontSize: '0.8rem' }}>
-                  <span style={{ fontWeight: 600 }}>{s.name}</span>
-                  <span style={{ color: '#7c3aed' }}>{s.dose}</span>
-                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1rem', lineHeight: 1, padding: 0 }} onClick={() => { toggleStack(s); }}>×</button>
+                <div key={s.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--teal-dim)', border: '1px solid var(--border-teal)', borderRadius: 99, padding: '5px 12px', fontSize: '0.78rem' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</span>
+                  <span style={{ color: 'var(--teal-500)', fontFamily: "'Space Mono', monospace", fontSize: '0.7rem' }}>{s.dose}</span>
+                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: '1rem', lineHeight: 1, padding: 0 }} onClick={() => { toggleStack(s); }}>×</button>
                 </div>
               ))}
             </div>
 
-            <div style={{ ...row, marginBottom: 14 }}>
-              <div style={{ ...statBlock, background: '#f5f3ff' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#7c3aed' }}>{stack.length}</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Supplements</div>
+            <div style={{ ...row, marginBottom: 16 }}>
+              <div style={statBlock}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: 'var(--teal-500)' }}>{stack.length}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Supplements</div>
               </div>
-              <div style={{ ...statBlock, background: '#f0fdf4' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#15803d' }}>~${stackCost}</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Est. monthly cost</div>
+              <div style={statBlock}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: 'var(--success)' }}>~${stackCost}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Est. monthly cost</div>
               </div>
             </div>
 
             {stackInteractions.length > 0 && (
-              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '12px 16px' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#c2410c', marginBottom: 6 }}>⚠ Interaction Warnings</div>
+              <div style={{ background: 'rgba(255,184,48,0.08)', border: '1px solid rgba(255,184,48,0.2)', borderRadius: 8, padding: '12px 16px' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--warning)', marginBottom: 6 }}>⚠ Interaction Warnings</div>
                 {stackInteractions.map((w, i) => (
-                  <div key={i} style={{ fontSize: '0.8rem', color: '#9a3412', marginBottom: 4 }}>• {w}</div>
+                  <div key={i} style={{ fontSize: '0.78rem', color: 'var(--warning)', marginBottom: 4, opacity: 0.85 }}>• {w}</div>
                 ))}
               </div>
             )}
             {stackInteractions.length === 0 && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 14px', fontSize: '0.8rem', color: '#15803d' }}>
+              <div style={{ background: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.2)', borderRadius: 8, padding: '10px 14px', fontSize: '0.78rem', color: 'var(--success)' }}>
                 ✓ No significant interactions detected between selected supplements
               </div>
             )}
@@ -723,25 +746,25 @@ export default function Nutrition() {
           <span style={{ fontSize: '1.2rem' }}>🩸</span> Lab Test Recommendations
         </div>
 
-        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '10px 16px', fontSize: '0.8rem', color: '#0369a1', marginBottom: 16 }}>
+        <div style={{ background: 'var(--blue-dim)', border: '1px solid rgba(77,184,255,0.2)', borderRadius: 8, padding: '10px 16px', fontSize: '0.78rem', color: 'var(--blue-400)', marginBottom: 16 }}>
           Ask your GP for these tests based on your conditions and goals. Reference ranges shown are for adults — your GP may use lab-specific ranges.
         </div>
 
-        <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#334155', lineHeight: 1.8 }}>
-          Ask your GP for:{' '}
+        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.75rem', background: 'var(--bg-void)', border: '1px solid var(--border-default)', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: 'var(--teal-500)', lineHeight: 1.9 }}>
+          {'> '}
           {labTests.map(t => t.name).join(', ')}
         </div>
 
         {labTests.map((t, i) => (
-          <div key={i} style={{ borderBottom: i < labTests.length - 1 ? '1px solid #f1f5f9' : 'none', padding: '12px 0' }}>
+          <div key={i} style={{ borderBottom: i < labTests.length - 1 ? '1px solid var(--border-subtle)' : 'none', padding: '12px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{t.name}</span>
-              <span style={{ ...tag, background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem' }}>{t.code}</span>
+              <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{t.name}</span>
+              <span style={{ ...tag, background: 'var(--bg-overlay)', color: 'var(--text-tertiary)', fontSize: '0.65rem' }}>{t.code}</span>
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#475569', marginBottom: 3 }}>{t.reason}</div>
-            <div style={{ fontSize: '0.78rem', display: 'flex', gap: 16, flexWrap: 'wrap' as const }}>
-              <span><span style={muted}>Reference: </span>{t.refRange}</span>
-              <span style={{ color: '#0369a1' }}><span style={muted}>If abnormal: </span>{t.action}</span>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 4 }}>{t.reason}</div>
+            <div style={{ fontSize: '0.75rem', display: 'flex', gap: 16, flexWrap: 'wrap' as const }}>
+              <span><span style={muted}>Range: </span><span style={{ fontFamily: "'Space Mono', monospace", color: 'var(--text-primary)', fontSize: '0.72rem' }}>{t.refRange}</span></span>
+              <span><span style={muted}>If abnormal: </span><span style={{ color: 'var(--blue-400)' }}>{t.action}</span></span>
             </div>
           </div>
         ))}

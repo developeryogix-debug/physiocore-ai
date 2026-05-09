@@ -106,7 +106,7 @@ export default function Clinician() {
   const selPatient = selected ? (PATIENTS.find(p => p.id === selected) ?? null) : null;
 
   return (
-    <div style={{ maxWidth: 1020, margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: 1020, margin: '0 auto', padding: '100px 24px 48px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>

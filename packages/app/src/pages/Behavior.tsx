@@ -127,7 +127,7 @@ function StreakCalendar({ presence }: { presence: boolean[] }) {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const page: React.CSSProperties = { maxWidth: 960, margin: '0 auto', padding: '32px 24px' };
+const page: React.CSSProperties = { maxWidth: 960, margin: '0 auto', padding: '100px 24px 48px' };
 const h1: React.CSSProperties = { fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 };
 const muted: React.CSSProperties = { color: '#64748b', fontSize: '0.875rem' };
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '20px 24px', marginBottom: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' };
