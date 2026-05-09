@@ -1,0 +1,14 @@
+{
+  "name": "@physiocore/pose-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": { "import": "./src/index.ts" } },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.18",
+    "@physiocore/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

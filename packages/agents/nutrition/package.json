@@ -1,0 +1,14 @@
+{
+  "name": "@physiocore/nutrition-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": { "import": "./src/index.ts" } },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@physiocore/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
