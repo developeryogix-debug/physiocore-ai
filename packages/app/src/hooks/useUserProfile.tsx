@@ -142,7 +142,8 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const remoteProfile = remoteResult.data as Record<string, unknown> | null;
 
-          if (remoteProfile && !raw) {
+          if (remoteProfile) {
+            // Supabase is authoritative — always hydrate so profile survives sign-out + sign-in
             const mapped = rowToProfile(remoteProfile, userId);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
             setUserProfileState(mapped);
