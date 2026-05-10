@@ -1,9 +1,41 @@
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 
 export default function Navigation() {
+  const { user, userRole, signOut } = useAuth();
   const { userProfile, clearProfile } = useUserProfile();
   const navigate = useNavigate();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  async function handleSignOut() {
+    setMenuOpen(false);
+    clearProfile();
+    await signOut();
+    navigate('/');
+  }
+
+  const displayName = userProfile?.name ?? user?.email ?? '';
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('');
 
   return (
     <nav style={{
@@ -88,42 +120,117 @@ export default function Navigation() {
         Clinician
       </NavLink>
 
-      {/* User pill */}
-      {userProfile && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          marginLeft: 6,
-          paddingLeft: 8,
-          borderLeft: '1px solid rgba(255,255,255,0.06)',
-        }}>
-          <span style={{
-            fontSize: '0.72rem',
-            color: 'var(--text-tertiary)',
-            fontFamily: "'Space Mono', monospace",
-          }}>
-            {userProfile.name.split(' ')[0]}
-          </span>
+      {/* Avatar + dropdown */}
+      {user && (
+        <div ref={menuRef} style={{ position: 'relative', marginLeft: '6px', paddingLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
           <button
-            onClick={() => { clearProfile(); navigate('/'); }}
-            title="Reset profile"
+            onClick={() => setMenuOpen(o => !o)}
+            title={displayName}
             style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.7rem',
-              color: 'var(--text-tertiary)',
-              padding: '2px 4px',
-              borderRadius: 4,
-              lineHeight: 1,
-              transition: 'color 0.15s',
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--teal-500), var(--blue-400))',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.65rem', fontWeight: 700, color: '#000',
+              fontFamily: "'Space Mono', monospace",
+              flexShrink: 0,
+              transition: 'opacity 0.15s',
+              opacity: menuOpen ? 0.85 : 1,
             }}
           >
-            ✕
+            {initials || '?'}
           </button>
+
+          {/* Dropdown */}
+          {menuOpen && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '12px',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+              minWidth: '200px',
+              overflow: 'hidden',
+              zIndex: 200,
+            }}>
+              {/* User info header */}
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
+                  {displayName || 'User'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: "'Space Mono', monospace" }}>
+                  {user.email}
+                </div>
+                <div style={{
+                  display: 'inline-block', marginTop: '6px',
+                  padding: '2px 8px', borderRadius: '20px', fontSize: '0.65rem',
+                  fontWeight: 700, textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                  background: userRole === 'admin' ? 'rgba(255,184,48,0.15)' :
+                               userRole === 'clinician' ? 'rgba(77,184,255,0.15)' : 'rgba(0,212,170,0.1)',
+                  color: userRole === 'admin' ? 'var(--amber-400)' :
+                         userRole === 'clinician' ? 'var(--blue-400)' : 'var(--teal-500)',
+                  border: `1px solid ${userRole === 'admin' ? 'rgba(255,184,48,0.25)' :
+                                       userRole === 'clinician' ? 'rgba(77,184,255,0.25)' : 'var(--border-teal)'}`,
+                  fontFamily: "'Space Mono', monospace",
+                }}>
+                  {userRole}
+                </div>
+              </div>
+
+              {/* Menu items */}
+              <div style={{ padding: '6px' }}>
+                {menuItem('My Profile', '/settings', () => { setMenuOpen(false); navigate('/settings'); })}
+                {(userRole === 'clinician' || userRole === 'admin') &&
+                  menuItem('Clinician View', '/clinician', () => { setMenuOpen(false); navigate('/clinician'); })}
+                {menuItem('Settings', '/settings', () => { setMenuOpen(false); navigate('/settings'); })}
+              </div>
+
+              {/* Sign out */}
+              <div style={{ padding: '6px', borderTop: '1px solid var(--border-subtle)' }}>
+                <button
+                  onClick={() => { void handleSignOut(); }}
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: '8px',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    textAlign: 'left' as const, fontSize: '0.82rem',
+                    color: 'var(--danger)', fontFamily: 'inherit',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,68,68,0.08)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </nav>
+  );
+}
+
+function menuItem(label: string, _to: string, onClick: () => void) {
+  return (
+    <button
+      key={label}
+      onClick={onClick}
+      style={{
+        width: '100%', padding: '9px 12px', borderRadius: '8px',
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        textAlign: 'left' as const, fontSize: '0.82rem',
+        color: 'var(--text-secondary)', fontFamily: 'inherit',
+        transition: 'background 0.1s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+    >
+      {label}
+    </button>
   );
 }

@@ -1,0 +1,135 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@physiocore/supabase';
+
+export type UserRole = 'patient' | 'clinician' | 'admin';
+
+interface AuthContextValue {
+  user: User | null;
+  session: Session | null;
+  userRole: UserRole;
+  hasConsented: boolean;
+  isLoading: boolean;
+  signInWithEmail: (email: string, password: string) => Promise<string | null>;
+  signUpWithEmail: (email: string, password: string, fullName: string) => Promise<string | null>;
+  signInWithGoogle: () => Promise<void>;
+  sendMagicLink: (email: string) => Promise<string | null>;
+  signOut: () => Promise<void>;
+  recordConsent: (fullName: string) => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+async function fetchUserMeta(userId: string): Promise<{ role: UserRole; hasConsented: boolean }> {
+  const [profileResult, consentResult] = await Promise.all([
+    supabase.from('profiles').select('role').eq('user_id', userId).maybeSingle(),
+    supabase.from('consents').select('id').eq('user_id', userId).maybeSingle(),
+  ]);
+  return {
+    role: (profileResult.data?.role as UserRole) ?? 'patient',
+    hasConsented: !!consentResult.data,
+  };
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>('patient');
+  const [hasConsented, setHasConsented] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  async function applyUser(u: User | null) {
+    setUser(u);
+    if (u) {
+      const meta = await fetchUserMeta(u.id);
+      setUserRole(meta.role);
+      setHasConsented(meta.hasConsented);
+    } else {
+      setUserRole('patient');
+      setHasConsented(false);
+    }
+  }
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(async ({ data }) => {
+      setSession(data.session);
+      await applyUser(data.session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      void applyUser(session?.user ?? null);
+    });
+
+    return () => { listener.subscription.unsubscribe(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function signInWithEmail(email: string, password: string): Promise<string | null> {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+  }
+
+  async function signUpWithEmail(email: string, password: string, fullName: string): Promise<string | null> {
+    const { error, data } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    if (error) return error.message;
+    if (data.user) {
+      await supabase.from('profiles').upsert({ user_id: data.user.id, full_name: fullName, role: 'patient' });
+    }
+    return null;
+  }
+
+  async function signInWithGoogle(): Promise<void> {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+  }
+
+  async function sendMagicLink(email: string): Promise<string | null> {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    return error?.message ?? null;
+  }
+
+  async function signOut(): Promise<void> {
+    await supabase.auth.signOut();
+  }
+
+  async function recordConsent(fullName: string): Promise<void> {
+    if (!user) return;
+    await Promise.all([
+      supabase.from('consents').upsert({
+        user_id: user.id,
+        version: '1.0',
+        full_name: fullName,
+        signed_at: new Date().toISOString(),
+      }),
+      supabase.from('profiles').upsert({ user_id: user.id, full_name: fullName, role: 'patient' }),
+    ]);
+    setHasConsented(true);
+  }
+
+  return (
+    <AuthContext.Provider value={{
+      user, session, userRole, hasConsented, isLoading,
+      signInWithEmail, signUpWithEmail, signInWithGoogle,
+      sendMagicLink, signOut, recordConsent,
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

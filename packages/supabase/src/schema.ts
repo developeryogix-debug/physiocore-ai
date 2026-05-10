@@ -223,6 +223,79 @@ export interface InterventionUpdate {
   responded?: boolean;
 }
 
+// ─── profiles ────────────────────────────────────────────────────────────────
+
+export interface ProfileRow {
+  id: string;
+  user_id: string;
+  full_name: string;
+  role: 'patient' | 'clinician' | 'admin';
+  created_at: string;
+}
+
+export interface ProfileInsert {
+  id?: string;
+  user_id: string;
+  full_name: string;
+  role?: 'patient' | 'clinician' | 'admin';
+  created_at?: string;
+}
+
+export interface ProfileUpdate {
+  full_name?: string;
+  role?: 'patient' | 'clinician' | 'admin';
+}
+
+// ─── outcomes ────────────────────────────────────────────────────────────────
+
+export interface OutcomeRow {
+  id: string;
+  user_id: string;
+  type: 'psfs' | 'nprs' | 'groc' | 'phq4';
+  score: number;
+  metadata: Record<string, unknown> | null;
+  recorded_at: string;
+}
+
+export interface OutcomeInsert {
+  id?: string;
+  user_id: string;
+  type: 'psfs' | 'nprs' | 'groc' | 'phq4';
+  score: number;
+  metadata?: Record<string, unknown> | null;
+  recorded_at?: string;
+}
+
+export interface OutcomeUpdate {
+  score?: number;
+  metadata?: Record<string, unknown> | null;
+}
+
+// ─── consents ────────────────────────────────────────────────────────────────
+
+export interface ConsentRow {
+  id: string;
+  user_id: string;
+  version: string;
+  full_name: string;
+  signed_at: string;
+  ip_hash: string | null;
+}
+
+export interface ConsentInsert {
+  id?: string;
+  user_id: string;
+  version?: string;
+  full_name: string;
+  signed_at?: string;
+  ip_hash?: string | null;
+}
+
+export interface ConsentUpdate {
+  full_name?: string;
+  ip_hash?: string | null;
+}
+
 // ─── Database generic type ───────────────────────────────────────────────────
 
 export interface Database {
@@ -262,6 +335,21 @@ export interface Database {
         Row: InterventionRow;
         Insert: InterventionInsert;
         Update: InterventionUpdate;
+      };
+      profiles: {
+        Row: ProfileRow;
+        Insert: ProfileInsert;
+        Update: ProfileUpdate;
+      };
+      outcomes: {
+        Row: OutcomeRow;
+        Insert: OutcomeInsert;
+        Update: OutcomeUpdate;
+      };
+      consents: {
+        Row: ConsentRow;
+        Insert: ConsentInsert;
+        Update: ConsentUpdate;
       };
     };
     Views: Record<string, never>;
