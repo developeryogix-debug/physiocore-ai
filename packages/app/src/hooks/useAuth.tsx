@@ -20,13 +20,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Bypass strict Database generic for tables added after initial schema generation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
 async function fetchUserMeta(userId: string): Promise<{ role: UserRole; hasConsented: boolean }> {
   const [profileResult, consentResult] = await Promise.all([
-    supabase.from('profiles').select('role').eq('user_id', userId).maybeSingle(),
-    supabase.from('consents').select('id').eq('user_id', userId).maybeSingle(),
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    db.from('profiles').select('role').eq('user_id', userId).maybeSingle() as Promise<{ data: { role: UserRole } | null }>,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    db.from('consents').select('id').eq('user_id', userId).maybeSingle() as Promise<{ data: { id: string } | null }>,
   ]);
   return {
-    role: (profileResult.data?.role as UserRole) ?? 'patient',
+    role: profileResult.data?.role ?? 'patient',
     hasConsented: !!consentResult.data,
   };
 }
@@ -79,7 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) return error.message;
     if (data.user) {
-      await supabase.from('profiles').upsert({ user_id: data.user.id, full_name: fullName, role: 'patient' });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      await db.from('profiles').upsert({ user_id: data.user.id, full_name: fullName, role: 'patient' });
     }
     return null;
   }
@@ -106,13 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function recordConsent(fullName: string): Promise<void> {
     if (!user) return;
     await Promise.all([
-      supabase.from('consents').upsert({
-        user_id: user.id,
-        version: '1.0',
-        full_name: fullName,
-        signed_at: new Date().toISOString(),
-      }),
-      supabase.from('profiles').upsert({ user_id: user.id, full_name: fullName, role: 'patient' }),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      db.from('consents').upsert({ user_id: user.id, version: '1.0', full_name: fullName, signed_at: new Date().toISOString() }),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      db.from('profiles').upsert({ user_id: user.id, full_name: fullName, role: 'patient' }),
     ]);
     setHasConsented(true);
   }

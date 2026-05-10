@@ -21,9 +21,14 @@ interface UserProfileContextValue {
 
 const UserProfileContext = createContext<UserProfileContextValue | null>(null);
 
+// Bypass strict Database generic for tables that may not be in compiled types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
 async function syncProfileToSupabase(profile: UserProfile, userId: string): Promise<void> {
   try {
-    await supabase.from('user_profiles').upsert({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    await db.from('user_profiles').upsert({
       id: userId,
       email: profile.email,
       name: profile.name,
@@ -47,43 +52,69 @@ async function syncProfileToSupabase(profile: UserProfile, userId: string): Prom
 
 async function migrateLocalStorageToSupabase(userId: string): Promise<void> {
   if (localStorage.getItem(MIGRATED_KEY)) return;
-
   try {
-    // Migrate sessions
     const rawSessions = localStorage.getItem('physiocore_sessions');
     if (rawSessions) {
       const sessions = JSON.parse(rawSessions) as Array<Record<string, unknown>>;
       for (const s of sessions) {
-        await supabase.from('sessions').insert({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        await db.from('sessions').insert({
           user_id: userId,
-          exercise: s['exercise'] as string | undefined,
-          date: s['date'] as string | undefined,
-          reps: s['reps'] as number | undefined,
-          form_score: s['formScore'] as number | undefined,
-          duration_min: s['durationMinutes'] as number | undefined,
-          fhir_json: s['fhirJson'] as Record<string, unknown> | undefined,
+          exercise: s['exercise'],
+          date: s['date'],
+          reps: s['reps'],
+          form_score: s['formScore'],
+          duration_min: s['durationMinutes'],
+          fhir_json: s['fhirJson'],
         });
       }
     }
-
-    // Migrate outcomes
     const rawOutcomes = localStorage.getItem('physiocore_outcomes');
     if (rawOutcomes) {
       const outcomes = JSON.parse(rawOutcomes) as Array<Record<string, unknown>>;
       for (const o of outcomes) {
-        await supabase.from('outcomes').insert({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        await db.from('outcomes').insert({
           user_id: userId,
-          type: o['type'] as 'psfs' | 'nprs' | 'groc' | 'phq4',
-          score: o['score'] as number,
-          recorded_at: o['recordedAt'] as string | undefined,
+          type: o['type'],
+          score: o['score'],
+          recorded_at: o['recordedAt'],
         });
       }
     }
-
     localStorage.setItem(MIGRATED_KEY, '1');
   } catch {
     // Migration failure is non-fatal
   }
+}
+
+function rowToProfile(row: Record<string, unknown>, userId: string): UserProfile {
+  return {
+    id: userId,
+    email: (row['email'] as string) ?? '',
+    name: (row['name'] as string) ?? '',
+    dateOfBirth: (row['date_of_birth'] as string) ?? '',
+    gender: (row['gender'] as UserProfile['gender']) ?? 'prefer_not_to_say',
+    heightCm: (row['height_cm'] as number) ?? 0,
+    weightKg: (row['weight_kg'] as number) ?? 0,
+    bmi: (row['bmi'] as number) ?? 0,
+    fitnessLevel: (row['fitness_level'] as UserProfile['fitnessLevel']) ?? 'beginner',
+    primaryGoal: (row['primary_goal'] as UserProfile['primaryGoal']) ?? 'strengthening',
+    injuries: (row['injuries'] as UserProfile['injuries']) ?? [],
+    conditions: (row['conditions'] as UserProfile['conditions']) ?? [],
+    medications: (row['medications'] as UserProfile['medications']) ?? [],
+    preferences: (row['preferences'] as UserProfile['preferences']) ?? {
+      sessionDurationMinutes: 30,
+      preferredIntensity: 'moderate',
+      equipmentAvailable: [],
+      notificationsEnabled: true,
+      language: 'en',
+      timezone: 'UTC',
+    },
+    subscription: (row['subscription'] as UserProfile['subscription']) ?? 'free',
+    createdAt: (row['created_at'] as string) ?? new Date().toISOString(),
+    updatedAt: (row['updated_at'] as string) ?? new Date().toISOString(),
+  };
 }
 
 export function UserProfileProvider({ children }: { children: ReactNode }) {
@@ -106,38 +137,20 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData.session?.user?.id;
         if (userId) {
-          // Attempt to pull profile from Supabase (non-fatal if table missing)
-          const { data: remoteProfile } = await supabase
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+          const { data: remoteProfile } = await db
             .from('user_profiles')
             .select('*')
             .eq('id', userId)
-            .maybeSingle();
+            .maybeSingle() as Promise<{ data: Record<string, unknown> | null }>;
 
           if (remoteProfile && !raw) {
-            // Remote exists but no local — hydrate localStorage
-            const mapped: UserProfile = {
-              id: remoteProfile.id,
-              email: remoteProfile.email,
-              name: remoteProfile.name,
-              dateOfBirth: remoteProfile.date_of_birth,
-              gender: remoteProfile.gender,
-              heightCm: remoteProfile.height_cm,
-              weightKg: remoteProfile.weight_kg,
-              bmi: remoteProfile.bmi,
-              fitnessLevel: remoteProfile.fitness_level,
-              primaryGoal: remoteProfile.primary_goal,
-              injuries: remoteProfile.injuries ?? [],
-              conditions: remoteProfile.conditions ?? [],
-              medications: remoteProfile.medications ?? [],
-              preferences: remoteProfile.preferences,
-              subscription: remoteProfile.subscription ?? 'free',
-            };
+            const mapped = rowToProfile(remoteProfile, userId);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
             setUserProfileState(mapped);
             setOnboardingDone(true);
           }
 
-          // Migrate old localStorage data to Supabase (runs once)
           void migrateLocalStorageToSupabase(userId);
         }
       } catch {
@@ -153,7 +166,6 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     setUserProfileState(profile);
     setOnboardingDone(true);
 
-    // Background sync to Supabase
     void supabase.auth.getSession().then(({ data }) => {
       const userId = data.session?.user?.id;
       if (userId) void syncProfileToSupabase(profile, userId);
