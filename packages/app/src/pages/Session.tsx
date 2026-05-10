@@ -266,6 +266,8 @@ export default function Session() {
   });
   const [holdTime, setHoldTime] = useState(0);
   const [holdComplete, setHoldComplete] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+  const [bottomHoldSecs, setBottomHoldSecs] = useState(0);
   const [mode, setMode] = useState<SessionMode>('idle');
   const [repCount, setRepCount] = useState(0);
   const [liveAngle, setLiveAngle] = useState<number | null>(null);
@@ -310,6 +312,8 @@ export default function Session() {
   const lastCountdownRef = useRef(-1);
   // Fix 3: hold time — track only time spent below down threshold
   const holdEndTimeRef = useRef(0);
+  const bottomEnteredRef = useRef(0);
+  const prevBottomSecRef = useRef(0);
   // Pilates
   const [plankScore, setPlankScore] = useState(0);
   const [plankSeconds, setPlankSeconds] = useState(0);
@@ -564,45 +568,53 @@ export default function Session() {
           setTimeout(() => setCountdown(null), 1000);
         }
 
-        // ── Rep counting with timing guard (min 1.5s) and form scoring ────────
+        // ── Rep counting: hysteresis + bottom-hold feedback ──────────────────
         const exCfg = EXERCISE_CONFIG[exerciseKey as ExerciseKey];
+        // 6° hysteresis band prevents small wobbles from falsely ending the hold
+        const HYSTERESIS = 6;
         if (repStateRef.current === 'up' && angle < exCfg.repDownThreshold) {
           repStateRef.current = 'down'; repStartTimeRef.current = now;
           repPeakAngleRef.current = angle; holdEndTimeRef.current = 0;
+          bottomEnteredRef.current = now; prevBottomSecRef.current = 0;
+          setIsAtBottom(true);
+          updateStatus('ready', 'HOLD ↓ — rise slowly when ready');
         } else if (repStateRef.current === 'down') {
           repPeakAngleRef.current = Math.min(repPeakAngleRef.current, angle);
-          // Fix 3: capture first moment angle rises back above down threshold (= end of hold)
-          if (angle > exCfg.repDownThreshold && holdEndTimeRef.current === 0) {
+          // Update bottom hold seconds display (once per second)
+          const bSec = Math.floor((now - bottomEnteredRef.current) / 1000);
+          if (bSec !== prevBottomSecRef.current) { prevBottomSecRef.current = bSec; setBottomHoldSecs(bSec); }
+          // Hysteresis: only mark hold-end when angle rises well above threshold
+          if (angle > exCfg.repDownThreshold + HYSTERESIS && holdEndTimeRef.current === 0) {
             holdEndTimeRef.current = now;
           }
           if (angle > exCfg.repUpThreshold) {
             repStateRef.current = 'up';
-            // Use hold duration (time below threshold), not full cycle time
+            setIsAtBottom(false); setBottomHoldSecs(0);
             const holdMs = (holdEndTimeRef.current || now) - repStartTimeRef.current;
             const elapsed = holdMs / 1000;
             holdEndTimeRef.current = 0;
-            // Fix 2: angle sanity — squat peak < 60° is camera noise, not a real rep
+            // Angle sanity — squat peak < 60° is camera noise, not a real rep
             const isSane = exerciseKey !== 'squat' || repPeakAngleRef.current >= 60;
             const score = computeFormScore(repPeakAngleRef.current, exCfg.targetRange);
             const flag: RepRecord['flag'] = !isSane ? 'invalid' : elapsed < 1.5 ? 'too_fast' : repPeakAngleRef.current > exCfg.targetRange[1] ? 'shallow' : 'good';
             if (flag === 'too_fast') {
               updateStatus('warn_velocity', 'Too fast — slow down for reps to count');
               const capturedRef = statusRef;
-              setTimeout(() => { if (capturedRef.current === 'warn_velocity') updateStatus('ready', 'Ready — counting reps'); }, 2000);
+              setTimeout(() => { if (capturedRef.current === 'warn_velocity') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
             } else if (flag === 'invalid') {
               updateStatus('warn_body', 'Invalid rep — angle too extreme (camera noise?)');
               const capturedRef = statusRef;
-              setTimeout(() => { if (capturedRef.current === 'warn_body') updateStatus('ready', 'Ready — counting reps'); }, 2000);
+              setTimeout(() => { if (capturedRef.current === 'warn_body') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
             } else {
               repCountRef.current++;
               const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat(elapsed.toFixed(1)), flag };
               repRecordsRef.current = [...repRecordsRef.current, rec];
               setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
-              updateStatus('ready', 'Ready — counting reps');
+              updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
             }
           }
         } else {
-          updateStatus('ready', 'Ready — counting reps');
+          updateStatus('ready', 'Ready — go down to start');
         }
         drawSkeleton(ctx, lms, activeJoint, isInRange, angle);
         framesRef.current.push({ timestamp: now, landmarks: lms.map((lm, idx) => ({ name: LANDMARK_NAMES[idx] ?? `point_${idx}`, x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility ?? 1 })) as PoseLandmark[] });
@@ -623,6 +635,7 @@ export default function Session() {
     holdMsRef.current = 0; prevHoldSecRef.current = -1; wasHoldingRef.current = false;
     holdCompleteRef.current = false; lastFrameTimeRef.current = null;
     setHoldTime(0); setHoldComplete(false);
+    setIsAtBottom(false); setBottomHoldSecs(0); bottomEnteredRef.current = 0;
     deadZoneEndRef.current = Date.now() + 8000; lastCountdownRef.current = -1; setCountdown(null);
     holdEndTimeRef.current = 0;
     setPlankScore(0); setPlankSeconds(0); lastPlankSecRef.current = -1; pilatesInvertStateRef.current = 'up';
@@ -792,9 +805,27 @@ export default function Session() {
                 <div style={{ fontSize: '0.7rem', color: '#f472b6', marginTop: '4px' }}>Target: {pilateCfgUI.targetLabel}</div>
               </div>
             ) : (
-              <div className="metric-card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Reps</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: 'var(--text-primary)' }}>{repCount}</div>
+              <div className="metric-card" style={{
+                textAlign: 'center',
+                border: isAtBottom ? '1px solid var(--teal-500)' : '1px solid var(--border-subtle)',
+                boxShadow: isAtBottom ? '0 0 24px rgba(0,212,170,0.12)' : 'none',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' as const, color: isAtBottom ? 'var(--teal-500)' : 'var(--text-tertiary)', transition: 'color 0.2s' }}>
+                  {isAtBottom ? 'HOLDING' : 'REPS'}
+                </div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: isAtBottom ? 'var(--teal-500)' : 'var(--text-primary)', transition: 'color 0.2s' }}>
+                  {repCount}
+                </div>
+                {isAtBottom ? (
+                  <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--teal-500)', fontFamily: "'Space Mono', monospace" }}>
+                    {bottomHoldSecs}s ↑ rise to count
+                  </div>
+                ) : (
+                  <div style={{ marginTop: '8px', fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                    Go down to start
+                  </div>
+                )}
               </div>
             )}
             <div className="metric-card" style={{ border: `1px solid ${inRange ? 'rgba(0,230,118,0.3)' : 'rgba(255,68,68,0.3)'}`, textAlign: 'center' }}>

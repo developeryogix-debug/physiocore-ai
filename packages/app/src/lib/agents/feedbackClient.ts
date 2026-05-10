@@ -82,6 +82,16 @@ export async function generateFeedback(
 
   const userMsg = `Ex:${exerciseName} reps:${poseAnalysis.repCount} score:${poseAnalysis.formScore}/100 ${worstLine}${statsLines ? ' joints:' + statsLines : ''} Feedback JSON:`;
 
-  const text = await callClaude({ model: 'claude-haiku-4-5-20251001', system, messages: [{ role: 'user', content: userMsg }], maxTokens: 600 });
-  return extractJson<FeedbackResponse>(text);
+  const text = await callClaude({ model: 'claude-haiku-4-5-20251001', system, messages: [{ role: 'user', content: userMsg }], maxTokens: 900 });
+  try {
+    return extractJson<FeedbackResponse>(text);
+  } catch {
+    return {
+      summary: text.slice(0, 300).replace(/[{}[\]"]/g, '').trim() || 'Session complete. Review your rep data above.',
+      formCorrections: [],
+      motivationalMessage: 'Great effort — keep going!',
+      nextSteps: ['Review your rep breakdown above.'],
+      safetyWarnings: [],
+    };
+  }
 }
