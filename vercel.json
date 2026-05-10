@@ -2,5 +2,15 @@
   "buildCommand": "pnpm --filter @physiocore/app build",
   "outputDirectory": "packages/app/dist",
   "installCommand": "npx pnpm@9.15.4 install",
-  "framework": null
+  "framework": null,
+  "crons": [
+    {
+      "path": "/api/health-check",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/weekly-report",
+      "schedule": "0 0 * * 1"
+    }
+  ]
 }
