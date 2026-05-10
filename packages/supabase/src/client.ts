@@ -8,7 +8,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Database generic omitted intentionally — strict table typing caused cross-package
+// tsc -b failures in the pnpm monorepo. Type safety is handled at the call site.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

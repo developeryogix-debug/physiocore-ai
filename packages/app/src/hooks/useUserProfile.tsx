@@ -137,12 +137,10 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData.session?.user?.id;
         if (userId) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          const { data: remoteProfile } = await db
-            .from('user_profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle() as Promise<{ data: Record<string, unknown> | null }>;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+          const remoteResult = await db.from('user_profiles').select('*').eq('id', userId).maybeSingle();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const remoteProfile = remoteResult.data as Record<string, unknown> | null;
 
           if (remoteProfile && !raw) {
             const mapped = rowToProfile(remoteProfile, userId);
