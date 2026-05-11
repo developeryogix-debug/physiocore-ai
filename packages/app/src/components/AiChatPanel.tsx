@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useUserProfile } from '../hooks/useUserProfile.js';
+import { saveChatMessage, loadChatHistory, getRecentSessionSummaries, formatSessionsForPrompt } from '../lib/sessionMemory.js';
 
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
@@ -39,9 +40,24 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
   const [streaming, setStreaming] = useState(false);
   const [voiceOut, setVoiceOut] = useState(false);
   const [listening, setListening] = useState(false);
+  const [sessionContext, setSessionContext] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const recogRef = useRef<SpeechRecognition | null>(null);
+
+  // Load chat history + session summaries when panel first opens
+  useEffect(() => {
+    if (!open) return;
+    void (async () => {
+      const [history, summaries] = await Promise.all([
+        loadChatHistory(pageContext.slice(0, 40), 10),
+        getRecentSessionSummaries(5),
+      ]);
+      if (history.length > 0) setMessages(history);
+      setSessionContext(formatSessionsForPrompt(summaries));
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -51,8 +67,8 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
     const profile = userProfile
       ? `User: ${userProfile.name}, ${userProfile.fitnessLevel} fitness, goal: ${userProfile.primaryGoal.replace(/_/g, ' ')}, conditions: ${userProfile.conditions.filter(c => c.isActive).map(c => c.name).join(', ') || 'none'}, injuries: ${userProfile.injuries.filter(i => i.isActive).map(i => `${i.bodyPart}(sev${i.severity})`).join(', ') || 'none'}.`
       : '';
-    return `You are a physiotherapy AI assistant embedded in PhysioCore AI. Be concise, evidence-based, and safety-focused. ${profile} ${pageContext}`.trim();
-  }, [userProfile, pageContext]);
+    return `You are a physiotherapy AI assistant embedded in PhysioCore AI. Be concise, evidence-based, and safety-focused. ${profile} ${sessionContext} ${pageContext}`.trim();
+  }, [userProfile, pageContext, sessionContext]);
 
   const speak = useCallback((text: string) => {
     if (!voiceOut || !window.speechSynthesis) return;
@@ -64,7 +80,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || streaming) return;
-    const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_API_KEY'];
+    const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'];
     if (!apiKey) return;
 
     const userMsg: Message = { role: 'user', content: text.trim() };
@@ -72,6 +88,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
     setMessages(history);
     setInput('');
     setStreaming(true);
+    void saveChatMessage({ role: 'user', content: text.trim(), page: pageContext.slice(0, 40) });
 
     const assistantMsg: Message = { role: 'assistant', content: '' };
     setMessages([...history, assistantMsg]);
@@ -127,6 +144,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
       }
 
       speak(full);
+      if (full) void saveChatMessage({ role: 'assistant', content: full, page: pageContext.slice(0, 40) });
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         setMessages(prev => {

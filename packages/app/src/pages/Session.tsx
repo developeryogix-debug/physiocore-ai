@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import type { PoseFrame, PoseLandmark, AgentResult, FeedbackResponse } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import { analyzeFrames, generateFeedback } from '../hooks/useOrchestrator.js';
+import { saveSessionSummary } from '../lib/sessionMemory.js';
 import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
@@ -682,6 +683,15 @@ export default function Session() {
         const existing = JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[];
         localStorage.setItem('physiocore_sessions', JSON.stringify([newSession, ...existing]));
       } catch { /* storage unavailable */ }
+      // Save session summary to Supabase for AI memory
+      void saveSessionSummary({
+        date: new Date().toISOString(),
+        exercise,
+        reps: repCountRef.current,
+        avg_score: analysis.formScore,
+        top_deviation: feedbackData.formCorrections[0]?.issue ?? '',
+        ai_feedback_summary: feedbackData.summary,
+      });
     } catch (e) {
       setFeedbackResult({ success: false, error: { code: 'FEEDBACK_ERROR', message: String(e), retryable: true }, metadata: { agentId: 'feedback-client', agentVersion: '1.0.0', processingMs: 0 } });
     } finally { setLoadingFeedback(false); setMode('idle'); }
