@@ -9,7 +9,7 @@ function weekStart(): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function GET(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const authHeader = req.headers['authorization'];
   if (authHeader !== `Bearer ${process.env['CRON_SECRET'] ?? ''}` && process.env['NODE_ENV'] !== 'development') {
     return res.status(401).json({ error: 'Unauthorized' });

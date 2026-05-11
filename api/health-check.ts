@@ -127,7 +127,7 @@ async function estimateDailyCost(): Promise<number> {
   return estimatedCost;
 }
 
-export async function GET(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Verify cron secret
   const authHeader = req.headers['authorization'];
   if (authHeader !== `Bearer ${process.env['CRON_SECRET'] ?? ''}` && process.env['NODE_ENV'] !== 'development') {
