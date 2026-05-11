@@ -155,7 +155,7 @@ function generatePrescription(exercise: ExerciseKey, records: RepRecord[]): Arra
   return base[exercise];
 }
 
-function exportReport(exercise: ExerciseKey, records: RepRecord[], feedbackData: FeedbackResponse | undefined, sessionDuration: number, viewMode: ViewMode) {
+function exportReport(exercise: ExerciseKey, records: RepRecord[], feedbackData: FeedbackResponse | undefined, sessionDuration: number, viewMode: ViewMode, userName: string, sessionNum: number) {
   const avgScore = records.length > 0 ? Math.round(records.reduce((s, r) => s + r.score, 0) / records.length) : 0;
   const bestScore = records.length > 0 ? Math.max(...records.map(r => r.score)) : 0;
   const tension = records.reduce((s, r) => s + r.duration, 0).toFixed(0);
@@ -179,7 +179,10 @@ function exportReport(exercise: ExerciseKey, records: RepRecord[], feedbackData:
   const repRows = records.map(r => `<tr><td>Rep ${r.num}</td><td>${r.angle}°</td><td style="color:${r.score>=80?'#16a34a':r.score>=60?'#92400e':'#dc2626'};font-weight:700">${r.score}/100</td><td>${r.duration}s</td><td>${r.flag==='good'?'✅ Good':r.flag==='too_fast'?'⚠️ Too fast':'⚠️ Shallow'}</td></tr>`).join('');
   const presRows = generatePrescription(exercise, records).map(p => `<tr><td><strong>${p.name}</strong></td><td>${p.sets}</td><td>${p.focus}</td></tr>`).join('');
   const fbHtml = feedbackData ? `<h2>AI Feedback</h2><p>${feedbackData.summary}</p>${feedbackData.safetyWarnings.length ? `<p><strong>Safety warnings:</strong> ${feedbackData.safetyWarnings.join('; ')}</p>` : ''}${feedbackData.formCorrections.map(c => `<p><strong>[${c.priority.toUpperCase()}] ${c.bodyPart.replace(/_/g,' ')}:</strong> ${c.instruction}</p>`).join('')}<p style="color:#10b981;font-style:italic">${feedbackData.motivationalMessage}</p>` : '';
-  const html = `<!DOCTYPE html><html><head><title>PhysioCore Report — ${exercise}</title><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1e293b}h1{color:#1e40af;margin-bottom:4px}h2{color:#1e293b;margin-top:28px;border-bottom:2px solid #e2e8f0;padding-bottom:6px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{padding:9px 14px;text-align:left;border:1px solid #e2e8f0;font-size:0.875rem}th{background:#f8fafc;font-weight:600;color:#475569}tr:nth-child(even) td{background:#f8fafc}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:8px}.stat{text-align:center;padding:14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px}.sv{font-size:1.8rem;font-weight:800;color:#0369a1}.sl{font-size:0.7rem;color:#64748b;margin-top:3px;font-weight:600}pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;font-size:0.72rem;overflow:auto;white-space:pre-wrap}@media print{pre{white-space:pre-wrap}}</style></head><body>
+  const dateStr = new Date().toISOString().split('T')[0];
+  const exerciseLabel = exercise.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
+  const filename = `${userName}_${exerciseLabel}_${dateStr}_S${sessionNum}`;
+  const html = `<!DOCTYPE html><html><head><title>${filename}</title><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1e293b}h1{color:#1e40af;margin-bottom:4px}h2{color:#1e293b;margin-top:28px;border-bottom:2px solid #e2e8f0;padding-bottom:6px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{padding:9px 14px;text-align:left;border:1px solid #e2e8f0;font-size:0.875rem}th{background:#f8fafc;font-weight:600;color:#475569}tr:nth-child(even) td{background:#f8fafc}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:8px}.stat{text-align:center;padding:14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px}.sv{font-size:1.8rem;font-weight:800;color:#0369a1}.sl{font-size:0.7rem;color:#64748b;margin-top:3px;font-weight:600}pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;font-size:0.72rem;overflow:auto;white-space:pre-wrap}@media print{pre{white-space:pre-wrap}}</style></head><body>
 <h1>PhysioCore AI — Session Report</h1>
 <p style="color:#64748b;font-size:0.875rem"><strong>Exercise:</strong> ${exercise.replace(/_/g,' ')} &nbsp;·&nbsp; <strong>View mode:</strong> ${viewMode} &nbsp;·&nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
 <h2>Metrics Summary</h2>
@@ -871,7 +874,11 @@ export default function Session() {
               <h2 className="font-display" style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Session Report</h2>
             </div>
             {repRecords.length > 0 && (
-              <button onClick={() => exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode)} className="btn-ghost" style={{ fontSize: '0.82rem' }}>
+              <button onClick={() => {
+                const firstName = profile?.name?.split(' ')[0] ?? 'User';
+                const sessionNum = (JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[]).length;
+                exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode, firstName, sessionNum);
+              }} className="btn-ghost" style={{ fontSize: '0.82rem' }}>
                 Export for Physiotherapist ↓
               </button>
             )}
