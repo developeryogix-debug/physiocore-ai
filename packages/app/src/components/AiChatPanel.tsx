@@ -44,6 +44,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const recogRef = useRef<SpeechRecognition | null>(null);
+  const sendMessageRef = useRef<(text: string) => Promise<void>>(async () => { /* placeholder */ });
 
   // Load chat history + session summaries when panel first opens
   useEffect(() => {
@@ -160,6 +161,9 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
     }
   }, [messages, streaming, buildSystem, speak]);
 
+  // Keep ref in sync so voice handler always calls latest sendMessage
+  useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
+
   const startVoice = useCallback(() => {
     const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!SR) return;
@@ -169,7 +173,10 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
     recog.interimResults = false;
     recog.onresult = (e: SpeechRecognitionEvent) => {
       const transcript = e.results[0]?.[0]?.transcript ?? '';
-      if (transcript) { setInput(transcript); }
+      if (transcript) {
+        setInput(transcript);
+        void sendMessageRef.current(transcript);
+      }
     };
     recog.onend = () => setListening(false);
     recog.onerror = () => setListening(false);
@@ -199,7 +206,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
           position: 'fixed',
           bottom: 28,
           right: 28,
-          zIndex: 1000,
+          zIndex: 10001,
           width: 52,
           height: 52,
           borderRadius: '50%',
@@ -231,7 +238,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
             position: 'fixed',
             bottom: 92,
             right: 28,
-            zIndex: 999,
+            zIndex: 10000,
             width: 360,
             maxHeight: '70vh',
             background: 'var(--bg-elevated)',
