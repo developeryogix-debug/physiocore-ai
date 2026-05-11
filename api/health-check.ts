@@ -41,6 +41,7 @@ async function checkAnthropicApi(): Promise<HealthCheckRow> {
 
 async function checkSupabase(): Promise<HealthCheckRow> {
   const start = Date.now();
+  if (!db) return { service: 'supabase', status: 'fail', latency_ms: 0, error_msg: 'SUPABASE_SERVICE_ROLE_KEY not set', diagnosis_json: null };
   try {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     const { count, error } = await db.from('profiles').select('*', { count: 'exact', head: true });
@@ -80,13 +81,13 @@ async function checkAppHomepage(): Promise<HealthCheckRow> {
 async function diagnose(check: HealthCheckRow): Promise<DiagnosisResult> {
   // Fetch last 3 errors for this service
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  const { data: recent } = await db
+  const { data: recent } = db ? await db
     .from('health_checks')
     .select('checked_at,error_msg')
     .eq('service', check.service)
     .eq('status', 'fail')
     .order('checked_at', { ascending: false })
-    .limit(3);
+    .limit(3) : { data: [] };
 
   const history = ((recent as Array<{ checked_at: string; error_msg: string }>) ?? [])
     .map(r => `${r.checked_at}: ${r.error_msg}`)
@@ -112,6 +113,7 @@ async function diagnose(check: HealthCheckRow): Promise<DiagnosisResult> {
 }
 
 async function estimateDailyCost(): Promise<number> {
+  if (!db) return 0;
   const today = new Date().toISOString().slice(0, 10);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
   const { count } = await db
@@ -128,6 +130,7 @@ async function estimateDailyCost(): Promise<number> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
   // Verify cron secret
   const authHeader = req.headers['authorization'];
   if (authHeader !== `Bearer ${process.env['CRON_SECRET'] ?? ''}` && process.env['NODE_ENV'] !== 'development') {
@@ -177,10 +180,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const dailyCost = await estimateDailyCost();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const { count: sessionCount } = await db
+    const { count: sessionCount } = db ? await db
       .from('sessions')
       .select('*', { count: 'exact', head: true })
-      .gte('date', new Date().toISOString().slice(0, 10));
+      .gte('date', new Date().toISOString().slice(0, 10)) : { count: 0 };
     await insertCostLog(dailyCost, (sessionCount as number) ?? 0);
 
     const { sendCostAlert } = await import('./_lib/email.js');
@@ -198,4 +201,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     results: results.map(r => ({ service: r.service, status: r.status, latency_ms: r.latency_ms })),
     failures: failures.length,
   });
+  } catch (e) {
+    return res.status(200).json({
+      status: 'error',
+      message: String(e),
+      stack: e instanceof Error ? e.stack : undefined,
+    });
+  }
 }
