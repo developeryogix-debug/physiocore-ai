@@ -192,7 +192,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      void sendMessage(input);
+      void sendMessageRef.current(input);
     }
   };
 
@@ -471,9 +471,8 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
             <button
               onClick={() => {
                 if (streaming) { abortRef.current?.abort(); setStreaming(false); }
-                else void sendMessage(input);
+                else void sendMessageRef.current(input);
               }}
-              disabled={!input.trim() && !streaming}
               style={{
                 width: 34,
                 height: 34,
@@ -491,6 +490,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
                 flexShrink: 0,
                 fontWeight: 700,
                 transition: 'all 0.15s',
+                pointerEvents: 'auto' as const,
               }}
             >
               {streaming ? '⏹' : '↑'}

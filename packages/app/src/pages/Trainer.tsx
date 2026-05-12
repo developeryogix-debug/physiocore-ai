@@ -268,17 +268,17 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
         {/* Input bar */}
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
           <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Ask your AI trainer…" rows={2}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(input); } }}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendRef.current(input); } }}
             style={{ flex: 1, resize: 'none', border: '1px solid var(--border-default)', borderRadius: 10, padding: '10px 14px', fontSize: '0.85rem', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontFamily: "'Figtree',inherit", lineHeight: 1.5, maxHeight: 120, overflowY: 'auto', outline: 'none' }}
             onFocus={e => { e.currentTarget.style.borderColor = 'var(--border-teal)'; }}
             onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }} />
           <button onClick={() => { const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition; if (!SR) return; listening ? recogRef.current?.stop() : startVoice(); }}
-            style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid ${listening ? 'var(--warning)' : 'var(--border-default)'}`, background: listening ? 'rgba(255,184,48,0.1)' : 'var(--bg-surface)', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: listening ? 'var(--warning)' : 'var(--text-tertiary)' }}>
+            style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid ${listening ? 'var(--warning)' : 'var(--border-default)'}`, background: listening ? 'rgba(255,184,48,0.1)' : 'var(--bg-surface)', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: listening ? 'var(--warning)' : 'var(--text-tertiary)', pointerEvents: 'auto' as const }}>
             {listening ? '⏹' : '🎤'}
           </button>
-          <button onClick={() => { if (streaming) { abortRef.current?.abort(); setStreaming(false); } else void sendMessage(input); }}
-            disabled={!input.trim() && !streaming}
-            style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: streaming ? 'rgba(255,68,68,0.2)' : (!input.trim() ? 'var(--bg-overlay)' : 'var(--teal-500)'), color: streaming ? 'var(--danger)' : (!input.trim() ? 'var(--text-tertiary)' : '#000'), cursor: !input.trim() && !streaming ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700, transition: 'all 0.15s' }}>
+          <button
+            onClick={() => { if (streaming) { abortRef.current?.abort(); setStreaming(false); } else void sendRef.current(input); }}
+            style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: streaming ? 'rgba(255,68,68,0.2)' : (!input.trim() ? 'var(--bg-overlay)' : 'var(--teal-500)'), color: streaming ? 'var(--danger)' : (!input.trim() ? 'var(--text-tertiary)' : '#000'), cursor: !input.trim() && !streaming ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700, transition: 'all 0.15s', pointerEvents: 'auto' as const }}>
             {streaming ? '⏹' : '↑'}
           </button>
         </div>
