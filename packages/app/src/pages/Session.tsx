@@ -274,6 +274,7 @@ export default function Session() {
   const [bottomHoldSecs, setBottomHoldSecs] = useState(0);
   const [mode, setMode] = useState<SessionMode>('idle');
   const [repCount, setRepCount] = useState(0);
+  const [repFlash, setRepFlash] = useState(false);
   const [liveAngle, setLiveAngle] = useState<number | null>(null);
   const [inRange, setInRange] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('front');
@@ -309,6 +310,7 @@ export default function Session() {
   const prevHoldSecRef = useRef(-1);
   const wasHoldingRef = useRef(false);
   const holdCompleteRef = useRef(false);
+  const consecTopFramesRef = useRef(0); // consecutive frames at/above repUpThreshold (mobile stability)
   const lastFrameTimeRef = useRef<number | null>(null);
   // Fix 1: startup dead zone
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -368,8 +370,11 @@ export default function Session() {
       const confJoints = [...cfg.joint, ...cfg.jointLeft];
       const avgConf = confJoints.reduce((s, i) => s + (lms[i]?.visibility ?? 0), 0) / confJoints.length;
       if (avgConf < 0.55) {
-        updateStatus('warn_lighting', '⚠ Low light — move to brighter area');
+        updateStatus('warn_lighting', '⚠ Adjust position — move to brighter area or step back');
         drawSkeleton(ctx, lms, cfg.joint, false, prevAngleRef.current ?? 0);
+        // Reset prevAngle so the noise filter doesn't block the first frame after confidence recovers.
+        // Without this, a large angle gap between drop and recovery causes infinite noise-filter loops.
+        prevAngleRef.current = null;
         rafRef.current = requestAnimationFrame(processFrame); return;
       }
 
@@ -574,12 +579,14 @@ export default function Session() {
 
         // ── Rep counting: hysteresis + bottom-hold feedback ──────────────────
         const exCfg = EXERCISE_CONFIG[exerciseKey as ExerciseKey];
-        // 6° hysteresis band prevents small wobbles from falsely ending the hold
-        const HYSTERESIS = 6;
+        // 15° hysteresis (was 6°) — wider band prevents premature ascent detection
+        // at mobile 30fps where landmark jitter near the threshold is larger.
+        const HYSTERESIS = 15;
         if (repStateRef.current === 'up' && angle < exCfg.repDownThreshold) {
           repStateRef.current = 'down'; repStartTimeRef.current = now;
           repPeakAngleRef.current = angle; holdEndTimeRef.current = 0;
           bottomEnteredRef.current = now; prevBottomSecRef.current = 0;
+          consecTopFramesRef.current = 0;
           setIsAtBottom(true);
           updateStatus('ready', 'HOLD ↓ — rise slowly when ready');
         } else if (repStateRef.current === 'down') {
@@ -592,30 +599,44 @@ export default function Session() {
             holdEndTimeRef.current = now;
           }
           if (angle > exCfg.repUpThreshold) {
-            repStateRef.current = 'up';
-            setIsAtBottom(false); setBottomHoldSecs(0);
-            const holdMs = (holdEndTimeRef.current || now) - repStartTimeRef.current;
-            const elapsed = holdMs / 1000;
-            holdEndTimeRef.current = 0;
-            // Angle sanity — squat peak < 60° is camera noise, not a real rep
-            const isSane = exerciseKey !== 'squat' || repPeakAngleRef.current >= 60;
-            const score = computeFormScore(repPeakAngleRef.current, exCfg.targetRange);
-            const flag: RepRecord['flag'] = !isSane ? 'invalid' : elapsed < 1.5 ? 'too_fast' : repPeakAngleRef.current > exCfg.targetRange[1] ? 'shallow' : 'good';
-            if (flag === 'too_fast') {
-              updateStatus('warn_velocity', 'Too fast — slow down for reps to count');
-              const capturedRef = statusRef;
-              setTimeout(() => { if (capturedRef.current === 'warn_velocity') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
-            } else if (flag === 'invalid') {
-              updateStatus('warn_body', 'Invalid rep — angle too extreme (camera noise?)');
-              const capturedRef = statusRef;
-              setTimeout(() => { if (capturedRef.current === 'warn_body') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
-            } else {
-              repCountRef.current++;
-              const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat(elapsed.toFixed(1)), flag };
-              repRecordsRef.current = [...repRecordsRef.current, rec];
-              setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
-              updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
+            // Require 3 consecutive frames above repUpThreshold before counting.
+            // On mobile (30fps) angle measurements are noisier near the top —
+            // a single frame spike could otherwise trigger a false rep completion.
+            consecTopFramesRef.current++;
+            if (consecTopFramesRef.current >= 3) {
+              consecTopFramesRef.current = 0;
+              repStateRef.current = 'up';
+              setIsAtBottom(false); setBottomHoldSecs(0);
+              const holdMs = (holdEndTimeRef.current || now) - repStartTimeRef.current;
+              const elapsed = holdMs / 1000;
+              holdEndTimeRef.current = 0;
+              // Angle sanity — squat peak < 60° is camera noise, not a real rep
+              const isSane = exerciseKey !== 'squat' || repPeakAngleRef.current >= 60;
+              const score = computeFormScore(repPeakAngleRef.current, exCfg.targetRange);
+              // 0.8s threshold (was 1.5s) — 1.5s was measuring only time below descent
+              // threshold, not full rep time. At mobile 30fps a controlled rep easily
+              // reads <1.5s even at proper tempo.
+              const flag: RepRecord['flag'] = !isSane ? 'invalid' : elapsed < 0.8 ? 'too_fast' : repPeakAngleRef.current > exCfg.targetRange[1] ? 'shallow' : 'good';
+              if (flag === 'too_fast') {
+                updateStatus('warn_velocity', 'Too fast — slow down for reps to count');
+                const capturedRef = statusRef;
+                setTimeout(() => { if (capturedRef.current === 'warn_velocity') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
+              } else if (flag === 'invalid') {
+                updateStatus('warn_body', 'Invalid rep — angle too extreme (camera noise?)');
+                const capturedRef = statusRef;
+                setTimeout(() => { if (capturedRef.current === 'warn_body') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
+              } else {
+                repCountRef.current++;
+                const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat(elapsed.toFixed(1)), flag };
+                repRecordsRef.current = [...repRecordsRef.current, rec];
+                setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
+                setRepFlash(true); setTimeout(() => setRepFlash(false), 500);
+                updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
+              }
             }
+          } else {
+            // Angle dropped back below upThreshold — reset consecutive counter
+            consecTopFramesRef.current = 0;
           }
         } else {
           updateStatus('ready', 'Ready — go down to start');
@@ -641,7 +662,7 @@ export default function Session() {
     setHoldTime(0); setHoldComplete(false);
     setIsAtBottom(false); setBottomHoldSecs(0); bottomEnteredRef.current = 0;
     deadZoneEndRef.current = Date.now() + 8000; lastCountdownRef.current = -1; setCountdown(null);
-    holdEndTimeRef.current = 0;
+    holdEndTimeRef.current = 0; consecTopFramesRef.current = 0;
     setPlankScore(0); setPlankSeconds(0); lastPlankSecRef.current = -1; pilatesInvertStateRef.current = 'up';
     statusRef.current = 'ready'; viewModeRef.current = 'front';
     const isYoga = exerciseRef.current in YOGA_CONFIG;
@@ -820,17 +841,22 @@ export default function Session() {
             ) : (
               <div className="metric-card" style={{
                 textAlign: 'center',
-                border: isAtBottom ? '1px solid var(--teal-500)' : '1px solid var(--border-subtle)',
-                boxShadow: isAtBottom ? '0 0 24px rgba(0,212,170,0.12)' : 'none',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
+                border: repFlash ? '2px solid #22c55e' : isAtBottom ? '1px solid var(--teal-500)' : '1px solid var(--border-subtle)',
+                boxShadow: repFlash ? '0 0 32px rgba(34,197,94,0.45)' : isAtBottom ? '0 0 24px rgba(0,212,170,0.12)' : 'none',
+                background: repFlash ? 'rgba(34,197,94,0.08)' : 'var(--bg-elevated)',
+                transition: 'all 0.15s',
               }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' as const, color: isAtBottom ? 'var(--teal-500)' : 'var(--text-tertiary)', transition: 'color 0.2s' }}>
-                  {isAtBottom ? 'HOLDING' : 'REPS'}
+                <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' as const, color: repFlash ? '#22c55e' : isAtBottom ? 'var(--teal-500)' : 'var(--text-tertiary)', transition: 'color 0.15s' }}>
+                  {repFlash ? '✓ REP!' : isAtBottom ? 'HOLDING' : 'REPS'}
                 </div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: isAtBottom ? 'var(--teal-500)' : 'var(--text-primary)', transition: 'color 0.2s' }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: repFlash ? '#22c55e' : isAtBottom ? 'var(--teal-500)' : 'var(--text-primary)', transition: 'color 0.15s' }}>
                   {repCount}
                 </div>
-                {isAtBottom ? (
+                {repFlash ? (
+                  <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#22c55e', fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>
+                    ✓ Counted!
+                  </div>
+                ) : isAtBottom ? (
                   <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--teal-500)', fontFamily: "'Space Mono', monospace" }}>
                     {bottomHoldSecs}s ↑ rise to count
                   </div>
