@@ -59,9 +59,9 @@ const EXERCISE_CONFIG: Record<ExerciseKey, {
   targetRange: [number,number]; repDownThreshold: number; repUpThreshold: number;
 }> = {
   squat:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Right Knee',  labelLeft:'Left Knee',  targetRange:[70,110],  repDownThreshold:100, repUpThreshold:160 },
-  deadlift:       { joint:[24,26,28], jointLeft:[23,25,27], label:'Right Knee',  labelLeft:'Left Knee',  targetRange:[150,175], repDownThreshold:140, repUpThreshold:165 },
+  deadlift:       { joint:[12,24,26], jointLeft:[11,23,25], label:'Hip Hinge (R)', labelLeft:'Hip Hinge (L)', targetRange:[45,70],  repDownThreshold:80,  repUpThreshold:160 },
   pushup:         { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow', labelLeft:'Left Elbow', targetRange:[60,100],  repDownThreshold:90,  repUpThreshold:150 },
-  lunge:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Front Knee',  labelLeft:'Front Knee', targetRange:[80,100],  repDownThreshold:95,  repUpThreshold:140 },
+  lunge:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Front Knee',  labelLeft:'Front Knee', targetRange:[80,100],  repDownThreshold:80,  repUpThreshold:140 },
   shoulder_press: { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow', labelLeft:'Left Elbow', targetRange:[85,100],  repDownThreshold:95,  repUpThreshold:150 },
 };
 const EXERCISES = Object.keys(EXERCISE_CONFIG) as ExerciseKey[];
@@ -259,6 +259,24 @@ type SessionMode = 'idle' | 'starting' | 'running' | 'stopping';
 function priorityColor(p: string) { return p === 'stop' ? '#ef4444' : p === 'high' ? '#f59e0b' : '#64748b'; }
 function fmtDur(s: number) { return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`; }
 
+/** Web Audio beep — no dependency required. isDouble fires a second beep 80ms after. */
+function playBeep(freq = 440, dur = 0.12, isDouble = false) {
+  try {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    const fire = (offset: number) => {
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + offset);
+      g.gain.setValueAtTime(0.3, ctx.currentTime + offset);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + dur);
+      osc.start(ctx.currentTime + offset); osc.stop(ctx.currentTime + offset + dur);
+    };
+    fire(0); if (isDouble) fire(dur + 0.08);
+  } catch { /* AudioContext blocked or unavailable */ }
+}
+
 export default function Session() {
   const { userProfile } = useUserProfile();
   const profile = userProfile ?? MOCK_PROFILE;
@@ -326,6 +344,15 @@ export default function Session() {
   const [plankSeconds, setPlankSeconds] = useState(0);
   const lastPlankSecRef = useRef(-1);
   const pilatesInvertStateRef = useRef<'up' | 'down'>('up');
+  // FAQ modal
+  const [showFaq, setShowFaq] = useState(false);
+  // Distance guide overlay (shows from session start until person is in frame)
+  const [showDistanceGuide, setShowDistanceGuide] = useState(false);
+  const showDistanceGuideRef = useRef(false);
+  const distanceGuideDismissedRef = useRef(false);
+  // Lunge bilateral auto-detect
+  const [lungeForwardSide, setLungeForwardSide] = useState<'left' | 'right' | null>(null);
+  const lungeForwardSideRef = useRef<'left' | 'right' | null>(null);
 
   const stopLoop = useCallback(() => {
     activeRef.current = false;
@@ -400,6 +427,14 @@ export default function Session() {
         }
       }
 
+      // ── Auto-dismiss distance guide when person is well positioned ────────
+      if (showDistanceGuideRef.current) {
+        const keyPts = [11, 12, 23, 24, 25, 26];
+        if (keyPts.every(i => (lms[i]?.visibility ?? 0) > 0.6)) {
+          showDistanceGuideRef.current = false; setShowDistanceGuide(false);
+        }
+      }
+
       let activeJoint: [number,number,number];
       let angle: number;
       let currentViewMode: ViewMode;
@@ -425,6 +460,18 @@ export default function Session() {
         drawSkeleton(ctx, lms, cfg.joint, false, prevAngleRef.current ?? 0);
         rafRef.current = requestAnimationFrame(processFrame); return;
       }
+
+      // ── Lunge: auto-detect which leg is forward (smaller angle = more bent = front knee) ──
+      if (exerciseKey === 'lunge' && visR && visL) {
+        const [ai,bi,ci] = cfg.joint; const [al,bl,cl] = cfg.jointLeft;
+        const angleR = angleDeg(lms[ai]!, lms[bi]!, lms[ci]!);
+        const angleL = angleDeg(lms[al]!, lms[bl]!, lms[cl]!);
+        if (angleR <= angleL) { activeJoint = cfg.joint; angle = angleR; currentViewMode = 'right'; }
+        else { activeJoint = cfg.jointLeft; angle = angleL; currentViewMode = 'left'; }
+        const ns = angleR <= angleL ? 'right' as const : 'left' as const;
+        if (ns !== lungeForwardSideRef.current) { lungeForwardSideRef.current = ns; setLungeForwardSide(ns); }
+      }
+
       updateViewMode(currentViewMode);
 
       // ── Proximity guard — front mode only (shoulder width collapses in side view) ─
@@ -514,14 +561,18 @@ export default function Session() {
           const remaining = deadZoneEndRef.current - Date.now();
           if (remaining > 0) {
             const secs = Math.ceil(remaining / 1000);
-            const display = secs <= 3 ? secs : null;
-            if (display !== lastCountdownRef.current) { lastCountdownRef.current = display ?? -1; setCountdown(display); if (display !== null) updateStatus('ready', `Starting in ${secs}...`); }
+            const display = secs;
+            if (display !== lastCountdownRef.current) {
+              lastCountdownRef.current = display; setCountdown(display);
+              updateStatus('ready', `Starting in ${secs}...`);
+              playBeep(secs <= 3 ? 660 : 440, 0.1);
+            }
             drawSkeleton(ctx, lms, activeJoint, isInRange, angle);
             framesRef.current.push({ timestamp: now, landmarks: lms.map((lm, idx) => ({ name: LANDMARK_NAMES[idx] ?? `point_${idx}`, x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility ?? 1 })) as PoseLandmark[] });
             if (framesRef.current.length > 300) framesRef.current.shift();
             rafRef.current = requestAnimationFrame(processFrame); return;
           }
-          if (lastCountdownRef.current !== 0) { lastCountdownRef.current = 0; setCountdown(0); setTimeout(() => setCountdown(null), 1000); }
+          if (lastCountdownRef.current !== 0) { lastCountdownRef.current = 0; setCountdown(0); playBeep(880, 0.15, true); setTimeout(() => setCountdown(null), 1200); }
 
           const minMs = pilateCfg.minCycleMs;
           if (!pilateCfg.invertRep) {
@@ -578,11 +629,12 @@ export default function Session() {
         const remaining = deadZoneEndRef.current - Date.now();
         if (remaining > 0) {
           const secs = Math.ceil(remaining / 1000);
-          const display = secs <= 3 ? secs : null;
+          const display = secs;
           if (display !== lastCountdownRef.current) {
-            lastCountdownRef.current = display ?? -1;
+            lastCountdownRef.current = display;
             setCountdown(display);
-            if (display !== null) updateStatus('ready', `Starting in ${secs}...`);
+            updateStatus('ready', `Starting in ${secs}...`);
+            playBeep(secs <= 3 ? 660 : 440, 0.1);
           }
           drawSkeleton(ctx, lms, activeJoint, isInRange, angle);
           framesRef.current.push({ timestamp: now, landmarks: lms.map((lm, idx) => ({ name: LANDMARK_NAMES[idx] ?? `point_${idx}`, x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility ?? 1 })) as PoseLandmark[] });
@@ -591,7 +643,8 @@ export default function Session() {
         }
         if (lastCountdownRef.current !== 0) {
           lastCountdownRef.current = 0; setCountdown(0);
-          setTimeout(() => setCountdown(null), 1000);
+          playBeep(880, 0.15, true); // double beep on GO!
+          setTimeout(() => setCountdown(null), 1200);
         }
 
         // ── Rep counting: hysteresis + bottom-hold feedback ──────────────────
@@ -634,7 +687,8 @@ export default function Session() {
                 holdEndTimeRef.current = 0;        // reset hold-end marker
                 repStartTimeRef.current = 0;       // reset rep start
                 // Angle sanity — squat peak < 60° is camera noise, not a real rep
-                const isSane = exerciseKey !== 'squat' || repPeakAngleRef.current >= 60;
+                const isSane = (exerciseKey !== 'squat' || repPeakAngleRef.current >= 60) &&
+                               (exerciseKey !== 'lunge' || repPeakAngleRef.current >= 50);
                 const score = computeFormScore(repPeakAngleRef.current, exCfg.targetRange);
                 const flag: RepRecord['flag'] = !isSane ? 'invalid' : elapsed < 0.8 ? 'too_fast' : repPeakAngleRef.current > exCfg.targetRange[1] ? 'shallow' : 'good';
                 if (flag === 'too_fast') {
@@ -684,8 +738,12 @@ export default function Session() {
     holdCompleteRef.current = false; lastFrameTimeRef.current = null;
     setHoldTime(0); setHoldComplete(false);
     setIsAtBottom(false); setBottomHoldSecs(0); bottomEnteredRef.current = 0;
-    deadZoneEndRef.current = Date.now() + 8000; lastCountdownRef.current = -1; setCountdown(null);
+    const dzMs = exerciseRef.current === 'lunge' ? 10000 : 8000;
+    deadZoneEndRef.current = Date.now() + dzMs; lastCountdownRef.current = -1; setCountdown(null);
     holdEndTimeRef.current = 0; consecTopFramesRef.current = 0; lastRepTimeRef.current = 0;
+    lungeForwardSideRef.current = null; setLungeForwardSide(null);
+    distanceGuideDismissedRef.current = false; showDistanceGuideRef.current = true; setShowDistanceGuide(true);
+    setTimeout(() => { if (!distanceGuideDismissedRef.current) { showDistanceGuideRef.current = false; setShowDistanceGuide(false); } }, dzMs + 10000);
     setPlankScore(0); setPlankSeconds(0); lastPlankSecRef.current = -1; pilatesInvertStateRef.current = 'up';
     statusRef.current = 'ready'; viewModeRef.current = 'front';
     const isYoga = exerciseRef.current in YOGA_CONFIG;
@@ -771,25 +829,38 @@ export default function Session() {
       </div>
 
       {mode === 'idle' && (
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap' }}>
-          <select value={exercise} onChange={(e) => { setExercise(e.target.value as SessionKey); }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '0.85rem', minWidth: '260px', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', fontFamily: "'Figtree', sans-serif" }}>
-            <optgroup label="Exercises">
-              {EXERCISES.map((ex) => <option key={ex} value={ex}>{ex.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
-            </optgroup>
-            <optgroup label="Yoga">
-              {YOGA_POSES.map((key) => <option key={key} value={key}>{YOGA_CONFIG[key].englishName} — {YOGA_CONFIG[key].sanskritName}</option>)}
-            </optgroup>
-            <optgroup label="Pilates">
-              {PILATES_POSES.map((key) => {
-                const pc = PILATES_CONFIG[key];
-                const name = key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
-                return <option key={key} value={key}>{name} — {pc.targetLabel}</option>;
-              })}
-            </optgroup>
-          </select>
-          <button onClick={() => { void startSession(); }} className="btn-primary">
-            Start Session
-          </button>
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select value={exercise} onChange={(e) => { setExercise(e.target.value as SessionKey); }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '0.85rem', minWidth: '260px', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', fontFamily: "'Figtree', sans-serif" }}>
+              <optgroup label="Exercises">
+                {EXERCISES.map((ex) => <option key={ex} value={ex}>{ex.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+              </optgroup>
+              <optgroup label="Yoga">
+                {YOGA_POSES.map((key) => <option key={key} value={key}>{YOGA_CONFIG[key].englishName} — {YOGA_CONFIG[key].sanskritName}</option>)}
+              </optgroup>
+              <optgroup label="Pilates">
+                {PILATES_POSES.map((key) => {
+                  const pc = PILATES_CONFIG[key];
+                  const name = key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+                  return <option key={key} value={key}>{name} — {pc.targetLabel}</option>;
+                })}
+              </optgroup>
+            </select>
+            <button onClick={() => { void startSession(); }} className="btn-primary">
+              Start Session
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFaq(true)}
+              title="Session help"
+              style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--border-default)', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            >?</button>
+          </div>
+          {exercise === 'lunge' && (
+            <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,212,170,0.07)', border: '1px solid var(--border-teal)', fontSize: '0.82rem', color: 'var(--teal-500)', lineHeight: 1.5 }}>
+              <strong>Lunge tip:</strong> Stand 2–3 m from camera so your full body is visible. Step one foot forward — the app auto-detects your front knee. Alternate sides each set.
+            </div>
+          )}
         </div>
       )}
 
@@ -802,15 +873,35 @@ export default function Session() {
             <video ref={videoRef} autoPlay playsInline muted style={{ display: 'block', width: '100%', borderRadius: '12px' }} />
             <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
             {countdown !== null && (
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', transform: 'scaleX(-1)' }}>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', transform: 'scaleX(-1)' }}>
                 <div style={{ textAlign: 'center' as const }}>
-                  <div style={{ fontSize: countdown === 0 ? '3.5rem' : '6rem', fontWeight: 900, color: '#fff', lineHeight: 1, textShadow: '0 4px 16px rgba(0,0,0,0.4)', transition: 'font-size 0.15s' }}>
-                    {countdown === 0 ? 'Go!' : countdown}
+                  <div style={{
+                    fontSize: countdown === 0 ? '3.5rem' : '6rem', fontWeight: 900, lineHeight: 1,
+                    color: countdown === 0 ? 'var(--teal-500)' : countdown <= 3 ? '#22c55e' : '#f59e0b',
+                    textShadow: '0 4px 20px rgba(0,0,0,0.5)', transition: 'color 0.2s, font-size 0.15s',
+                  }}>
+                    {countdown === 0 ? 'GO!' : countdown}
                   </div>
-                  {countdown > 0 && <div style={{ color: '#c7d2fe', fontSize: '1rem', fontWeight: 600, marginTop: 8 }}>Get into position</div>}
+                  {(countdown ?? 0) > 0 && (
+                    <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: 10, color: countdown <= 3 ? '#86efac' : '#fcd34d' }}>
+                      {countdown <= 3 ? 'Almost ready…' : 'Get into position'}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
+            {/* Distance guide overlay — shows until person is in frame or tapped */}
+            {showDistanceGuide && (
+              <div
+                onClick={() => { distanceGuideDismissedRef.current = true; showDistanceGuideRef.current = false; setShowDistanceGuide(false); }}
+                style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer', transform: 'scaleX(-1)', zIndex: 5 }}
+              >
+                <div style={{ fontSize: '2.4rem' }}>📱 ↔ 🧍</div>
+                <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem', textAlign: 'center' as const }}>Stand 2–3 metres away</div>
+                <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.82rem', textAlign: 'center' as const, maxWidth: 220, lineHeight: 1.5 }}>Full body (head to ankles) must be visible. Tap to dismiss.</div>
+              </div>
+            )}
+
             {isRunning && (
               <>
                 <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '7px', background: stUi.bg, border: `1px solid ${stUi.border}`, borderRadius: '99px', padding: '5px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
@@ -825,6 +916,12 @@ export default function Session() {
                 {isPilatesMode && pilateCfgUI && (
                   <div style={{ position: 'absolute', top: 46, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', background: 'rgba(219,39,119,0.85)', color: '#fdf2f8', borderRadius: '99px', padding: '3px 14px', fontSize: '0.7rem', fontWeight: 600 }}>
                     Pilates · {pilateCfgUI.targetLabel}
+                  </div>
+                )}
+                {/* Lunge: forward-leg side indicator */}
+                {exercise === 'lunge' && lungeForwardSide && (
+                  <div style={{ position: 'absolute', top: 46, right: 10, transform: 'scaleX(-1)', background: 'rgba(0,212,170,0.88)', color: '#000', borderRadius: '99px', padding: '3px 12px', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'Space Mono', monospace", whiteSpace: 'nowrap' }}>
+                    {lungeForwardSide === 'right' ? '→ Right' : '← Left'}
                   </div>
                 )}
                 <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', background: vb.bg, border: `1px solid ${vb.border}`, borderRadius: '99px', padding: '4px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}>
@@ -924,7 +1021,7 @@ export default function Session() {
             </div>
             {repRecords.length > 0 && (
               <button onClick={() => {
-                const firstName = profile?.name?.split(' ')[0] ?? 'User';
+                const firstName = ((userProfile?.name || profile?.name || 'User').split(' ')[0] || 'User').replace(/[^a-zA-Z0-9]/g, '') || 'User';
                 const sessionNum = (JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[]).length;
                 exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode, firstName, sessionNum);
               }} className="btn-ghost" style={{ fontSize: '0.82rem' }}>
@@ -1032,6 +1129,37 @@ export default function Session() {
           <button onClick={() => { setFeedbackResult(null); setRepCount(0); setRepRecords([]); }} className="btn-ghost" style={{ marginTop: '16px', fontSize: '0.85rem' }}>
             New Session
           </button>
+        </div>
+      )}
+
+      {/* ── FAQ modal ────────────────────────────────────────────────────────── */}
+      {showFaq && (
+        <div
+          onClick={() => setShowFaq(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', maxWidth: 520, width: '100%', maxHeight: '80vh', overflowY: 'auto' as const, padding: '28px 24px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Session Guide</h2>
+              <button type="button" onClick={() => setShowFaq(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: '1.2rem', lineHeight: 1 }}>✕</button>
+            </div>
+            {[
+              { title: '📐 Setup', body: 'Stand 2–3 metres from camera on a flat floor. Ensure your full body (head to ankles) is visible. Good lighting helps — face a window if possible.' },
+              { title: '🔁 Counting Reps', body: 'The app counts a rep when you complete a full movement. For squats/lunges: descend until the angle drops below threshold, then rise fully. A green flash confirms the rep was counted.' },
+              { title: '👁 View Modes', body: 'The app automatically detects front view or side view. For lunges it auto-detects which leg is forward and shows "→ Right" or "← Left" on screen.' },
+              { title: '💪 Exercise Tips', body: 'Squat: feet shoulder-width, knees track over toes. Deadlift: hip-hinge movement (shoulder–hip–knee angle), keep back neutral. Lunge: front knee over ankle, back knee low. Push-up: elbows close to body.' },
+              { title: '📄 Your Report', body: 'After stopping a session, AI analyses your form. Each rep is scored 0–100. The PDF export includes rep-by-rep data in FHIR R4 format for your physiotherapist.' },
+            ].map(({ title, body }) => (
+              <div key={title} style={{ marginBottom: 18 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--teal-500)', marginBottom: 4 }}>{title}</div>
+                <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{body}</div>
+              </div>
+            ))}
+            <button type="button" onClick={() => setShowFaq(false)} className="btn-ghost" style={{ marginTop: 8, fontSize: '0.85rem', width: '100%' }}>Close</button>
+          </div>
         </div>
       )}
 

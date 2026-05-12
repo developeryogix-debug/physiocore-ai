@@ -172,18 +172,20 @@ export default function Navigation() {
         </NavLink>
       ))}
 
-      {/* Clinician — blue tint, right side */}
-      <NavLink to="/clinician"
-        style={({isActive})=>({
-          padding:'5px 12px',borderRadius:'50px',textDecoration:'none',
-          fontSize:'0.8rem',fontWeight:isActive?600:500,
-          background:isActive?'rgba(77,184,255,0.12)':'transparent',
-          color:isActive?'var(--blue-400)':'var(--text-secondary)',
-          border:isActive?'1px solid rgba(77,184,255,0.25)':'1px solid transparent',
-          transition:'all 0.15s',
-        })}>
-        Clinician
-      </NavLink>
+      {/* Clinician — only visible to clinician / admin roles */}
+      {(userRole === 'clinician' || userRole === 'admin') && (
+        <NavLink to="/clinician"
+          style={({isActive})=>({
+            padding:'5px 12px',borderRadius:'50px',textDecoration:'none',
+            fontSize:'0.8rem',fontWeight:isActive?600:500,
+            background:isActive?'rgba(77,184,255,0.12)':'transparent',
+            color:isActive?'var(--blue-400)':'var(--text-secondary)',
+            border:isActive?'1px solid rgba(77,184,255,0.25)':'1px solid transparent',
+            transition:'all 0.15s',
+          })}>
+          Clinician
+        </NavLink>
+      )}
 
       {/* Avatar + dropdown */}
       {user&&(

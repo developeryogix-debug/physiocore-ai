@@ -49,6 +49,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Guards the /clinician route — redirects patients to dashboard */
+function ClinicianRoute() {
+  const { userRole } = useAuth();
+  if (userRole !== 'clinician' && userRole !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Clinician />;
+}
+
 function AppContent() {
   const { user, isLoading } = useAuth();
   const { onboardingDone } = useUserProfile();
@@ -83,7 +92,7 @@ function AppContent() {
           <Route path="/session"    element={<ProtectedRoute><Session /></ProtectedRoute>} />
           <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
           <Route path="/nutrition"  element={<ProtectedRoute><Nutrition /></ProtectedRoute>} />
-          <Route path="/clinician"  element={<ProtectedRoute><Clinician /></ProtectedRoute>} />
+          <Route path="/clinician"  element={<ProtectedRoute><ClinicianRoute /></ProtectedRoute>} />
           <Route path="/behavior"   element={<ProtectedRoute><Behavior /></ProtectedRoute>} />
           <Route path="/gym"        element={<ProtectedRoute><Gym /></ProtectedRoute>} />
           <Route path="/history"   element={<ProtectedRoute><History /></ProtectedRoute>} />
