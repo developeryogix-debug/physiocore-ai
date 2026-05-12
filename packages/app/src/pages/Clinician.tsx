@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import type { MockPatient } from '../lib/clinicianTypes.js';
 import ClinicianPatientDetail from '../components/ClinicianPatientDetail.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
+import { useAuth } from '../hooks/useAuth.js';
+import { getClinicianPatients, createInvite, type ClinicianPatient } from '../lib/orgApi.js';
+import { sendPatientInvite, getInviteLink } from '../lib/emailApi.js';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -84,7 +87,42 @@ const CHURN_COLORS: Record<string, { bg: string; color: string }> = {
 const muted: React.CSSProperties = { color: '#64748b', fontSize: '0.875rem' };
 
 export default function Clinician() {
+  const { user, orgId } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
+
+  // ─── Real patients from DB ─────────────────────────────────────────────────
+  const [dbPatients, setDbPatients] = useState<ClinicianPatient[]>([]);
+  const [loadingDb, setLoadingDb] = useState(true);
+
+  // ─── Invite patient modal ──────────────────────────────────────────────────
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+    void getClinicianPatients(user.id).then(data => { setDbPatients(data); setLoadingDb(false); });
+  }, [user]);
+
+  async function handleInvitePatient(e: FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setInviteSending(true);
+    setInviteMsg('');
+    const invite = await createInvite({ org_id: orgId ?? '', invited_by: user.id, email: inviteEmail, role: 'patient' });
+    if (!invite) { setInviteSending(false); setInviteMsg('Failed to create invite. Try again.'); return; }
+    const link = getInviteLink(invite.token);
+    await navigator.clipboard.writeText(link).catch(() => undefined);
+    void sendPatientInvite({ toEmail: inviteEmail, toName: inviteName || 'there', clinicianName: user.email ?? 'Your clinician', orgName: '', inviteToken: invite.token });
+    setInviteMsg(`Invite link copied! ${import.meta.env.VITE_RESEND_API_KEY ? 'Email sent.' : '(Add VITE_RESEND_API_KEY to send emails.)'}`);
+    setInviteEmail('');
+    setInviteName('');
+    setInviteSending(false);
+  }
+
+  const inputSt: React.CSSProperties = { width: '100%', padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, color: '#0f172a', fontSize: '0.85rem', fontFamily: 'inherit', boxSizing: 'border-box' as const };
 
   function avgScore(p: MockPatient) {
     return p.sessions.length ? Math.round(p.sessions.reduce((s, x) => s + x.formScore, 0) / p.sessions.length) : 0;
@@ -113,8 +151,13 @@ export default function Clinician() {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>Clinician Mode</h1>
           <p style={{ ...muted, marginTop: 2 }}>Patient deep dives · SOAP notes · HEP generator · FHIR R4 · AI transparency</p>
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '5px 14px', fontSize: '0.78rem', fontWeight: 600, color: '#1e40af' }}>
-          👨‍⚕️ Clinician Mode Active
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' as const }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '5px 14px', fontSize: '0.78rem', fontWeight: 600, color: '#1e40af' }}>
+            👨‍⚕️ Clinician Mode Active
+          </div>
+          <button onClick={() => setShowInvite(true)} className="btn-primary" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
+            + Invite Patient
+          </button>
         </div>
       </div>
 
@@ -135,8 +178,48 @@ export default function Clinician() {
         ))}
       </div>
 
-      {/* Patient list */}
+      {/* ── Real patients from DB ── */}
+      {!loadingDb && dbPatients.length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
+            Your Patients ({dbPatients.length})
+          </p>
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+              <thead><tr style={{ background: '#f8fafc' }}>
+                {['Patient', 'Status', 'Assigned'].map(h => (
+                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left' as const, fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {dbPatients.map(p => (
+                  <tr key={p.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>
+                      {p.profile?.full_name ?? `Patient ${p.patient_id.slice(0, 8)}…`}
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ padding: '2px 10px', borderRadius: 99, background: p.status === 'active' ? '#dcfce7' : '#fee2e2', color: p.status === 'active' ? '#15803d' : '#b91c1c', fontSize: '0.7rem', fontWeight: 700 }}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '0.78rem' }}>
+                      {new Date(p.assigned_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Demo patient list ── */}
       <div>
+        {dbPatients.length === 0 && !loadingDb && (
+          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
+            Demo Patients — invite real patients above to replace this
+          </p>
+        )}
         {PATIENTS.map(p => {
           const isOpen = selected === p.id;
           const cr     = CHURN_COLORS[p.churnRisk] ?? CHURN_COLORS['low']!;
@@ -196,9 +279,48 @@ export default function Clinician() {
         })}
       </div>
 
-      <p style={{ ...muted, fontSize: '0.73rem', marginTop: 12 }}>
-        For demonstration purposes — mock patients only. In production, connect to Supabase user_profiles and session_records tables.
-      </p>
+      {dbPatients.length === 0 && !loadingDb && (
+        <p style={{ ...muted, fontSize: '0.73rem', marginTop: 12 }}>
+          Demo data shown. Use &ldquo;Invite Patient&rdquo; to add real patients — they will appear above.
+        </p>
+      )}
+
+      {/* ── Invite patient modal ── */}
+      {showInvite && (
+        <div onClick={() => { setShowInvite(false); setInviteMsg(''); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '28px 24px', width: '100%', maxWidth: 420, boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 6px', fontWeight: 700, color: '#0f172a' }}>Invite Patient</h3>
+            <p style={{ ...muted, fontSize: '0.8rem', marginBottom: 20 }}>They will receive an email with a signup link tied to your account.</p>
+            <form onSubmit={e => { void handleInvitePatient(e); }} style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+              {[
+                { label: 'Patient Email', key: 'email', type: 'email', placeholder: 'patient@example.com', required: true },
+                { label: 'Patient Name (optional)', key: 'name', type: 'text', placeholder: 'Alex Johnson', required: false },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#64748b', marginBottom: 5, letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>{f.label}</label>
+                  <input
+                    type={f.type}
+                    value={f.key === 'email' ? inviteEmail : inviteName}
+                    onChange={e => f.key === 'email' ? setInviteEmail(e.target.value) : setInviteName(e.target.value)}
+                    placeholder={f.placeholder}
+                    required={f.required}
+                    style={inputSt}
+                  />
+                </div>
+              ))}
+              {inviteMsg && (
+                <div style={{ padding: '10px 14px', background: inviteMsg.startsWith('Failed') ? '#fee2e2' : '#dcfce7', border: `1px solid ${inviteMsg.startsWith('Failed') ? '#fca5a5' : '#86efac'}`, borderRadius: 8, fontSize: '0.8rem', color: inviteMsg.startsWith('Failed') ? '#b91c1c' : '#15803d' }}>
+                  {inviteMsg}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button type="button" onClick={() => { setShowInvite(false); setInviteMsg(''); }} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 500 }}>Cancel</button>
+                <button type="submit" disabled={inviteSending} className="btn-primary" style={{ flex: 1 }}>{inviteSending ? 'Sending…' : 'Send Invite'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <AiChatPanel
         pageContext={`Clinician Mode. ${selPatient ? `Selected: ${selPatient.name}, ${selPatient.age}yo. Conditions: ${selPatient.conditions.join(', ')}. Medications: ${selPatient.medications.join(', ')}. Sessions: ${selPatient.sessions.length}. Adherence: ${selPatient.adherencePct}%.` : 'No patient selected.'}`}

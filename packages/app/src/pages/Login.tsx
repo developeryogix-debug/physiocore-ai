@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
 type Mode = 'signin' | 'signup' | 'magic';
@@ -7,7 +7,10 @@ type Mode = 'signin' | 'signup' | 'magic';
 export default function Login() {
   const { user, signInWithEmail, signUpWithEmail, signInWithGoogle, sendMagicLink } = useAuth();
 
-  const [mode, setMode] = useState<Mode>('signin');
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+
+  const [mode, setMode] = useState<Mode>(() => inviteToken ? 'signup' : 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -29,8 +32,8 @@ export default function Login() {
       err = await sendMagicLink(email);
       if (!err) setInfo('Check your inbox — a login link is on its way.');
     } else if (mode === 'signup') {
-      err = await signUpWithEmail(email, password, fullName);
-      if (!err) setInfo('Account created! Check your email to confirm, then sign in.');
+      err = await signUpWithEmail(email, password, fullName, inviteToken ?? undefined);
+      if (!err) setInfo(inviteToken ? 'Account created! Your invite has been accepted.' : 'Account created! Check your email to confirm, then sign in.');
     } else {
       err = await signInWithEmail(email, password);
     }
@@ -87,6 +90,17 @@ export default function Login() {
       }} />
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '420px' }}>
+        {/* Invite banner */}
+        {inviteToken && (
+          <div style={{
+            marginBottom: 16, padding: '12px 18px',
+            background: 'rgba(0,212,170,0.08)', border: '1px solid var(--border-teal)',
+            borderRadius: 12, color: 'var(--teal-500)', fontSize: '0.84rem',
+            textAlign: 'center' as const, fontWeight: 500,
+          }}>
+            🎉 You have been invited to join PhysioCore AI — create your account below
+          </div>
+        )}
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{

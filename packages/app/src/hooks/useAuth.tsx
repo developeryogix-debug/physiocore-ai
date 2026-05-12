@@ -2,16 +2,17 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@physiocore/supabase';
 
-export type UserRole = 'patient' | 'clinician' | 'admin';
+export type UserRole = 'patient' | 'clinician' | 'trainer' | 'org_admin' | 'admin';
 
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
   userRole: UserRole;
+  orgId: string | null;
   hasConsented: boolean;
   isLoading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<string | null>;
-  signUpWithEmail: (email: string, password: string, fullName: string) => Promise<string | null>;
+  signUpWithEmail: (email: string, password: string, fullName: string, inviteToken?: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<void>;
   sendMagicLink: (email: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -24,15 +25,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
-async function fetchUserMeta(userId: string): Promise<{ role: UserRole; hasConsented: boolean }> {
+async function fetchUserMeta(userId: string): Promise<{ role: UserRole; orgId: string | null; hasConsented: boolean }> {
   const [profileResult, consentResult] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    db.from('profiles').select('role').eq('user_id', userId).maybeSingle() as Promise<{ data: { role: UserRole } | null }>,
+    db.from('profiles').select('role, org_id').eq('user_id', userId).maybeSingle() as Promise<{ data: { role: UserRole; org_id: string | null } | null }>,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     db.from('consents').select('id').eq('user_id', userId).maybeSingle() as Promise<{ data: { id: string } | null }>,
   ]);
   return {
     role: profileResult.data?.role ?? 'patient',
+    orgId: profileResult.data?.org_id ?? null,
     hasConsented: !!consentResult.data,
   };
 }
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole>('patient');
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [hasConsented, setHasConsented] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,9 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (u) {
       const meta = await fetchUserMeta(u.id);
       setUserRole(meta.role);
+      setOrgId(meta.orgId);
       setHasConsented(meta.hasConsented);
     } else {
       setUserRole('patient');
+      setOrgId(null);
       setHasConsented(false);
     }
   }
@@ -77,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error?.message ?? null;
   }
 
-  async function signUpWithEmail(email: string, password: string, fullName: string): Promise<string | null> {
+  async function signUpWithEmail(email: string, password: string, fullName: string, inviteToken?: string): Promise<string | null> {
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -87,6 +92,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.user) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       await db.from('profiles').upsert({ user_id: data.user.id, full_name: fullName, role: 'patient' });
+      if (inviteToken) {
+        const { acceptInvite } = await import('../lib/orgApi.js');
+        const result = await acceptInvite(inviteToken, data.user.id);
+        if (result) {
+          setUserRole(result.role as UserRole);
+          setOrgId(result.orgId);
+        }
+      }
     }
     return null;
   }
@@ -123,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, session, userRole, hasConsented, isLoading,
+      user, session, userRole, orgId, hasConsented, isLoading,
       signInWithEmail, signUpWithEmail, signInWithGoogle,
       sendMagicLink, signOut, recordConsent,
     }}>

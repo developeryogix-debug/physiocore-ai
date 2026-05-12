@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth.js';
 import { UserProfileProvider, useUserProfile } from './hooks/useUserProfile.js';
 import Navigation from './components/Navigation.js';
@@ -17,6 +17,8 @@ import Outcomes from './pages/Outcomes.js';
 import Settings from './pages/Settings.js';
 import Trainer from './pages/Trainer.js';
 import OnboardingWizard from './components/OnboardingWizard.js';
+import Admin from './pages/Admin.js';
+import OrgDashboard from './pages/OrgDashboard.js';
 
 function LoadingScreen() {
   return (
@@ -58,6 +60,27 @@ function ClinicianRoute() {
   return <Clinician />;
 }
 
+/** Preserves ?invite= query param when redirecting /signup → /login */
+function SignupRedirect() {
+  const [searchParams] = useSearchParams();
+  const invite = searchParams.get('invite');
+  return <Navigate to={invite ? `/login?invite=${invite}` : '/login'} replace />;
+}
+
+/** Guards /admin — super-admin only */
+function AdminRoute() {
+  const { userRole } = useAuth();
+  if (userRole !== 'admin') return <Navigate to="/dashboard" replace />;
+  return <Admin />;
+}
+
+/** Guards /org-dashboard — org_admin or admin */
+function OrgAdminRoute() {
+  const { userRole } = useAuth();
+  if (userRole !== 'org_admin' && userRole !== 'admin') return <Navigate to="/dashboard" replace />;
+  return <OrgDashboard />;
+}
+
 function AppContent() {
   const { user, isLoading } = useAuth();
   const { onboardingDone } = useUserProfile();
@@ -75,7 +98,7 @@ function AppContent() {
           {/* Public */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
-          <Route path="/signup" element={<Navigate to="/login" replace />} />
+          <Route path="/signup" element={<SignupRedirect />} />
 
           {/* Onboarding — requires auth + consent */}
           <Route
@@ -92,7 +115,9 @@ function AppContent() {
           <Route path="/session"    element={<ProtectedRoute><Session /></ProtectedRoute>} />
           <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
           <Route path="/nutrition"  element={<ProtectedRoute><Nutrition /></ProtectedRoute>} />
-          <Route path="/clinician"  element={<ProtectedRoute><ClinicianRoute /></ProtectedRoute>} />
+          <Route path="/clinician"      element={<ProtectedRoute><ClinicianRoute /></ProtectedRoute>} />
+          <Route path="/org-dashboard"  element={<ProtectedRoute><OrgAdminRoute /></ProtectedRoute>} />
+          <Route path="/admin"          element={<ProtectedRoute><AdminRoute /></ProtectedRoute>} />
           <Route path="/behavior"   element={<ProtectedRoute><Behavior /></ProtectedRoute>} />
           <Route path="/gym"        element={<ProtectedRoute><Gym /></ProtectedRoute>} />
           <Route path="/history"   element={<ProtectedRoute><History /></ProtectedRoute>} />

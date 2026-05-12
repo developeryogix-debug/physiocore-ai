@@ -187,6 +187,36 @@ export default function Navigation() {
         </NavLink>
       )}
 
+      {/* Org Dashboard — org_admin / admin */}
+      {(userRole === 'org_admin' || userRole === 'admin') && (
+        <NavLink to="/org-dashboard"
+          style={({isActive})=>({
+            padding:'5px 12px',borderRadius:'50px',textDecoration:'none',
+            fontSize:'0.8rem',fontWeight:isActive?600:500,
+            background:isActive?'rgba(139,92,246,0.12)':'transparent',
+            color:isActive?'#a78bfa':'var(--text-secondary)',
+            border:isActive?'1px solid rgba(139,92,246,0.25)':'1px solid transparent',
+            transition:'all 0.15s',
+          })}>
+          Org
+        </NavLink>
+      )}
+
+      {/* Admin panel — super-admin only */}
+      {userRole === 'admin' && (
+        <NavLink to="/admin"
+          style={({isActive})=>({
+            padding:'5px 12px',borderRadius:'50px',textDecoration:'none',
+            fontSize:'0.8rem',fontWeight:isActive?600:500,
+            background:isActive?'rgba(255,184,48,0.15)':'transparent',
+            color:isActive?'#f59e0b':'var(--text-secondary)',
+            border:isActive?'1px solid rgba(255,184,48,0.25)':'1px solid transparent',
+            transition:'all 0.15s',
+          })}>
+          Admin
+        </NavLink>
+      )}
+
       {/* Avatar + dropdown */}
       {user&&(
         <div ref={menuRef} style={{position:'relative',marginLeft:'6px',paddingLeft:'8px',borderLeft:'1px solid rgba(255,255,255,0.06)'}}>
@@ -213,9 +243,9 @@ export default function Navigation() {
                 <div style={{
                   display:'inline-block',marginTop:'6px',padding:'2px 8px',borderRadius:'20px',
                   fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',
-                  background:userRole==='admin'?'rgba(255,184,48,0.15)':userRole==='clinician'?'rgba(77,184,255,0.15)':'rgba(0,212,170,0.1)',
-                  color:userRole==='admin'?'var(--amber-400)':userRole==='clinician'?'var(--blue-400)':'var(--teal-500)',
-                  border:`1px solid ${userRole==='admin'?'rgba(255,184,48,0.25)':userRole==='clinician'?'rgba(77,184,255,0.25)':'var(--border-teal)'}`,
+                  background:userRole==='admin'?'rgba(255,184,48,0.15)':userRole==='clinician'?'rgba(77,184,255,0.15)':userRole==='org_admin'?'rgba(139,92,246,0.15)':'rgba(0,212,170,0.1)',
+                  color:userRole==='admin'?'#f59e0b':userRole==='clinician'?'var(--blue-400)':userRole==='org_admin'?'#a78bfa':'var(--teal-500)',
+                  border:`1px solid ${userRole==='admin'?'rgba(255,184,48,0.25)':userRole==='clinician'?'rgba(77,184,255,0.25)':userRole==='org_admin'?'rgba(139,92,246,0.25)':'var(--border-teal)'}`,
                   fontFamily:"'Space Mono', monospace",
                 }}>
                   {userRole}
@@ -225,6 +255,8 @@ export default function Navigation() {
                 {menuItem('My Profile',()=>{setMenuOpen(false);navigate('/settings');})}
                 {(userRole==='clinician'||userRole==='admin')&&menuItem('Clinician View',()=>{setMenuOpen(false);navigate('/clinician');})}
                 {menuItem('Settings',()=>{setMenuOpen(false);navigate('/settings');})}
+                {(userRole==='org_admin'||userRole==='admin')&&menuItem('Org Dashboard',()=>{setMenuOpen(false);navigate('/org-dashboard');})}
+                {userRole==='admin'&&menuItem('Admin Panel',()=>{setMenuOpen(false);navigate('/admin');})}
               </div>
               <div style={{padding:'6px',borderTop:'1px solid var(--border-subtle)'}}>
                 <button onClick={()=>{void handleSignOut();}} style={{
@@ -270,6 +302,8 @@ function MobileDropdown({displayName,email,userRole,onSignOut,onClose,navigate}:
         {menuItem('Gym',()=>{onClose();navigate('/gym');})}
         {menuItem('Behavior',()=>{onClose();navigate('/behavior');})}
         {(userRole==='clinician'||userRole==='admin')&&menuItem('Clinician',()=>{onClose();navigate('/clinician');})}
+        {(userRole==='org_admin'||userRole==='admin')&&menuItem('Org Dashboard',()=>{onClose();navigate('/org-dashboard');})}
+        {userRole==='admin'&&menuItem('Admin Panel',()=>{onClose();navigate('/admin');})}
       </div>
       <div style={{padding:'6px',borderTop:'1px solid var(--border-subtle)'}}>
         <button onClick={onSignOut} style={{
