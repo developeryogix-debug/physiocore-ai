@@ -278,6 +278,11 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
             onChange={e => { console.log('[Trainer] input changed:', JSON.stringify(e.target.value)); setInput(e.target.value); }}
             placeholder="Ask your AI trainer…"
             rows={2}
+            data-gramm="false"
+            data-gramm_editor="false"
+            data-enable-grammarly="false"
+            spellCheck={false}
+            autoComplete="off"
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

@@ -382,6 +382,8 @@ export default function OnboardingWizard() {
                 <label style={{fontSize:'0.78rem',fontWeight:600,color:'var(--text-secondary)'}}>Additional notes for your physiotherapist</label>
                 <textarea value={d.notes} onChange={e=>set('notes',e.target.value)} rows={3}
                   placeholder="Recent surgeries, medications, specific concerns…"
+                  data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"
+                  spellCheck={false} autoComplete="off"
                   style={{padding:'9px 12px',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:8,fontSize:'0.9rem',resize:'vertical',fontFamily:'inherit',background:'#121B2E',color:'var(--text-primary)',outline:'none'}}/>
               </div>
             </div>

@@ -431,6 +431,11 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
               ref={inputRef}
               value={input}
               onChange={e => { console.log('[AiChatPanel] input changed:', JSON.stringify(e.target.value)); setInput(e.target.value); }}
+              data-gramm="false"
+              data-gramm_editor="false"
+              data-enable-grammarly="false"
+              spellCheck={false}
+              autoComplete="off"
               onKeyDown={e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
