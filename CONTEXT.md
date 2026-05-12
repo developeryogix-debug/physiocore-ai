@@ -117,10 +117,10 @@ SUPABASE_SERVICE_ROLE_KEY
 | `/assessment` | ✅ | Clinical assessment |
 | `/clinician` | ✅ | SOAP notes, FHIR R4, churn risk |
 | `/behavior` | ✅ | Retention engine |
-| `/history` | ❌ | Not built |
-| `/outcomes` | ❌ | Not built |
-| `/settings` | ❌ | Not built |
-| `/trainer` | ❌ | AI chat trainer not built |
+| `/history` | ✅ | 52-week heatmap, trend chart, session timeline, personal bests |
+| `/outcomes` | ✅ | PSFS, NPRS, GROC, PHQ-4 + SOS referral, CSV export |
+| `/settings` | ✅ | Profile edit, biometrics tracker, notifications, PDPA data export/delete |
+| `/trainer` | ✅ | Full streaming chat, sidebar sessions, voice in/out, PDF export |
 
 ---
 
@@ -188,7 +188,10 @@ ProtectedRoute: isLoading → !user → /login
 | `consents` | signed consent records |
 | `user_profiles` | full onboarding data |
 | `sessions` | session history (synced from localStorage) |
-| `outcomes` | PSFS/NPRS/GROC scores |
+| `outcomes` | PSFS/NPRS/GROC/PHQ-4 scores (type, score, metadata, recorded_at) |
+| `biometrics` | HR, BP, glucose, HRV, sleep, weight readings |
+| `trainer_sessions` | AI trainer conversation list |
+| `trainer_messages` | messages per trainer session |
 | `health_checks` | monitoring results |
 | `alert_log` | sent email deduplication |
 | `cost_log` | daily spend estimates |
@@ -196,6 +199,8 @@ ProtectedRoute: isLoading → !user → /login
 Migration files:
 - `packages/supabase/src/migration.sql` — auth tables
 - `packages/supabase/src/monitor-migration.sql` — monitoring tables
+- `packages/supabase/src/session-memory-migration.sql` — session_summaries + chat_messages
+- `packages/supabase/src/pages-migration.sql` — biometrics + trainer_sessions + trainer_messages
 
 ---
 
@@ -231,9 +236,8 @@ All pages need `padding-top: 100px` to clear nav.
 
 ### Remaining
 - Onboard page still uses old light theme (needs Clinical Noir redesign)
-- /history, /outcomes, /settings, /trainer pages not built
-- Vercel API routes returning 404 (api/tsconfig.json fix deployed, awaiting confirmation)
-- Connect Vercel Git to developeryogix-debug/physiocore-ai (user action needed)
+- Run pages-migration.sql in Supabase (biometrics, trainer_sessions, trainer_messages tables)
+- Dashboard 8-panel upgrade
 
 ---
 
