@@ -122,8 +122,8 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
       console.log('[Trainer] blocked — empty:', !text.trim(), 'streaming:', streaming);
       return;
     }
-    const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'];
-    if (!apiKey) { console.error('[Trainer] VITE_ANTHROPIC_KEY missing'); return; }
+    const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_API_KEY'];
+    if (!apiKey) { console.error('[Trainer] VITE_ANTHROPIC_API_KEY missing'); return; }
 
     let sessionId = activeId;
     if (!sessionId) {

@@ -86,8 +86,8 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
       console.log('[AiChatPanel] blocked — empty:', !text.trim(), 'streaming:', streaming);
       return;
     }
-    const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'];
-    if (!apiKey) { console.error('[AiChatPanel] VITE_ANTHROPIC_KEY missing'); return; }
+    const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_API_KEY'];
+    if (!apiKey) { console.error('[AiChatPanel] VITE_ANTHROPIC_API_KEY missing'); return; }
 
     const userMsg: Message = { role: 'user', content: text.trim() };
     const history = [...messages, userMsg];
