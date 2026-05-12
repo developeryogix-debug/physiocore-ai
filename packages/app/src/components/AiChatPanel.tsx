@@ -44,6 +44,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const recogRef = useRef<SpeechRecognition | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const sendMessageRef = useRef<(text: string) => Promise<void>>(async () => { /* placeholder */ });
 
   // Load chat history + session summaries when panel first opens
@@ -80,9 +81,13 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
   }, [voiceOut]);
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || streaming) return;
+    console.log('[AiChatPanel] sendMessage called, text:', JSON.stringify(text), 'streaming:', streaming);
+    if (!text.trim() || streaming) {
+      console.log('[AiChatPanel] blocked — empty:', !text.trim(), 'streaming:', streaming);
+      return;
+    }
     const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'];
-    if (!apiKey) return;
+    if (!apiKey) { console.error('[AiChatPanel] VITE_ANTHROPIC_KEY missing'); return; }
 
     const userMsg: Message = { role: 'user', content: text.trim() };
     const history = [...messages, userMsg];
@@ -200,6 +205,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
     <>
       {/* Floating button */}
       <button
+        type="button"
         onClick={() => setOpen(o => !o)}
         aria-label="Ask AI"
         style={{
@@ -282,6 +288,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button
+                type="button"
                 onClick={() => setVoiceOut(v => !v)}
                 title={voiceOut ? 'Voice output on' : 'Voice output off'}
                 style={{
@@ -298,6 +305,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
                 ♪
               </button>
               <button
+                type="button"
                 onClick={() => { setMessages([]); }}
                 title="Clear chat"
                 style={{
@@ -420,9 +428,17 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
             flexShrink: 0,
           }}>
             <textarea
+              ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onChange={e => { console.log('[AiChatPanel] input changed:', JSON.stringify(e.target.value)); setInput(e.target.value); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  const text = inputRef.current?.value ?? input;
+                  console.log('[AiChatPanel] Enter pressed, sending:', JSON.stringify(text));
+                  void sendMessageRef.current(text);
+                }
+              }}
               placeholder="Ask a question…"
               rows={1}
               style={{
@@ -445,6 +461,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
             />
             <button
+              type="button"
               onClick={() => {
                 const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
                 if (!SR) return;
@@ -469,9 +486,18 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
               {listening ? '⏹' : '🎤'}
             </button>
             <button
-              onClick={() => {
-                if (streaming) { abortRef.current?.abort(); setStreaming(false); }
-                else void sendMessageRef.current(input);
+              type="button"
+              onMouseDown={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (streaming) {
+                  abortRef.current?.abort();
+                  setStreaming(false);
+                  return;
+                }
+                const text = inputRef.current?.value ?? input;
+                console.log('[AiChatPanel] send button mousedown, text:', JSON.stringify(text));
+                void sendMessageRef.current(text);
               }}
               style={{
                 width: 34,

@@ -47,6 +47,7 @@ export default function Trainer() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const recogRef = useRef<SpeechRecognition | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const sendRef = useRef<(text: string) => Promise<void>>(async () => { /* placeholder */ });
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -116,9 +117,13 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
   }
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || streaming) return;
+    console.log('[Trainer] sendMessage called, text:', JSON.stringify(text), 'streaming:', streaming);
+    if (!text.trim() || streaming) {
+      console.log('[Trainer] blocked — empty:', !text.trim(), 'streaming:', streaming);
+      return;
+    }
     const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'];
-    if (!apiKey) return;
+    if (!apiKey) { console.error('[Trainer] VITE_ANTHROPIC_KEY missing'); return; }
 
     let sessionId = activeId;
     if (!sessionId) {
@@ -267,17 +272,44 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
 
         {/* Input bar */}
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
-          <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Ask your AI trainer…" rows={2}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendRef.current(input); } }}
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => { console.log('[Trainer] input changed:', JSON.stringify(e.target.value)); setInput(e.target.value); }}
+            placeholder="Ask your AI trainer…"
+            rows={2}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const text = inputRef.current?.value ?? input;
+                console.log('[Trainer] Enter pressed, sending:', JSON.stringify(text));
+                void sendRef.current(text);
+              }
+            }}
             style={{ flex: 1, resize: 'none', border: '1px solid var(--border-default)', borderRadius: 10, padding: '10px 14px', fontSize: '0.85rem', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontFamily: "'Figtree',inherit", lineHeight: 1.5, maxHeight: 120, overflowY: 'auto', outline: 'none' }}
             onFocus={e => { e.currentTarget.style.borderColor = 'var(--border-teal)'; }}
-            onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }} />
-          <button onClick={() => { const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition; if (!SR) return; listening ? recogRef.current?.stop() : startVoice(); }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+          />
+          <button
+            type="button"
+            onClick={() => { const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition; if (!SR) return; listening ? recogRef.current?.stop() : startVoice(); }}
             style={{ width: 40, height: 40, borderRadius: '50%', border: `1px solid ${listening ? 'var(--warning)' : 'var(--border-default)'}`, background: listening ? 'rgba(255,184,48,0.1)' : 'var(--bg-surface)', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: listening ? 'var(--warning)' : 'var(--text-tertiary)', pointerEvents: 'auto' as const }}>
             {listening ? '⏹' : '🎤'}
           </button>
           <button
-            onClick={() => { if (streaming) { abortRef.current?.abort(); setStreaming(false); } else void sendRef.current(input); }}
+            type="button"
+            onMouseDown={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (streaming) {
+                abortRef.current?.abort();
+                setStreaming(false);
+                return;
+              }
+              const text = inputRef.current?.value ?? input;
+              console.log('[Trainer] send button mousedown, text:', JSON.stringify(text));
+              void sendRef.current(text);
+            }}
             style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: streaming ? 'rgba(255,68,68,0.2)' : (!input.trim() ? 'var(--bg-overlay)' : 'var(--teal-500)'), color: streaming ? 'var(--danger)' : (!input.trim() ? 'var(--text-tertiary)' : '#000'), cursor: !input.trim() && !streaming ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700, transition: 'all 0.15s', pointerEvents: 'auto' as const }}>
             {streaming ? '⏹' : '↑'}
           </button>
