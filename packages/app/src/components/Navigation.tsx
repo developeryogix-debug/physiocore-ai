@@ -77,10 +77,14 @@ export default function Navigation() {
       {[
         { to: '/dashboard', label: 'Dashboard', end: true },
         { to: '/session',   label: 'Session' },
+        { to: '/history',   label: 'History' },
         { to: '/assessment',label: 'Assess' },
         { to: '/nutrition', label: 'Nutrition' },
         { to: '/gym',       label: 'Gym' },
+        { to: '/outcomes',  label: 'Outcomes' },
         { to: '/behavior',  label: 'Behavior' },
+        { to: '/trainer',   label: 'Trainer' },
+        { to: '/settings',  label: 'Settings' },
       ].map(({ to, label, end }) => (
         <NavLink
           key={to}

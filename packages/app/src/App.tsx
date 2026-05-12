@@ -12,6 +12,10 @@ import Nutrition from './pages/Nutrition.js';
 import Clinician from './pages/Clinician.js';
 import Behavior from './pages/Behavior.js';
 import Gym from './pages/Gym.js';
+import History from './pages/History.js';
+import Outcomes from './pages/Outcomes.js';
+import Settings from './pages/Settings.js';
+import Trainer from './pages/Trainer.js';
 import OnboardingWizard from './components/OnboardingWizard.js';
 
 function LoadingScreen() {
@@ -82,6 +86,10 @@ function AppContent() {
           <Route path="/clinician"  element={<ProtectedRoute><Clinician /></ProtectedRoute>} />
           <Route path="/behavior"   element={<ProtectedRoute><Behavior /></ProtectedRoute>} />
           <Route path="/gym"        element={<ProtectedRoute><Gym /></ProtectedRoute>} />
+          <Route path="/history"   element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/outcomes"  element={<ProtectedRoute><Outcomes /></ProtectedRoute>} />
+          <Route path="/settings"  element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/trainer"   element={<ProtectedRoute><Trainer /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
         </Routes>
