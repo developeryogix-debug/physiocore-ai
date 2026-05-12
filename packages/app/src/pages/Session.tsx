@@ -61,7 +61,7 @@ const EXERCISE_CONFIG: Record<ExerciseKey, {
   squat:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Right Knee',  labelLeft:'Left Knee',  targetRange:[70,110],  repDownThreshold:100, repUpThreshold:160 },
   deadlift:       { joint:[24,26,28], jointLeft:[23,25,27], label:'Right Knee',  labelLeft:'Left Knee',  targetRange:[150,175], repDownThreshold:140, repUpThreshold:165 },
   pushup:         { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow', labelLeft:'Left Elbow', targetRange:[60,100],  repDownThreshold:90,  repUpThreshold:150 },
-  lunge:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Right Knee',  labelLeft:'Left Knee',  targetRange:[80,100],  repDownThreshold:95,  repUpThreshold:155 },
+  lunge:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Front Knee',  labelLeft:'Front Knee', targetRange:[80,100],  repDownThreshold:95,  repUpThreshold:140 },
   shoulder_press: { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow', labelLeft:'Left Elbow', targetRange:[85,100],  repDownThreshold:95,  repUpThreshold:150 },
 };
 const EXERCISES = Object.keys(EXERCISE_CONFIG) as ExerciseKey[];
@@ -311,6 +311,7 @@ export default function Session() {
   const wasHoldingRef = useRef(false);
   const holdCompleteRef = useRef(false);
   const consecTopFramesRef = useRef(0); // consecutive frames at/above repUpThreshold (mobile stability)
+  const lastRepTimeRef = useRef(0);     // performance.now() of last counted rep (prevents double-count)
   const lastFrameTimeRef = useRef<number | null>(null);
   // Fix 1: startup dead zone
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -367,21 +368,37 @@ export default function Session() {
       }
 
       // ── Fix 4: low-light / confidence check across key joints ────────────
-      const confJoints = [...cfg.joint, ...cfg.jointLeft];
-      const avgConf = confJoints.reduce((s, i) => s + (lms[i]?.visibility ?? 0), 0) / confJoints.length;
-      if (avgConf < 0.55) {
+      // Use the BETTER side's confidence, not the average of both.
+      // Critical for lunge: back-leg ankle is frequently off-screen on phone
+      // portrait mode, dragging avgConf < 0.55 and blocking every frame.
+      const confR = cfg.joint.reduce((s, i) => s + (lms[i]?.visibility ?? 0), 0) / cfg.joint.length;
+      const confL = cfg.jointLeft.reduce((s, i) => s + (lms[i]?.visibility ?? 0), 0) / cfg.jointLeft.length;
+      const bestConf = Math.max(confR, confL);
+      if (bestConf < 0.45) {
         updateStatus('warn_lighting', '⚠ Adjust position — move to brighter area or step back');
         drawSkeleton(ctx, lms, cfg.joint, false, prevAngleRef.current ?? 0);
-        // Reset prevAngle so the noise filter doesn't block the first frame after confidence recovers.
-        // Without this, a large angle gap between drop and recovery causes infinite noise-filter loops.
         prevAngleRef.current = null;
         rafRef.current = requestAnimationFrame(processFrame); return;
       }
 
-      // ── View mode: pick active side by joint visibility ≥0.7 ──────────────
-      // Side view only needs 3 landmarks on one side — no bilateral requirement.
-      const visR = cfg.joint.every(i => (lms[i]?.visibility ?? 0) >= 0.7);
-      const visL = cfg.jointLeft.every(i => (lms[i]?.visibility ?? 0) >= 0.7);
+      // ── View mode: pick active side by joint visibility ──────────────────
+      // Lunge uses 0.5 threshold (lower) because in portrait mode one leg is
+      // always partially off-screen. Squat/pushup etc. keep 0.7 (stricter).
+      const visThresh = exerciseKey === 'lunge' ? 0.5 : 0.7;
+      const visR = cfg.joint.every(i => (lms[i]?.visibility ?? 0) >= visThresh);
+      const visL = cfg.jointLeft.every(i => (lms[i]?.visibility ?? 0) >= visThresh);
+
+      // ── Lunge camera-distance guidance ───────────────────────────────────
+      if (exerciseKey === 'lunge') {
+        const hipY  = Math.min(lms[23]?.y ?? 1, lms[24]?.y ?? 1);
+        const ankleY = Math.max(lms[27]?.y ?? 0, lms[28]?.y ?? 0);
+        const legSpan = ankleY - hipY; // normalised 0-1; needs ≥0.35 to see full leg
+        if (legSpan < 0.30 && (lms[27]?.visibility ?? 0) < 0.4 && (lms[28]?.visibility ?? 0) < 0.4) {
+          updateStatus('warn_body', 'Step back — need full legs in frame');
+          drawSkeleton(ctx, lms, cfg.joint, false, prevAngleRef.current ?? 0);
+          rafRef.current = requestAnimationFrame(processFrame); return;
+        }
+      }
 
       let activeJoint: [number,number,number];
       let angle: number;
@@ -599,39 +616,45 @@ export default function Session() {
             holdEndTimeRef.current = now;
           }
           if (angle > exCfg.repUpThreshold) {
-            // Require 3 consecutive frames above repUpThreshold before counting.
-            // On mobile (30fps) angle measurements are noisier near the top —
-            // a single frame spike could otherwise trigger a false rep completion.
+            // 2 consecutive frames above repUpThreshold required (was 3 — too strict
+            // for mobile where angle at standing often reads 155-158° due to lens
+            // distortion, making 3 consecutive frames above 160° unreachable).
             consecTopFramesRef.current++;
-            if (consecTopFramesRef.current >= 3) {
-              consecTopFramesRef.current = 0;
-              repStateRef.current = 'up';
-              setIsAtBottom(false); setBottomHoldSecs(0);
-              const holdMs = (holdEndTimeRef.current || now) - repStartTimeRef.current;
-              const elapsed = holdMs / 1000;
-              holdEndTimeRef.current = 0;
-              // Angle sanity — squat peak < 60° is camera noise, not a real rep
-              const isSane = exerciseKey !== 'squat' || repPeakAngleRef.current >= 60;
-              const score = computeFormScore(repPeakAngleRef.current, exCfg.targetRange);
-              // 0.8s threshold (was 1.5s) — 1.5s was measuring only time below descent
-              // threshold, not full rep time. At mobile 30fps a controlled rep easily
-              // reads <1.5s even at proper tempo.
-              const flag: RepRecord['flag'] = !isSane ? 'invalid' : elapsed < 0.8 ? 'too_fast' : repPeakAngleRef.current > exCfg.targetRange[1] ? 'shallow' : 'good';
-              if (flag === 'too_fast') {
-                updateStatus('warn_velocity', 'Too fast — slow down for reps to count');
-                const capturedRef = statusRef;
-                setTimeout(() => { if (capturedRef.current === 'warn_velocity') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
-              } else if (flag === 'invalid') {
-                updateStatus('warn_body', 'Invalid rep — angle too extreme (camera noise?)');
-                const capturedRef = statusRef;
-                setTimeout(() => { if (capturedRef.current === 'warn_body') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
+            if (consecTopFramesRef.current >= 2) {
+              // Guard: ignore if a rep was counted within the last 1000ms (debounce)
+              if (now - lastRepTimeRef.current < 1000) {
+                // still rising — just wait
               } else {
-                repCountRef.current++;
-                const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat(elapsed.toFixed(1)), flag };
-                repRecordsRef.current = [...repRecordsRef.current, rec];
-                setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
-                setRepFlash(true); setTimeout(() => setRepFlash(false), 500);
-                updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
+                // ── Explicit full reset before counting ───────────────────────
+                consecTopFramesRef.current = 0;
+                repStateRef.current = 'up';        // READY for next descent
+                setIsAtBottom(false); setBottomHoldSecs(0);
+                const holdMs = (holdEndTimeRef.current || now) - repStartTimeRef.current;
+                const elapsed = holdMs / 1000;
+                holdEndTimeRef.current = 0;        // reset hold-end marker
+                repStartTimeRef.current = 0;       // reset rep start
+                // Angle sanity — squat peak < 60° is camera noise, not a real rep
+                const isSane = exerciseKey !== 'squat' || repPeakAngleRef.current >= 60;
+                const score = computeFormScore(repPeakAngleRef.current, exCfg.targetRange);
+                const flag: RepRecord['flag'] = !isSane ? 'invalid' : elapsed < 0.8 ? 'too_fast' : repPeakAngleRef.current > exCfg.targetRange[1] ? 'shallow' : 'good';
+                if (flag === 'too_fast') {
+                  updateStatus('warn_velocity', 'Too fast — slow down for reps to count');
+                  const capturedRef = statusRef;
+                  setTimeout(() => { if (capturedRef.current === 'warn_velocity') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
+                } else if (flag === 'invalid') {
+                  updateStatus('warn_body', 'Invalid rep — angle too extreme (camera noise?)');
+                  const capturedRef = statusRef;
+                  setTimeout(() => { if (capturedRef.current === 'warn_body') updateStatus('ready', 'Ready — go down for next rep'); }, 2000);
+                } else {
+                  repCountRef.current++;
+                  lastRepTimeRef.current = now;    // stamp time for debounce
+                  const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat(elapsed.toFixed(1)), flag };
+                  repRecordsRef.current = [...repRecordsRef.current, rec];
+                  setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
+                  setRepFlash(true); setTimeout(() => setRepFlash(false), 500);
+                  updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
+                  console.log('[Session] Rep counted, state reset to READY, total reps:', repCountRef.current);
+                }
               }
             }
           } else {
@@ -662,7 +685,7 @@ export default function Session() {
     setHoldTime(0); setHoldComplete(false);
     setIsAtBottom(false); setBottomHoldSecs(0); bottomEnteredRef.current = 0;
     deadZoneEndRef.current = Date.now() + 8000; lastCountdownRef.current = -1; setCountdown(null);
-    holdEndTimeRef.current = 0; consecTopFramesRef.current = 0;
+    holdEndTimeRef.current = 0; consecTopFramesRef.current = 0; lastRepTimeRef.current = 0;
     setPlankScore(0); setPlankSeconds(0); lastPlankSecRef.current = -1; pilatesInvertStateRef.current = 'up';
     statusRef.current = 'ready'; viewModeRef.current = 'front';
     const isYoga = exerciseRef.current in YOGA_CONFIG;
