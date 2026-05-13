@@ -9,6 +9,8 @@ import { saveSessionSummary } from '../lib/sessionMemory.js';
 import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
+import { EXERCISE_LIBRARY, EXERCISE_KEYS_BY_CATEGORY } from '../lib/exerciseLibrary.js';
+import type { ExerciseMeta } from '../lib/exerciseLibrary.js';
 
 type MPLandmark = { x: number; y: number; z: number; visibility?: number };
 interface Landmarker {
@@ -54,17 +56,22 @@ const POSE_CONNECTIONS: [number, number][] = [
   [24,26],[26,28],[28,30],[30,32],[32,28],
 ];
 
-type ExerciseKey = 'squat' | 'deadlift' | 'pushup' | 'lunge' | 'shoulder_press';
+type ExerciseKey = 'squat' | 'deadlift' | 'pushup' | 'lunge' | 'shoulder_press' | 'hip_thrust' | 'glute_bridge' | 'bent_over_row';
 const EXERCISE_CONFIG: Record<ExerciseKey, {
   joint: [number,number,number]; jointLeft: [number,number,number];
   label: string; labelLeft: string;
   targetRange: [number,number]; repDownThreshold: number; repUpThreshold: number;
 }> = {
-  squat:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Right Knee',  labelLeft:'Left Knee',  targetRange:[70,110],  repDownThreshold:100, repUpThreshold:160 },
-  deadlift:       { joint:[12,24,26], jointLeft:[11,23,25], label:'Hip Hinge (R)', labelLeft:'Hip Hinge (L)', targetRange:[45,70],  repDownThreshold:80,  repUpThreshold:160 },
-  pushup:         { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow', labelLeft:'Left Elbow', targetRange:[60,100],  repDownThreshold:90,  repUpThreshold:150 },
-  lunge:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Front Knee',  labelLeft:'Front Knee', targetRange:[80,100],  repDownThreshold:80,  repUpThreshold:140 },
-  shoulder_press: { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow', labelLeft:'Left Elbow', targetRange:[85,100],  repDownThreshold:95,  repUpThreshold:150 },
+  squat:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Right Knee',    labelLeft:'Left Knee',     targetRange:[70,110],  repDownThreshold:100, repUpThreshold:160 },
+  deadlift:       { joint:[12,24,26], jointLeft:[11,23,25], label:'Hip Hinge (R)', labelLeft:'Hip Hinge (L)', targetRange:[45,70],   repDownThreshold:80,  repUpThreshold:160 },
+  pushup:         { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow',   labelLeft:'Left Elbow',    targetRange:[60,100],  repDownThreshold:90,  repUpThreshold:150 },
+  lunge:          { joint:[24,26,28], jointLeft:[23,25,27], label:'Front Knee',    labelLeft:'Front Knee',    targetRange:[80,100],  repDownThreshold:80,  repUpThreshold:140 },
+  shoulder_press: { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow',   labelLeft:'Left Elbow',    targetRange:[85,100],  repDownThreshold:95,  repUpThreshold:150 },
+  // hip thrust / glute bridge — measures trunk-to-thigh angle (ankle-hip-shoulder arc)
+  hip_thrust:     { joint:[28,24,12], jointLeft:[27,23,11], label:'Hip Angle (R)', labelLeft:'Hip Angle (L)', targetRange:[145,175], repDownThreshold:120, repUpThreshold:160 },
+  glute_bridge:   { joint:[28,24,12], jointLeft:[27,23,11], label:'Hip Angle (R)', labelLeft:'Hip Angle (L)', targetRange:[155,180], repDownThreshold:130, repUpThreshold:170 },
+  // bent over row — tracks elbow angle at peak contraction
+  bent_over_row:  { joint:[12,14,16], jointLeft:[11,13,15], label:'Right Elbow',   labelLeft:'Left Elbow',    targetRange:[50,90],   repDownThreshold:80,  repUpThreshold:140 },
 };
 const EXERCISES = Object.keys(EXERCISE_CONFIG) as ExerciseKey[];
 
@@ -859,6 +866,12 @@ export default function Session() {
                   const pc = PILATES_CONFIG[key];
                   const name = key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
                   return <option key={key} value={key}>{name} — {pc.targetLabel}</option>;
+                })}
+              </optgroup>
+              <optgroup label="Physiotherapy (prescription only)">
+                {EXERCISE_KEYS_BY_CATEGORY.physiotherapy.map((key) => {
+                  const meta = EXERCISE_LIBRARY[key]!;
+                  return <option key={key} value={key} disabled>{meta.displayName}</option>;
                 })}
               </optgroup>
             </select>
