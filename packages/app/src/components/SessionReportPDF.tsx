@@ -112,16 +112,11 @@ function priorityBadge(p: string): { bg: string; fg: string } {
 
 // ── Prop types ────────────────────────────────────────────────────────────────
 export interface SessionReportProps {
-  exercise:     string;
-  viewMode:     string;
-  sessionNum:   number;
-  userName:     string;
-  sessionDate:  string;            // ISO date string
-  avgScore:     number;
-  bestScore:    number;
-  tension:      string;            // seconds as string
-  mins:         number;
-  secs:         number;
+  exercise:        string;
+  viewMode:        string;
+  sessionNumber:   number;
+  userName:        string;
+  sessionDuration: number;         // seconds — used for mins/secs display
   records: Array<{
     num: number; angle: number; score: number; duration: number;
     flag: 'good' | 'too_fast' | 'shallow' | 'invalid';
@@ -132,7 +127,7 @@ export interface SessionReportProps {
     motivationalMessage: string;
     nextSteps: string[];
     safetyWarnings: string[];
-  };
+  } | null;
   prescription: Array<{ name: string; sets: string; focus: string }>;
   fhirJson:     string;
 }
@@ -145,11 +140,17 @@ const FLAG_LABEL: Record<string, string> = {
 };
 
 // ── PDF Document ─────────────────────────────────────────────────────────────
-export default function SessionReportPDF({
-  exercise, viewMode, sessionNum, userName, sessionDate,
-  avgScore, bestScore, tension, mins, secs,
+export function SessionReportPDF({
+  exercise, viewMode, sessionNumber, userName, sessionDuration,
   records, feedback, prescription, fhirJson,
 }: SessionReportProps) {
+  // Derived values computed internally
+  const avgScore  = records.length > 0 ? Math.round(records.reduce((s, r) => s + r.score, 0) / records.length) : 0;
+  const bestScore = records.length > 0 ? Math.max(...records.map(r => r.score)) : 0;
+  const tension   = records.reduce((s, r) => s + r.duration, 0).toFixed(0);
+  const mins      = Math.floor(sessionDuration / 60);
+  const secs      = Math.round(sessionDuration % 60);
+  const sessionDate = new Date().toISOString();
   const exerciseLabel = exercise.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   return (
@@ -173,7 +174,7 @@ export default function SessionReportPDF({
           <View style={s.metaCol}>
             <Text style={s.metaLine}><Text style={s.metaBold}>Patient: </Text>{userName}</Text>
             <Text style={s.metaLine}><Text style={s.metaBold}>Exercise: </Text>{exerciseLabel}</Text>
-            <Text style={s.metaLine}><Text style={s.metaBold}>View: </Text>{viewMode}  ·  <Text style={s.metaBold}>Session: </Text>#{sessionNum}</Text>
+            <Text style={s.metaLine}><Text style={s.metaBold}>View: </Text>{viewMode}  ·  <Text style={s.metaBold}>Session: </Text>#{sessionNumber}</Text>
             <Text style={s.metaLine}><Text style={s.metaBold}>Date: </Text>{new Date(sessionDate).toLocaleDateString('en-SG', { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
           </View>
         </View>
@@ -289,3 +290,5 @@ export default function SessionReportPDF({
     </Document>
   );
 }
+
+export default SessionReportPDF;

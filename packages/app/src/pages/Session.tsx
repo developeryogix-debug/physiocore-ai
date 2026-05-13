@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { pdf } from '@react-pdf/renderer';
+import { SessionReportPDF } from '../components/SessionReportPDF.js';
 import { useLocation } from 'react-router-dom';
 import type { PoseFrame, PoseLandmark, AgentResult, FeedbackResponse } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
@@ -155,77 +157,6 @@ function generatePrescription(exercise: ExerciseKey, records: RepRecord[]): Arra
   return base[exercise];
 }
 
-/**
- * exportReport — generates a proper PDF file and triggers a direct browser download.
- * Uses @react-pdf/renderer via dynamic import so the ~1 MB PDF bundle only loads
- * on demand (not on initial page load).
- */
-async function exportReport(
-  exercise: ExerciseKey,
-  records: RepRecord[],
-  feedbackData: FeedbackResponse | undefined,
-  sessionDuration: number,
-  viewMode: ViewMode,
-  userName: string,
-  sessionNum: number,
-): Promise<void> {
-  // Pre-compute derived values
-  const avgScore  = records.length > 0 ? Math.round(records.reduce((s, r) => s + r.score, 0) / records.length) : 0;
-  const bestScore = records.length > 0 ? Math.max(...records.map(r => r.score)) : 0;
-  const tension   = records.reduce((s, r) => s + r.duration, 0).toFixed(0);
-  const mins      = Math.floor(sessionDuration / 60);
-  const secs      = Math.round(sessionDuration % 60);
-  const dateStr   = new Date().toISOString().split('T')[0] as string;
-  const exerciseLabel = exercise.replace(/_/g, '-');
-  const filename  = `${userName}_${exerciseLabel}_${dateStr}_S${sessionNum}`;
-
-  const fhirJson  = JSON.stringify({
-    resourceType: 'Bundle', type: 'collection',
-    entry: records.map(r => ({
-      resource: {
-        resourceType: 'Observation', status: 'final',
-        code: { coding: [{ system: 'http://loinc.org', code: '72514-3', display: 'Physiotherapy session rep' }] },
-        valueInteger: r.num,
-        component: [
-          { code: { text: 'Peak Angle' }, valueQuantity: { value: r.angle, unit: 'deg' } },
-          { code: { text: 'Form Score' }, valueQuantity: { value: r.score } },
-          { code: { text: 'Duration' },   valueQuantity: { value: r.duration, unit: 's' } },
-          { code: { text: 'Flag' },       valueString: r.flag },
-        ],
-      },
-    })),
-  }, null, 2);
-
-  // Lazy-load react-pdf (only downloaded when user clicks Export)
-  const [{ pdf }, { default: SessionReportPDF }] = await Promise.all([
-    import('@react-pdf/renderer'),
-    import('../components/SessionReportPDF.js'),
-  ]);
-
-  const doc = SessionReportPDF({
-    exercise, viewMode, sessionNum, userName,
-    sessionDate: dateStr,
-    avgScore, bestScore, tension, mins, secs,
-    records,
-    feedback: feedbackData ? {
-      summary:          feedbackData.summary,
-      formCorrections:  feedbackData.formCorrections.map(c => ({ bodyPart: c.bodyPart, priority: c.priority, instruction: c.instruction })),
-      motivationalMessage: feedbackData.motivationalMessage,
-      nextSteps:        feedbackData.nextSteps,
-      safetyWarnings:   feedbackData.safetyWarnings,
-    } : undefined,
-    prescription: generatePrescription(exercise, records) ?? [],
-    fhirJson,
-  });
-
-  const blob = await pdf(doc).toBlob();
-  const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement('a'), { href: url, download: `${filename}.pdf` });
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-}
 
 const _lastVoiceMs = { t: 0 };
 function speak(text: string, force = false) {
@@ -322,6 +253,8 @@ export default function Session() {
   const [feedbackResult, setFeedbackResult] = useState<AgentResult<FeedbackResponse> | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportStatus, setExportStatus] = useState<'idle' | 'downloaded'>('idle');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -841,6 +774,69 @@ export default function Session() {
   const feedbackData = feedbackResult?.success ? feedbackResult.data : undefined;
   const vb = VIEW_BADGE[viewMode];
 
+  const exportReport = async () => {
+    setExportLoading(true);
+    try {
+      const firstName = ((userProfile?.name || profile?.name || 'User').split(' ')[0] || 'User').replace(/[^a-zA-Z0-9]/g, '') || 'User';
+      const sessionNum = (JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[]).length;
+      const dateStr = new Date().toISOString().split('T')[0] as string;
+      const exerciseLabel = (exercise as string).replace(/_/g, '-');
+      const filename = `${firstName}_${exerciseLabel}_${dateStr}_S${sessionNum}`;
+
+      const fhirJson = JSON.stringify({
+        resourceType: 'Bundle', type: 'collection',
+        entry: repRecords.map(r => ({
+          resource: {
+            resourceType: 'Observation', status: 'final',
+            code: { coding: [{ system: 'http://loinc.org', code: '72514-3', display: 'Physiotherapy session rep' }] },
+            valueInteger: r.num,
+            component: [
+              { code: { text: 'Peak Angle' }, valueQuantity: { value: r.angle, unit: 'deg' } },
+              { code: { text: 'Form Score' }, valueQuantity: { value: r.score } },
+              { code: { text: 'Duration' },   valueQuantity: { value: r.duration, unit: 's' } },
+              { code: { text: 'Flag' },       valueString: r.flag },
+            ],
+          },
+        })),
+      }, null, 2);
+
+      const blob = await pdf(
+        <SessionReportPDF
+          exercise={exercise as string}
+          viewMode={viewMode}
+          sessionNumber={sessionNum}
+          userName={firstName}
+          sessionDuration={sessionDuration}
+          records={repRecords}
+          feedback={feedbackData ? {
+            summary: feedbackData.summary,
+            formCorrections: feedbackData.formCorrections.map(c => ({ bodyPart: c.bodyPart, priority: c.priority, instruction: c.instruction })),
+            motivationalMessage: feedbackData.motivationalMessage,
+            nextSteps: feedbackData.nextSteps,
+            safetyWarnings: feedbackData.safetyWarnings,
+          } : null}
+          prescription={(!isYogaMode && !isPilatesMode) ? (generatePrescription(exercise as ExerciseKey, repRecords) ?? []) : []}
+          fhirJson={fhirJson}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href: url, download: `${filename}.pdf` });
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+      setExportStatus('downloaded');
+      setTimeout(() => setExportStatus('idle'), 2500);
+    } catch (err) {
+      console.error('PDF error:', err);
+      alert('PDF generation failed: ' + String(err));
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 48px' }}>
       <div style={{ marginBottom: 28 }}>
@@ -1040,17 +1036,13 @@ export default function Session() {
               <h2 className="font-display" style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Session Report</h2>
             </div>
             {repRecords.length > 0 && (
-              <button onClick={e => {
-                const btn = e.currentTarget;
-                btn.textContent = 'Generating PDF…';
-                btn.setAttribute('disabled', 'true');
-                const firstName = ((userProfile?.name || profile?.name || 'User').split(' ')[0] || 'User').replace(/[^a-zA-Z0-9]/g, '') || 'User';
-                const sessionNum = (JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[]).length;
-                void exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode, firstName, sessionNum)
-                  .then(() => { btn.textContent = '✓ PDF Downloaded'; setTimeout(() => { btn.textContent = 'Export for Physiotherapist ↓'; btn.removeAttribute('disabled'); }, 2500); })
-                  .catch(() => { btn.textContent = 'Export for Physiotherapist ↓'; btn.removeAttribute('disabled'); });
-              }} className="btn-ghost" style={{ fontSize: '0.82rem' }}>
-                Export for Physiotherapist ↓
+              <button
+                onClick={() => { void exportReport(); }}
+                disabled={exportLoading}
+                className="btn-ghost"
+                style={{ fontSize: '0.82rem', opacity: exportLoading ? 0.6 : 1 }}
+              >
+                {exportLoading ? 'Generating PDF…' : exportStatus === 'downloaded' ? '✓ PDF Downloaded' : 'Export for Physiotherapist ↓'}
               </button>
             )}
           </div>
