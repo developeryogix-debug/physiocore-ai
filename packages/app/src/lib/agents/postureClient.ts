@@ -1,0 +1,246 @@
+/**
+ * postureClient.ts
+ * Posture analysis agent — measurement extraction + Claude Sonnet call.
+ * Implements POSTURE_SYSTEM.md AI Analysis Prompt.
+ * Every finding must cite Kendall et al. or equivalent primary source.
+ */
+import { callClaude, extractJson } from './anthropicClient.js';
+
+// ─── Landmark type (matches MediaPipe normalised output) ───────────────────────
+type MPLandmark = { x: number; y: number; z?: number; visibility?: number };
+
+// ─── Measurement types ────────────────────────────────────────────────────────
+
+export interface PostureMeasurements {
+  // Frontal plane — anterior (front) view
+  shoulderLevelDiff:  number;  // degrees off horizontal (0 = level)
+  headTiltAngle:      number;  // degrees nose displaced from shoulder-midpoint vertical
+  hipLevelDiff:       number;  // degrees off horizontal
+  plumbDeviation:     number;  // degrees shoulder+hip midpoints displaced from centre
+
+  // Sagittal plane — right lateral view (if visible)
+  headForwardPosture:  number;  // ear→shoulder horizontal gap as % of shoulder→hip distance
+  earShoulderHipAngle: number;  // angle at shoulder landmark (degrees; ideal ≈ 0° = vertical)
+  lateralAvailable:    boolean;
+}
+
+export interface PostureFinding {
+  name:               string;
+  severity:           'normal' | 'mild' | 'moderate' | 'severe';
+  measurement:        string;  // human-readable value, e.g., "3.2° rightward tilt"
+  clinicalSignificance: string;
+  citation:           string;
+  evidenceGrade:      'A' | 'B' | 'C' | 'D';
+}
+
+export interface PostureReport {
+  overallScore:    number;          // 0-100
+  sagittalScore:   number;
+  frontalScore:    number;
+  clinicalSummary: string;          // 3-sentence summary
+  findings:        PostureFinding[];
+  muscleImbalancePattern: {
+    name:              string;      // e.g. "Upper Crossed Syndrome (Janda)"
+    shortenedMuscles:  string[];
+    lengthenedMuscles: string[];
+    citation:          string;
+  } | null;
+  correctionExercises: Array<{ name: string; sets: string; focus: string }>;
+  referralFlags:       string[];
+  homeCare: {
+    stretches:      Array<{ name: string; instructions: string }>;
+    strengthening:  Array<{ name: string; instructions: string }>;
+  };
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function angleDeg3(a: MPLandmark, b: MPLandmark, c: MPLandmark): number {
+  const abx = a.x - b.x, aby = a.y - b.y;
+  const cbx = c.x - b.x, cby = c.y - b.y;
+  const dot = abx * cbx + aby * cby;
+  const mag = Math.sqrt((abx ** 2 + aby ** 2) * (cbx ** 2 + cby ** 2));
+  return mag === 0 ? 0 : Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180 / Math.PI;
+}
+
+/** Angle of line AB off horizontal (0° = perfectly level). */
+function levelAngle(a: MPLandmark, b: MPLandmark): number {
+  return Math.abs(Math.atan2(Math.abs(a.y - b.y), Math.abs(a.x - b.x)) * 180 / Math.PI);
+}
+
+function visible(lm: MPLandmark | undefined, thr = 0.3): boolean {
+  return !!lm && (lm.visibility ?? 1) >= thr;
+}
+
+function round1(n: number): number { return Math.round(n * 10) / 10; }
+
+// ─── Measurement extraction ───────────────────────────────────────────────────
+
+/**
+ * Extracts postural measurements from captured MediaPipe landmark arrays.
+ * @param anteriorLms  Landmarks from front-facing (anterior) frame
+ * @param lateralLms   Landmarks from right-lateral frame (may be null)
+ */
+export function extractMeasurements(
+  anteriorLms: MPLandmark[] | null,
+  lateralLms:  MPLandmark[] | null,
+): PostureMeasurements {
+  const m: PostureMeasurements = {
+    shoulderLevelDiff:   0,
+    headTiltAngle:       0,
+    hipLevelDiff:        0,
+    plumbDeviation:      0,
+    headForwardPosture:  0,
+    earShoulderHipAngle: 90,
+    lateralAvailable:    false,
+  };
+
+  // ── Anterior measurements ─────────────────────────────────────────────────
+  if (anteriorLms && anteriorLms.length >= 25) {
+    const nose = anteriorLms[0];
+    const lShoulder = anteriorLms[11], rShoulder = anteriorLms[12];
+    const lHip      = anteriorLms[23], rHip      = anteriorLms[24];
+
+    if (visible(lShoulder) && visible(rShoulder)) {
+      m.shoulderLevelDiff = round1(levelAngle(lShoulder!, rShoulder!));
+
+      const sMidX = (lShoulder!.x + rShoulder!.x) / 2;
+      const sMidY = (lShoulder!.y + rShoulder!.y) / 2;
+
+      if (visible(nose)) {
+        // Head tilt: angle of nose from the shoulder-midpoint vertical axis
+        const dx = Math.abs((nose!.x) - sMidX);
+        const dy = Math.max(Math.abs((nose!.y) - sMidY), 0.001);
+        m.headTiltAngle = round1(Math.atan2(dx, dy) * 180 / Math.PI);
+      }
+
+      if (visible(lHip) && visible(rHip)) {
+        m.hipLevelDiff = round1(levelAngle(lHip!, rHip!));
+
+        // Plumb deviation: how far body centre deviates from frame centre (x=0.5)
+        const hMidX = (lHip!.x + rHip!.x) / 2;
+        const maxOff = Math.max(Math.abs(sMidX - 0.5), Math.abs(hMidX - 0.5));
+        m.plumbDeviation = round1(maxOff * 30); // ~1% frame width ≈ 0.3° at 2.5 m
+      }
+    }
+  }
+
+  // ── Right lateral measurements ────────────────────────────────────────────
+  if (lateralLms && lateralLms.length >= 25) {
+    // Landmark indices: 7 = left_ear, 8 = right_ear, 11 = lShoulder, 12 = rShoulder
+    // For right lateral view the right side faces camera → prefer right landmarks
+    const ear      = visible(lateralLms[8]) ? lateralLms[8]! : (visible(lateralLms[7]) ? lateralLms[7]! : null);
+    const shoulder = visible(lateralLms[12]) ? lateralLms[12]! : (visible(lateralLms[11]) ? lateralLms[11]! : null);
+    const hip      = visible(lateralLms[24]) ? lateralLms[24]! : (visible(lateralLms[23]) ? lateralLms[23]! : null);
+
+    if (ear && shoulder && hip) {
+      m.lateralAvailable = true;
+
+      // Head forward posture: horizontal distance of ear relative to shoulder,
+      // normalised by shoulder-to-hip distance (so body size doesn't matter).
+      const shDist = Math.sqrt(
+        (shoulder.x - hip.x) ** 2 + (shoulder.y - hip.y) ** 2,
+      );
+      // In right-lateral view, patient faces LEFT in camera frame (lower x = anterior)
+      // Positive = ear is anterior (forward) relative to shoulder
+      const earForwardNorm = (shoulder.x - ear.x) / Math.max(shDist, 0.01);
+      m.headForwardPosture = round1(earForwardNorm * 100); // express as %
+
+      // Ear-shoulder-hip angle at shoulder.
+      // Ideal: ~0° (ear directly above hip — perfect vertical line)
+      // As ear moves anterior, this angle decreases from 180° toward 90°.
+      m.earShoulderHipAngle = round1(angleDeg3(ear, shoulder, hip));
+    }
+  }
+
+  return m;
+}
+
+// ─── Claude API call ──────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `You are a clinical physiotherapist specialising in postural assessment (SaMD Class II context).
+Analyse the provided postural measurements and respond with a structured JSON report.
+
+Requirements:
+- Every finding MUST cite Kendall et al. (Muscles: Testing and Function, 5th Ed.) or an equivalent primary source.
+- Every recommendation must carry an evidence grade (A/B/C/D per Oxford CEBM hierarchy).
+- Use Latin anatomical muscle names (e.g., "trapezius (upper)") throughout.
+- Identify Janda patterns when measurements support them (Upper Crossed, Lower Crossed, Layer Syndrome).
+- Apply POSTURE_SYSTEM.md severity thresholds:
+  Shoulder/hip tilt: ≤2°=normal, 2-5°=mild, 5-10°=moderate, >10°=severe
+  Head tilt: ≤2°=normal, 2-5°=mild, >5°=significant
+  Head forward posture (% of S-H dist): ≤15%=normal, 15-30%=mild, 30-50%=moderate, >50%=severe
+  Ear-shoulder-hip angle: 155-180°=normal, 140-155°=mild, 120-140°=moderate, <120°=severe
+- referralFlags must include: any scoliosis suspicion (plumbDeviation >7°), neurological signs, or structural red flags.
+- Be conservative: if measurements are borderline, classify as mild, not moderate.
+
+Output ONLY valid JSON matching exactly:
+{
+  "overallScore": number,
+  "sagittalScore": number,
+  "frontalScore": number,
+  "clinicalSummary": "string (3 sentences max)",
+  "findings": [
+    {
+      "name": "string",
+      "severity": "normal|mild|moderate|severe",
+      "measurement": "string (value + unit)",
+      "clinicalSignificance": "string",
+      "citation": "string",
+      "evidenceGrade": "A|B|C|D"
+    }
+  ],
+  "muscleImbalancePattern": {
+    "name": "string",
+    "shortenedMuscles": ["string"],
+    "lengthenedMuscles": ["string"],
+    "citation": "string"
+  } | null,
+  "correctionExercises": [
+    { "name": "string", "sets": "string", "focus": "string" }
+  ],
+  "referralFlags": ["string"],
+  "homeCare": {
+    "stretches": [{ "name": "string", "instructions": "string" }],
+    "strengthening": [{ "name": "string", "instructions": "string" }]
+  }
+}`;
+
+export async function analysePosture(
+  measurements: PostureMeasurements,
+  userConditions: string[],
+): Promise<PostureReport> {
+  const condStr = userConditions.length > 0
+    ? `Patient conditions: ${userConditions.join(', ')}.`
+    : 'No known conditions reported.';
+
+  const measureStr = [
+    `FRONTAL PLANE (anterior view):`,
+    `  shoulderLevelDiff: ${measurements.shoulderLevelDiff}° off horizontal`,
+    `  headTiltAngle: ${measurements.headTiltAngle}° from vertical`,
+    `  hipLevelDiff: ${measurements.hipLevelDiff}° off horizontal`,
+    `  plumbDeviation: ${measurements.plumbDeviation}° body-centre offset`,
+    measurements.lateralAvailable
+      ? [
+          `SAGITTAL PLANE (right lateral view):`,
+          `  headForwardPosture: ${measurements.headForwardPosture}% of shoulder-to-hip distance`,
+          `  earShoulderHipAngle: ${measurements.earShoulderHipAngle}° at shoulder`,
+        ].join('\n')
+      : `SAGITTAL PLANE: lateral view not available — skip sagittal findings.`,
+  ].join('\n');
+
+  const userMsg = `${condStr}
+
+Postural measurements:
+${measureStr}
+
+Provide the JSON posture report.`;
+
+  const raw = await callClaude({
+    system: SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userMsg }],
+    maxTokens: 2048,
+  });
+
+  return extractJson<PostureReport>(raw);
+}
