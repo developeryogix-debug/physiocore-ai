@@ -15,6 +15,11 @@ interface ViewConfig {
   color: string;
 }
 
+interface CapturedFrame {
+  dataUrl: string;
+  landmarks: MPLandmark[] | null;
+}
+
 type Phase = 'intro' | 'capturing' | 'review';
 
 const VIEWS: ViewConfig[] = [
@@ -73,7 +78,100 @@ const POSE_CONNECTIONS: [number, number][] = [
   [24,26],[26,28],[28,30],[30,32],[32,28],
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Grid overlay helpers ─────────────────────────────────────────────────────
+
+function deviationColor(deg: number): string {
+  return deg <= 2 ? '#00E676' : deg <= 5 ? '#FFB830' : '#FF4444';
+}
+
+function drawGridOverlay(canvas: HTMLCanvasElement, frame: CapturedFrame) {
+  const img = new Image();
+  img.onload = () => {
+    const w = img.width, h = img.height;
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw image mirrored (match capture-view orientation)
+    ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1);
+    ctx.drawImage(img, 0, 0); ctx.restore();
+
+    const lms = frame.landmarks;
+
+    // ── Plumb line ─────────────────────────────────────────────────
+    // Deviation = how far shoulder & hip midpoints are from x=0.5
+    let plumbDev = 0;
+    if (lms) {
+      const s11 = lms[11], s12 = lms[12], h23 = lms[23], h24 = lms[24];
+      if (s11 && s12 && h23 && h24) {
+        const sMid = (s11.x + s12.x) / 2;
+        const hMid = (h23.x + h24.x) / 2;
+        const maxOff = Math.max(Math.abs(sMid - 0.5), Math.abs(hMid - 0.5));
+        // ~30° scale: 1% of frame width ≈ 0.3° at typical 2.5m distance
+        plumbDev = Math.round(maxOff * 30 * 10) / 10;
+      }
+    }
+
+    ctx.save();
+    ctx.strokeStyle = deviationColor(plumbDev);
+    ctx.lineWidth = 1.5; ctx.setLineDash([7, 5]); ctx.globalAlpha = 0.75;
+    ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+    ctx.setLineDash([]);
+    // Label at top
+    ctx.font = "bold 11px 'Space Mono', monospace";
+    ctx.fillStyle = deviationColor(plumbDev);
+    ctx.textAlign = 'center'; ctx.globalAlpha = 0.95;
+    ctx.fillText(`▼ ${plumbDev.toFixed(1)}°`, w / 2, 16);
+    ctx.restore();
+
+    if (!lms) return;
+
+    // ── Horizontal reference lines ──────────────────────────────────
+    const hLines = [
+      { name: 'SHOULDER', li: 11, ri: 12 },
+      { name: 'HIP',      li: 23, ri: 24 },
+      { name: 'KNEE',     li: 25, ri: 26 },
+    ];
+
+    for (const hl of hLines) {
+      const lm = lms[hl.li], rm = lms[hl.ri];
+      if (!lm || !rm) continue;
+      if ((lm.visibility ?? 1) < 0.25 || (rm.visibility ?? 1) < 0.25) continue;
+
+      // Mirror x (MediaPipe x=0 is left of original camera frame)
+      // After display mirror: patient's left (lms[11]) appears on screen-left
+      const lxScr = (1 - lm.x) * w, lyScr = lm.y * h;
+      const rxScr = (1 - rm.x) * w, ryScr = rm.y * h;
+      const midX = (lxScr + rxScr) / 2, midY = (lyScr + ryScr) / 2;
+      const dx = rxScr - lxScr, dy = ryScr - lyScr;
+      const angleDeg = Math.abs(Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI);
+      const color = deviationColor(angleDeg);
+
+      // Full-width line with tilt
+      const slope = Math.abs(dx) > 1 ? dy / dx : 0;
+      const y0 = midY - midX * slope;
+      const yW = midY + (w - midX) * slope;
+
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(w, yW); ctx.stroke();
+
+      // Landmark dots
+      ctx.fillStyle = color; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.arc(lxScr, lyScr, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(rxScr, ryScr, 4, 0, Math.PI * 2); ctx.fill();
+
+      // Label + angle (right-aligned)
+      ctx.font = "bold 10px 'Space Mono', monospace";
+      ctx.fillStyle = color; ctx.textAlign = 'right'; ctx.globalAlpha = 0.95;
+      ctx.fillText(`${hl.name}  ${angleDeg.toFixed(1)}°`, w - 8, midY - 6);
+      ctx.restore();
+    }
+  };
+  img.src = frame.dataUrl;
+}
+
+// ─── Audio helpers ────────────────────────────────────────────────────────────
 
 function speak(text: string) {
   if (!('speechSynthesis' in window)) return;
@@ -134,24 +232,36 @@ export default function PostureAssessment() {
   const captureCanvasRef  = useRef<HTMLCanvasElement>(null);
   const streamRef         = useRef<MediaStream | null>(null);
   const landmarkerRef     = useRef<Landmarker | null>(null);
+  const lastLandmarksRef  = useRef<MPLandmark[] | null>(null);
   const rafRef            = useRef<number>(0);
   const timerRef          = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gridCanvasRefs    = useRef<Partial<Record<ViewKey, HTMLCanvasElement>>>({});
 
   const [phase, setPhase]             = useState<Phase>('intro');
   const [viewIndex, setViewIndex]     = useState(0);
   const [countdown, setCountdown]     = useState<number | null>(null);
   const [isHold, setIsHold]           = useState(false);
-  const [frames, setFrames]           = useState<Partial<Record<ViewKey, string>>>({});
+  const [frames, setFrames]           = useState<Partial<Record<ViewKey, CapturedFrame>>>({});
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [showCue, setShowCue]         = useState(false);
   const [isRetake, setIsRetake]       = useState(false);
 
-  // Countdown color: amber 8-4, red 3-1, green on HOLD
   const countdownColor = isHold ? '#00E676'
     : countdown !== null && countdown <= 3 ? '#FF4444'
     : '#FFB830';
 
   const currentView = VIEWS[viewIndex]!;
+
+  // ── Draw grid overlays in review phase ──────────────────────────────────────
+
+  useEffect(() => {
+    if (phase !== 'review') return;
+    for (const v of VIEWS) {
+      const frame = frames[v.key];
+      const canvas = gridCanvasRefs.current[v.key];
+      if (frame && canvas) drawGridOverlay(canvas, frame);
+    }
+  }, [phase, frames]);
 
   // ── Camera ──────────────────────────────────────────────────────────────────
 
@@ -196,11 +306,12 @@ export default function PostureAssessment() {
       try {
         const result = landmarkerRef.current.detectForVideo(video, performance.now());
         const lms = result.landmarks[0];
+        lastLandmarksRef.current = lms ?? null;
         if (lms) {
-          const w = canvas.width; const h = canvas.height;
+          const w = canvas.width, h = canvas.height;
           ctx.strokeStyle = 'rgba(0,212,170,0.75)'; ctx.lineWidth = 2;
           for (const [a, b] of POSE_CONNECTIONS) {
-            const lmA = lms[a]; const lmB = lms[b];
+            const lmA = lms[a], lmB = lms[b];
             if (!lmA || !lmB) continue;
             ctx.beginPath();
             ctx.moveTo(lmA.x * w, lmA.y * h);
@@ -210,9 +321,7 @@ export default function PostureAssessment() {
           ctx.fillStyle = '#00D4AA';
           for (const lm of lms) {
             if (!lm || (lm.visibility ?? 1) < 0.3) continue;
-            ctx.beginPath();
-            ctx.arc(lm.x * w, lm.y * h, 4, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(lm.x * w, lm.y * h, 4, 0, Math.PI * 2); ctx.fill();
           }
         }
       } catch { /* skip frame */ }
@@ -221,9 +330,9 @@ export default function PostureAssessment() {
     rafRef.current = requestAnimationFrame(renderLoop);
   }, []);
 
-  // ── Frame capture ────────────────────────────────────────────────────────────
+  // ── Frame capture (stores landmark snapshot) ─────────────────────────────────
 
-  const captureFrame = useCallback((): string | null => {
+  const captureFrame = useCallback((): CapturedFrame | null => {
     const video  = videoRef.current;
     const canvas = captureCanvasRef.current;
     if (!video || !canvas) return null;
@@ -232,17 +341,17 @@ export default function PostureAssessment() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL('image/jpeg', 0.85);
+    return {
+      dataUrl: canvas.toDataURL('image/jpeg', 0.85),
+      landmarks: lastLandmarksRef.current ? [...lastLandmarksRef.current] : null,
+    };
   }, []);
 
   // ── Single view countdown ────────────────────────────────────────────────────
 
   const runCountdown = useCallback((viewIdx: number, onDone: () => void) => {
     const view = VIEWS[viewIdx]!;
-    setViewIndex(viewIdx);
-    setShowCue(true);
-    setIsHold(false);
-    setCountdown(null);
+    setViewIndex(viewIdx); setShowCue(true); setIsHold(false); setCountdown(null);
     speak(view.voiceCue);
 
     timerRef.current = setTimeout(() => {
@@ -253,15 +362,12 @@ export default function PostureAssessment() {
       const interval = setInterval(() => {
         tick--;
         if (tick > 0) {
-          setCountdown(tick);
-          beep(false);
+          setCountdown(tick); beep(false);
         } else {
           clearInterval(interval);
-          setCountdown(null);
-          setIsHold(true);
-          beep(true);
-          const dataUrl = captureFrame();
-          if (dataUrl) setFrames(prev => ({ ...prev, [view.key]: dataUrl }));
+          setCountdown(null); setIsHold(true); beep(true);
+          const captured = captureFrame();
+          if (captured) setFrames(prev => ({ ...prev, [view.key]: captured }));
           timerRef.current = setTimeout(() => { setIsHold(false); onDone(); }, 1500);
         }
       }, 1000);
@@ -285,10 +391,7 @@ export default function PostureAssessment() {
   // ── Start full assessment ────────────────────────────────────────────────────
 
   const handleStart = useCallback(async () => {
-    setPhase('capturing');
-    setViewIndex(0);
-    setFrames({});
-    setIsRetake(false);
+    setPhase('capturing'); setViewIndex(0); setFrames({}); setIsRetake(false);
     await startCamera();
     loadLandmarker().then(lm => { landmarkerRef.current = lm; }).catch(() => {});
     rafRef.current = requestAnimationFrame(renderLoop);
@@ -300,9 +403,7 @@ export default function PostureAssessment() {
 
   const startRetake = useCallback(async (viewKey: ViewKey) => {
     const viewIdx = VIEWS.findIndex(v => v.key === viewKey);
-    setIsRetake(true);
-    setPhase('capturing');
-    setViewIndex(viewIdx);
+    setIsRetake(true); setPhase('capturing'); setViewIndex(viewIdx);
     await startCamera();
     loadLandmarker().then(lm => { landmarkerRef.current = lm; }).catch(() => {});
     rafRef.current = requestAnimationFrame(renderLoop);
@@ -459,7 +560,7 @@ export default function PostureAssessment() {
   );
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // RENDER: Review — 2×2 grid
+  // RENDER: Review — 2×2 grid with grid overlay canvases
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
@@ -468,7 +569,7 @@ export default function PostureAssessment() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Capture Complete</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>All 4 views captured. Retake any view or proceed to analysis.</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Grid overlay applied. Retake any view or proceed to analysis.</p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-ghost" onClick={() => { void handleStart(); }}>Retake All</button>
@@ -478,12 +579,25 @@ export default function PostureAssessment() {
           </div>
         </div>
 
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          {[['#00E676', '≤2°  Normal'], ['#FFB830', '2-5°  Mild'], ['#FF4444', '>5°  Significant']].map(([color, label]) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <div style={{ width: 24, height: 2, background: color, borderRadius: 1 }} />
+              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontFamily: "'Space Mono', monospace" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
         {/* 2×2 grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           {VIEWS.map((v, i) => (
             <div key={v.key} style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', aspectRatio: '16/9' }}>
               {frames[v.key] ? (
-                <img src={frames[v.key]} alt={v.label} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transform: 'scaleX(-1)' }} />
+                <canvas
+                  ref={el => { if (el) gridCanvasRefs.current[v.key] = el; }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>No frame</span>
@@ -516,7 +630,7 @@ export default function PostureAssessment() {
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            Grid overlay, angle measurements, and AI analysis coming in Phase 2.
+            Angle measurements and AI analysis (Janda pattern detection, muscle imbalance mapping) coming in Phase 2.
           </span>
         </div>
       </div>
