@@ -5,6 +5,11 @@ import { useUserProfile } from '../hooks/useUserProfile.js';
 import { extractMeasurements, analysePosture } from '../lib/agents/postureClient.js';
 import type { PostureReport } from '../lib/agents/postureClient.js';
 import PostureReportCard from '../components/PostureReportCard.js';
+import {
+  drawGridOverlay,
+  drawIdealComparison,
+  calcLandmarkConfidence,
+} from '../lib/postureGridOverlay.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -28,7 +33,7 @@ interface CapturedFrame {
   landmarks: MPLandmark[] | null;
 }
 
-type Phase = 'intro' | 'capturing' | 'review';
+type Phase = 'intro' | 'calibration' | 'capturing' | 'review';
 
 const VIEWS: ViewConfig[] = [
   {
@@ -85,130 +90,6 @@ const POSE_CONNECTIONS: [number, number][] = [
   [23,25],[25,27],[27,29],[29,31],[31,27],
   [24,26],[26,28],[28,30],[30,32],[32,28],
 ];
-
-// ─── Grid overlay helpers ─────────────────────────────────────────────────────
-
-function deviationColor(deg: number): string {
-  return deg <= 2 ? '#00E676' : deg <= 5 ? '#FFB830' : '#FF4444';
-}
-
-function drawGridOverlay(canvas: HTMLCanvasElement, frame: CapturedFrame) {
-  const img = new Image();
-  img.onload = () => {
-    const w = img.width, h = img.height;
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Draw image mirrored (match capture-view orientation)
-    ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1);
-    ctx.drawImage(img, 0, 0); ctx.restore();
-
-    const lms = frame.landmarks;
-
-    // ── Plumb line ─────────────────────────────────────────────────
-    let plumbDev = 0;
-    let sMidX = w / 2, hMidX = w / 2, sMidY = h * 0.3, hMidY = h * 0.6;
-
-    if (lms) {
-      const s11 = lms[11], s12 = lms[12], h23 = lms[23], h24 = lms[24];
-      if (s11 && s12 && h23 && h24) {
-        const sMid = (s11.x + s12.x) / 2;
-        const hMid = (h23.x + h24.x) / 2;
-        plumbDev = Math.round(Math.max(Math.abs(sMid - 0.5), Math.abs(hMid - 0.5)) * 30 * 10) / 10;
-        sMidX = (1 - sMid) * w;  hMidX = (1 - hMid) * w;
-        sMidY = ((s11.y + s12.y) / 2) * h;
-        hMidY = ((h23.y + h24.y) / 2) * h;
-      }
-    }
-
-    ctx.save();
-    ctx.strokeStyle = deviationColor(plumbDev);
-    ctx.lineWidth = 1.5; ctx.setLineDash([7, 5]); ctx.globalAlpha = 0.65;
-    ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.font = "bold 11px 'Space Mono', monospace";
-    ctx.fillStyle = deviationColor(plumbDev);
-    ctx.textAlign = 'center'; ctx.globalAlpha = 0.95;
-    ctx.fillText(`▼ ${plumbDev.toFixed(1)}°`, w / 2, 16);
-    ctx.restore();
-
-    if (!lms) return;
-
-    // ── Spine midline (shoulder-mid → hip-mid, extrapolated) ────────
-    {
-      const spineOffPx = Math.abs(sMidX - hMidX);
-      const spineColor = deviationColor(Math.round((spineOffPx / w) * 30 * 10) / 10);
-      const dY = hMidY - sMidY;
-      const dX = hMidX - sMidX;
-      const slope = Math.abs(dY) > 1 ? dX / dY : 0;
-      const xAtTop = sMidX - sMidY * slope;
-      const xAtBot = sMidX + (h - sMidY) * slope;
-      ctx.save();
-      ctx.strokeStyle = spineColor; ctx.lineWidth = 2; ctx.globalAlpha = 0.55;
-      ctx.beginPath(); ctx.moveTo(xAtTop, 0); ctx.lineTo(xAtBot, h); ctx.stroke();
-      ctx.fillStyle = spineColor; ctx.globalAlpha = 0.85;
-      ctx.beginPath(); ctx.arc(sMidX, sMidY, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(hMidX, hMidY, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
-    // ── Horizontal reference lines ──────────────────────────────────
-    const hLines: { name: string; li: number; ri: number }[] = [
-      { name: 'SHOULDER', li: 11, ri: 12 },
-      { name: 'HIP',      li: 23, ri: 24 },
-      { name: 'KNEE',     li: 25, ri: 26 },
-      { name: 'ANKLE',    li: 27, ri: 28 },
-    ];
-
-    for (const hl of hLines) {
-      const lm = lms[hl.li], rm = lms[hl.ri];
-      if (!lm || !rm) continue;
-      if ((lm.visibility ?? 1) < 0.25 || (rm.visibility ?? 1) < 0.25) continue;
-
-      const lxScr = (1 - lm.x) * w, lyScr = lm.y * h;
-      const rxScr = (1 - rm.x) * w, ryScr = rm.y * h;
-      const midX = (lxScr + rxScr) / 2, midY = (lyScr + ryScr) / 2;
-      const dx = rxScr - lxScr, dy = ryScr - lyScr;
-      const angleDeg = Math.abs(Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI);
-      const color = deviationColor(angleDeg);
-      const slope = Math.abs(dx) > 1 ? dy / dx : 0;
-
-      ctx.save();
-      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.8;
-      ctx.beginPath(); ctx.moveTo(0, midY - midX * slope); ctx.lineTo(w, midY + (w - midX) * slope); ctx.stroke();
-      ctx.fillStyle = color; ctx.globalAlpha = 0.9;
-      ctx.beginPath(); ctx.arc(lxScr, lyScr, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(rxScr, ryScr, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.font = "bold 10px 'Space Mono', monospace";
-      ctx.fillStyle = color; ctx.textAlign = 'right'; ctx.globalAlpha = 0.95;
-      ctx.fillText(`${hl.name}  ${angleDeg.toFixed(1)}°`, w - 8, midY - 6);
-      ctx.restore();
-    }
-
-    // ── Head position (nose vs shoulder centre) ─────────────────────
-    const nose = lms[0], ls = lms[11], rs = lms[12];
-    if (nose && ls && rs && (nose.visibility ?? 1) > 0.3
-        && (ls.visibility ?? 1) > 0.3 && (rs.visibility ?? 1) > 0.3) {
-      const noseX = (1 - nose.x) * w, noseY = nose.y * h;
-      const shCX = ((1 - ls.x) * w + (1 - rs.x) * w) / 2;
-      const shCY = (ls.y * h + rs.y * h) / 2;
-      const headDeg = Math.round((Math.abs(noseX - shCX) / w) * 30 * 10) / 10;
-      const headColor = deviationColor(headDeg);
-      ctx.save();
-      ctx.strokeStyle = headColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.globalAlpha = 0.7;
-      ctx.beginPath(); ctx.moveTo(noseX, noseY); ctx.lineTo(shCX, shCY); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = headColor; ctx.globalAlpha = 0.9;
-      ctx.beginPath(); ctx.arc(noseX, noseY, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.font = "bold 10px 'Space Mono', monospace";
-      ctx.fillStyle = headColor; ctx.textAlign = 'left'; ctx.globalAlpha = 0.95;
-      ctx.fillText(`HEAD  ${headDeg.toFixed(1)}°`, 8, noseY - 5);
-      ctx.restore();
-    }
-  };
-  img.src = frame.dataUrl;
-}
 
 // ─── Audio helpers ────────────────────────────────────────────────────────────
 
@@ -276,6 +157,7 @@ export default function PostureAssessment() {
   const rafRef            = useRef<number>(0);
   const timerRef          = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gridCanvasRefs    = useRef<Partial<Record<ViewKey, HTMLCanvasElement>>>({});
+  const compareCanvasRefs = useRef<Partial<Record<ViewKey, HTMLCanvasElement>>>({});
 
   const [phase, setPhase]             = useState<Phase>('intro');
   const [viewIndex, setViewIndex]     = useState(0);
@@ -289,6 +171,7 @@ export default function PostureAssessment() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [postureReport, setPostureReport] = useState<PostureReport | null>(null);
   const [savedToDb, setSavedToDb]     = useState(false);
+  const [calibrated, setCalibrated]   = useState(false);
 
   const countdownColor = isHold ? '#00E676'
     : countdown !== null && countdown <= 3 ? '#FF4444'
@@ -303,9 +186,18 @@ export default function PostureAssessment() {
     for (const v of VIEWS) {
       const frame = frames[v.key];
       const canvas = gridCanvasRefs.current[v.key];
-      if (frame && canvas) drawGridOverlay(canvas, frame);
+      if (frame && canvas) drawGridOverlay(canvas, frame, v.key);
     }
   }, [phase, frames]);
+
+  useEffect(() => {
+    if (!postureReport) return;
+    for (const v of VIEWS) {
+      const frame = frames[v.key];
+      const canvas = compareCanvasRefs.current[v.key];
+      if (frame && canvas) drawIdealComparison(canvas, frame, v.key);
+    }
+  }, [postureReport, frames]);
 
   // ── Camera ──────────────────────────────────────────────────────────────────
 
@@ -432,9 +324,9 @@ export default function PostureAssessment() {
     });
   }, [runCountdown, stopCamera]);
 
-  // ── Start full assessment ────────────────────────────────────────────────────
+  // ── Begin capture (called from calibration confirm or Retake All) ────────────
 
-  const handleStart = useCallback(async () => {
+  const handleBeginCapture = useCallback(async () => {
     setPhase('capturing'); setViewIndex(0); setFrames({}); setIsRetake(false);
     await startCamera();
     loadLandmarker().then(lm => { landmarkerRef.current = lm; }).catch(() => {});
@@ -442,6 +334,13 @@ export default function PostureAssessment() {
     speak('Starting posture assessment. Stand 2 to 3 metres from the camera.');
     timerRef.current = setTimeout(() => runAllViews(0), 3000);
   }, [startCamera, renderLoop, runAllViews]);
+
+  // ── Go to calibration screen (from intro) ────────────────────────────────────
+
+  const handleStart = useCallback(() => {
+    setCalibrated(false);
+    setPhase('calibration');
+  }, []);
 
   // ── Retake single view ───────────────────────────────────────────────────────
 
@@ -554,6 +453,96 @@ export default function PostureAssessment() {
   );
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // RENDER: Calibration (Pausic et al. 2010 — 1.5 m, 115 cm camera height)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  if (phase === 'calibration') return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-void)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', paddingTop: '100px' }}>
+      <div style={{ maxWidth: 580, width: '100%' }}>
+        <p style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Step 1 of 2 — Camera Setup</p>
+        <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Calibrate Your Camera</h1>
+
+        {/* Setup cards */}
+        {[
+          {
+            icon: '📏',
+            title: 'Camera height — navel level',
+            detail: 'Place your phone or webcam at umbilicus (belly button) height. Pausic et al. 2010 recommend 115 cm from floor for standard adults.',
+            color: '#00D4AA',
+          },
+          {
+            icon: '↔',
+            title: 'Distance — 2.5 to 3 metres',
+            detail: 'Stand far enough that your full body from head to ankle is visible. Align the camera with a vertical door frame edge for a true plumb reference.',
+            color: '#4DB8FF',
+          },
+          {
+            icon: '📄',
+            title: 'Scale reference — A4 paper (21 × 29.7 cm)',
+            detail: 'Optionally hold an A4 sheet at hip level for the first frame. This lets the system estimate real-world scale from landmark proportions.',
+            color: '#FFB830',
+          },
+          {
+            icon: '✕',
+            title: 'Stand on the X mark',
+            detail: 'Place a strip of tape in an X on the floor 2.5 m from the camera. Return to this mark for every view to keep distance consistent.',
+            color: '#a78bfa',
+          },
+        ].map(card => (
+          <div key={card.title} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '1rem 1.25rem', marginBottom: '10px' }}>
+            <div style={{ fontSize: '1.25rem', minWidth: 28, textAlign: 'center' as const }}>{card.icon}</div>
+            <div>
+              <p style={{ fontWeight: 600, color: card.color, fontSize: '0.875rem', marginBottom: 3 }}>{card.title}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.55, margin: 0 }}>{card.detail}</p>
+            </div>
+          </div>
+        ))}
+
+        {/* Visual plumb-line guide */}
+        <div style={{ background: 'rgba(0,212,170,0.06)', border: '1px solid rgba(0,212,170,0.2)', borderRadius: '10px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Animated vertical line SVG */}
+          <svg width={40} height={80} viewBox="0 0 40 80" style={{ flexShrink: 0 }}>
+            <line x1={20} y1={0} x2={20} y2={80} stroke="rgba(0,212,170,0.3)" strokeWidth={2} strokeDasharray="5 4" />
+            <line x1={20} y1={0} x2={20} y2={80} stroke="#00D4AA" strokeWidth={2} strokeDasharray="5 4">
+              <animate attributeName="stroke-dashoffset" from="0" to="18" dur="1.2s" repeatCount="indefinite" />
+            </line>
+            <circle cx={20} cy={40} r={5} fill="#00D4AA" opacity={0.85} />
+          </svg>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', lineHeight: 1.55, margin: 0 }}>
+            Align the camera so a vertical door-frame edge runs through the centre of frame — this becomes your plumb reference for all measurements.
+          </p>
+        </div>
+
+        {/* Confirm + begin */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {!calibrated ? (
+            <button
+              className="btn-ghost"
+              onClick={() => setCalibrated(true)}
+              style={{ flex: 1 }}
+            >
+              ✓ Camera is set up correctly
+            </button>
+          ) : (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: '8px', background: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.3)' }}>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#00E676" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span style={{ color: '#00E676', fontFamily: "'Space Mono',monospace", fontSize: '0.75rem' }}>Camera calibrated ✓</span>
+            </div>
+          )}
+          <button
+            className="btn-primary"
+            onClick={() => { void handleBeginCapture(); }}
+            style={{ flex: 1 }}
+          >
+            {calibrated ? 'Begin Assessment →' : 'Skip & Begin'}
+          </button>
+        </div>
+        <button onClick={() => setPhase('intro')} style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--text-tertiary)', fontSize: '0.8rem', cursor: 'pointer', width: '100%' }}>← Back</button>
+      </div>
+    </div>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // RENDER: Capture
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -661,7 +650,7 @@ export default function PostureAssessment() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Grid overlay applied. Retake any view or proceed to analysis.</p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-ghost" onClick={() => { void handleStart(); }}>Retake All</button>
+            <button className="btn-ghost" onClick={() => { void handleBeginCapture(); }}>Retake All</button>
             <button className="btn-primary" onClick={() => { void handleAnalyse(); }} disabled={analysing}>
               {analysing ? 'Analysing…' : 'Analyse Posture'}
             </button>
@@ -705,6 +694,18 @@ export default function PostureAssessment() {
                 </div>
               )}
 
+              {/* Confidence badge */}
+              {frames[v.key] && (() => {
+                const conf = calcLandmarkConfidence(frames[v.key]!.landmarks);
+                const confColor = conf >= 70 ? '#00E676' : conf >= 50 ? '#FFB830' : '#FF4444';
+                const confMsg   = conf >= 70 ? '' : conf >= 50 ? ' — retake recommended' : ' — poor capture';
+                return (
+                  <div style={{ position: 'absolute', bottom: '40px', left: '10px', padding: '3px 8px', borderRadius: '6px', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', color: confColor, fontSize: '0.65rem', fontFamily: "'Space Mono',monospace" }}>
+                    {conf}% confidence{confMsg}
+                  </div>
+                );
+              })()}
+
               {/* Retake button */}
               <button onClick={() => { void startRetake(v.key); }} style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '5px 12px', borderRadius: '8px', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', fontFamily: "'Space Mono', monospace", cursor: 'pointer' }}>
                 ↺ Retake
@@ -720,6 +721,37 @@ export default function PostureAssessment() {
         )}
 
         {postureReport && <PostureReportCard report={postureReport} savedToDb={savedToDb} />}
+
+        {/* Improvement 5 — Ideal vs actual comparison grid */}
+        {postureReport && (
+          <div style={{ marginTop: '2rem' }}>
+            <h3 style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.75rem', color: 'var(--text-tertiary)', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: '0.75rem' }}>
+              Ideal Alignment Comparison
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1rem' }}>
+              Teal ghost line = ideal plumb. Your joint chain shows deviation from vertical.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {VIEWS.map((v, i) => (
+                <div key={v.key} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', aspectRatio: '16/9' }}>
+                  {frames[v.key] ? (
+                    <canvas
+                      ref={el => { if (el) compareCanvasRefs.current[v.key] = el; }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem' }}>No frame</span>
+                    </div>
+                  )}
+                  <div style={{ position: 'absolute', top: '8px', left: '8px', padding: '3px 8px', borderRadius: '20px', background: 'rgba(0,0,0,0.7)', border: `1px solid ${v.color}40`, color: v.color, fontSize: '0.65rem', fontFamily: "'Space Mono',monospace" }}>
+                    {i + 1}. {v.shortLabel}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
