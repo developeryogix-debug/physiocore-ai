@@ -16,9 +16,11 @@ import History from './pages/History.js';
 import Outcomes from './pages/Outcomes.js';
 import Settings from './pages/Settings.js';
 import Trainer from './pages/Trainer.js';
+import PostureAssessment from './pages/PostureAssessment.js';
 import OnboardingWizard from './components/OnboardingWizard.js';
 import Admin from './pages/Admin.js';
 import OrgDashboard from './pages/OrgDashboard.js';
+import Pricing from './pages/Pricing.js';
 
 function LoadingScreen() {
   return (
@@ -97,6 +99,7 @@ function AppContent() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
           <Route path="/signup" element={<SignupRedirect />} />
 
@@ -124,6 +127,7 @@ function AppContent() {
           <Route path="/outcomes"  element={<ProtectedRoute><Outcomes /></ProtectedRoute>} />
           <Route path="/settings"  element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/trainer"   element={<ProtectedRoute><Trainer /></ProtectedRoute>} />
+          <Route path="/posture"   element={<ProtectedRoute><PostureAssessment /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
         </Routes>

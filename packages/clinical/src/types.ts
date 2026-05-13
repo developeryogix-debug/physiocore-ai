@@ -15,6 +15,8 @@ export interface SpecialTest {
   sensitivity: number;
   specificity: number;
   citation: string;
+  /** Flag when pooled data are sparse or conflicting — review before clinical use */
+  needsReview?: true;
 }
 
 export interface ExerciseDefinition {
@@ -45,4 +47,47 @@ export type RedFlag =
   | 'meningitis'
   | 'acute_cardiac'
   | 'safeguarding'
-  | 'infection';
+  | 'infection'
+  | 'septic_arthritis'
+  | 'vascular_injury'
+  | 'brachial_neuritis';
+
+// ─── Phase 1a: Joint Assessment Database types ───────────────────────────────
+
+export interface ROMValue {
+  min: number;
+  max: number;
+  unit: 'degrees' | 'cm' | 'mm';
+  citation: string;
+  /** Flag when published normal ranges conflict — review before clinical use */
+  needsReview?: true;
+}
+
+export interface Pathology {
+  name: string;
+  icd10: string;
+  description: string;
+  commonPresentations: string[];
+}
+
+export interface CPTCode {
+  code: string;
+  description: string;
+  notes?: string;
+}
+
+export interface RedFlagDetail {
+  type: RedFlag;
+  description: string;
+  signsSymptoms: string[];
+  immediateAction: string;
+}
+
+export interface JointData {
+  joint: string;
+  normalROM: Record<string, ROMValue>;
+  specialTests: SpecialTest[];
+  commonPathologies: Pathology[];
+  redFlags: RedFlagDetail[];
+  cptCodes: CPTCode[];
+}
