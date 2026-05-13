@@ -55,7 +55,7 @@ export default function OrgDashboard() {
     e.preventDefault();
     if (!org || !user) return;
     setInviteSaving(true); setInviteStatus(null); setInviteLink(null);
-    const invite = await createInvite({ org_id: org.id, invited_by: user.id, email: inviteForm.email, role: 'clinician' });
+    const invite = await createInvite({ org_id: org.id, invited_by: user.id, email: inviteForm.email, role: 'clinician', token: crypto.randomUUID(), expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() });
     if (!invite) { setInviteStatus('Failed to create invite.'); setInviteSaving(false); return; }
     const link = getInviteLink(invite.token);
     setInviteLink(link);

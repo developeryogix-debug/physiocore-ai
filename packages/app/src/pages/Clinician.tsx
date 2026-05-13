@@ -111,7 +111,7 @@ export default function Clinician() {
     if (!user) return;
     setInviteSending(true);
     setInviteMsg('');
-    const invite = await createInvite({ org_id: orgId ?? '', invited_by: user.id, email: inviteEmail, role: 'patient' });
+    const invite = await createInvite({ org_id: orgId ?? '', invited_by: user.id, email: inviteEmail, role: 'patient', token: crypto.randomUUID(), expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() });
     if (!invite) { setInviteSending(false); setInviteMsg('Failed to create invite. Try again.'); return; }
     const link = getInviteLink(invite.token);
     await navigator.clipboard.writeText(link).catch(() => undefined);
