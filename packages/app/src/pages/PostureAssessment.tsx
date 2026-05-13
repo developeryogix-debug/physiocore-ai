@@ -107,25 +107,26 @@ function drawGridOverlay(canvas: HTMLCanvasElement, frame: CapturedFrame) {
     const lms = frame.landmarks;
 
     // ── Plumb line ─────────────────────────────────────────────────
-    // Deviation = how far shoulder & hip midpoints are from x=0.5
     let plumbDev = 0;
+    let sMidX = w / 2, hMidX = w / 2, sMidY = h * 0.3, hMidY = h * 0.6;
+
     if (lms) {
       const s11 = lms[11], s12 = lms[12], h23 = lms[23], h24 = lms[24];
       if (s11 && s12 && h23 && h24) {
         const sMid = (s11.x + s12.x) / 2;
         const hMid = (h23.x + h24.x) / 2;
-        const maxOff = Math.max(Math.abs(sMid - 0.5), Math.abs(hMid - 0.5));
-        // ~30° scale: 1% of frame width ≈ 0.3° at typical 2.5m distance
-        plumbDev = Math.round(maxOff * 30 * 10) / 10;
+        plumbDev = Math.round(Math.max(Math.abs(sMid - 0.5), Math.abs(hMid - 0.5)) * 30 * 10) / 10;
+        sMidX = (1 - sMid) * w;  hMidX = (1 - hMid) * w;
+        sMidY = ((s11.y + s12.y) / 2) * h;
+        hMidY = ((h23.y + h24.y) / 2) * h;
       }
     }
 
     ctx.save();
     ctx.strokeStyle = deviationColor(plumbDev);
-    ctx.lineWidth = 1.5; ctx.setLineDash([7, 5]); ctx.globalAlpha = 0.75;
+    ctx.lineWidth = 1.5; ctx.setLineDash([7, 5]); ctx.globalAlpha = 0.65;
     ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
     ctx.setLineDash([]);
-    // Label at top
     ctx.font = "bold 11px 'Space Mono', monospace";
     ctx.fillStyle = deviationColor(plumbDev);
     ctx.textAlign = 'center'; ctx.globalAlpha = 0.95;
@@ -134,11 +135,30 @@ function drawGridOverlay(canvas: HTMLCanvasElement, frame: CapturedFrame) {
 
     if (!lms) return;
 
+    // ── Spine midline (shoulder-mid → hip-mid, extrapolated) ────────
+    {
+      const spineOffPx = Math.abs(sMidX - hMidX);
+      const spineColor = deviationColor(Math.round((spineOffPx / w) * 30 * 10) / 10);
+      const dY = hMidY - sMidY;
+      const dX = hMidX - sMidX;
+      const slope = Math.abs(dY) > 1 ? dX / dY : 0;
+      const xAtTop = sMidX - sMidY * slope;
+      const xAtBot = sMidX + (h - sMidY) * slope;
+      ctx.save();
+      ctx.strokeStyle = spineColor; ctx.lineWidth = 2; ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.moveTo(xAtTop, 0); ctx.lineTo(xAtBot, h); ctx.stroke();
+      ctx.fillStyle = spineColor; ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.arc(sMidX, sMidY, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hMidX, hMidY, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
     // ── Horizontal reference lines ──────────────────────────────────
-    const hLines = [
+    const hLines: { name: string; li: number; ri: number }[] = [
       { name: 'SHOULDER', li: 11, ri: 12 },
       { name: 'HIP',      li: 23, ri: 24 },
       { name: 'KNEE',     li: 25, ri: 26 },
+      { name: 'ANKLE',    li: 27, ri: 28 },
     ];
 
     for (const hl of hLines) {
@@ -146,33 +166,44 @@ function drawGridOverlay(canvas: HTMLCanvasElement, frame: CapturedFrame) {
       if (!lm || !rm) continue;
       if ((lm.visibility ?? 1) < 0.25 || (rm.visibility ?? 1) < 0.25) continue;
 
-      // Mirror x (MediaPipe x=0 is left of original camera frame)
-      // After display mirror: patient's left (lms[11]) appears on screen-left
       const lxScr = (1 - lm.x) * w, lyScr = lm.y * h;
       const rxScr = (1 - rm.x) * w, ryScr = rm.y * h;
       const midX = (lxScr + rxScr) / 2, midY = (lyScr + ryScr) / 2;
       const dx = rxScr - lxScr, dy = ryScr - lyScr;
       const angleDeg = Math.abs(Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI);
       const color = deviationColor(angleDeg);
-
-      // Full-width line with tilt
       const slope = Math.abs(dx) > 1 ? dy / dx : 0;
-      const y0 = midY - midX * slope;
-      const yW = midY + (w - midX) * slope;
 
       ctx.save();
       ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.8;
-      ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(w, yW); ctx.stroke();
-
-      // Landmark dots
+      ctx.beginPath(); ctx.moveTo(0, midY - midX * slope); ctx.lineTo(w, midY + (w - midX) * slope); ctx.stroke();
       ctx.fillStyle = color; ctx.globalAlpha = 0.9;
       ctx.beginPath(); ctx.arc(lxScr, lyScr, 4, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(rxScr, ryScr, 4, 0, Math.PI * 2); ctx.fill();
-
-      // Label + angle (right-aligned)
       ctx.font = "bold 10px 'Space Mono', monospace";
       ctx.fillStyle = color; ctx.textAlign = 'right'; ctx.globalAlpha = 0.95;
       ctx.fillText(`${hl.name}  ${angleDeg.toFixed(1)}°`, w - 8, midY - 6);
+      ctx.restore();
+    }
+
+    // ── Head position (nose vs shoulder centre) ─────────────────────
+    const nose = lms[0], ls = lms[11], rs = lms[12];
+    if (nose && ls && rs && (nose.visibility ?? 1) > 0.3
+        && (ls.visibility ?? 1) > 0.3 && (rs.visibility ?? 1) > 0.3) {
+      const noseX = (1 - nose.x) * w, noseY = nose.y * h;
+      const shCX = ((1 - ls.x) * w + (1 - rs.x) * w) / 2;
+      const shCY = (ls.y * h + rs.y * h) / 2;
+      const headDeg = Math.round((Math.abs(noseX - shCX) / w) * 30 * 10) / 10;
+      const headColor = deviationColor(headDeg);
+      ctx.save();
+      ctx.strokeStyle = headColor; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(noseX, noseY); ctx.lineTo(shCX, shCY); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = headColor; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.arc(noseX, noseY, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.font = "bold 10px 'Space Mono', monospace";
+      ctx.fillStyle = headColor; ctx.textAlign = 'left'; ctx.globalAlpha = 0.95;
+      ctx.fillText(`HEAD  ${headDeg.toFixed(1)}°`, 8, noseY - 5);
       ctx.restore();
     }
   };
