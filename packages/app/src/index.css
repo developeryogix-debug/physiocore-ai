@@ -174,7 +174,7 @@ input, textarea, select { font-family: 'Figtree', inherit; }
   font-family: 'Figtree', sans-serif;
   font-weight: 600;
   padding: 0.75rem 1.75rem;
-  border-radius: 8px;
+  border-radius: 100px;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
@@ -199,7 +199,7 @@ input, textarea, select { font-family: 'Figtree', inherit; }
   color: var(--text-secondary);
   border: 1px solid var(--border-default);
   padding: 0.75rem 1.75rem;
-  border-radius: 8px;
+  border-radius: 6px;
   font-family: 'Figtree', sans-serif;
   font-weight: 500;
   transition: all 0.2s;

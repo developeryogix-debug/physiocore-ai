@@ -19,20 +19,20 @@ interface Landmarker {
 type StatusState = 'ready' | 'warn_body' | 'warn_proximity' | 'warn_velocity' | 'warn_lighting' | 'idle';
 interface SessionStatus { state: StatusState; message: string }
 const STATUS_UI: Record<StatusState, { bg: string; border: string; color: string; dot: string }> = {
-  ready:          { bg: '#dcfce7', border: '#86efac', color: '#15803d', dot: '#22c55e' },
-  warn_body:      { bg: '#fee2e2', border: '#fca5a5', color: '#dc2626', dot: '#ef4444' },
-  warn_proximity: { bg: '#fef9c3', border: '#fde047', color: '#92400e', dot: '#f59e0b' },
-  warn_velocity:  { bg: '#fee2e2', border: '#fca5a5', color: '#dc2626', dot: '#ef4444' },
+  ready:          { bg: 'rgba(0, 230, 118, 0.12)', border: '#86efac', color: '#00E676', dot: '#22c55e' },
+  warn_body:      { bg: 'rgba(239, 68, 68, 0.12)', border: '#fca5a5', color: '#FF4444', dot: '#ef4444' },
+  warn_proximity: { bg: 'rgba(245, 158, 11, 0.12)', border: '#fde047', color: '#FFB830', dot: '#f59e0b' },
+  warn_velocity:  { bg: 'rgba(239, 68, 68, 0.12)', border: '#fca5a5', color: '#FF4444', dot: '#ef4444' },
   warn_lighting:  { bg: '#fff7ed', border: '#fed7aa', color: '#c2410c', dot: '#f97316' },
-  idle:           { bg: '#fef9c3', border: '#fde047', color: '#92400e', dot: '#f59e0b' },
+  idle:           { bg: 'rgba(245, 158, 11, 0.12)', border: '#fde047', color: '#FFB830', dot: '#f59e0b' },
 };
 
 type ViewMode = 'front' | 'right' | 'left' | 'lost';
 const VIEW_BADGE: Record<ViewMode, { bg: string; border: string; color: string; dot: string; label: string }> = {
-  front: { bg: '#dcfce7', border: '#86efac', color: '#15803d', dot: '#22c55e', label: '● Front view' },
+  front: { bg: 'rgba(0, 230, 118, 0.12)', border: '#86efac', color: '#00E676', dot: '#22c55e', label: '● Front view' },
   right: { bg: '#dbeafe', border: '#93c5fd', color: '#1e40af', dot: '#3b82f6', label: '● Side view — right' },
   left:  { bg: '#dbeafe', border: '#93c5fd', color: '#1e40af', dot: '#3b82f6', label: '● Side view — left' },
-  lost:  { bg: '#fef9c3', border: '#fde047', color: '#92400e', dot: '#f59e0b', label: '● Repositioning...' },
+  lost:  { bg: 'rgba(245, 158, 11, 0.12)', border: '#fde047', color: '#FFB830', dot: '#f59e0b', label: '● Repositioning...' },
 };
 interface RepRecord { num: number; angle: number; score: number; duration: number; flag: 'good' | 'too_fast' | 'shallow' | 'invalid' }
 
@@ -840,8 +840,8 @@ export default function Session() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 48px' }}>
       <div style={{ marginBottom: 28 }}>
-        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Live Session</p>
-        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 0 }}>Exercise Session</h1>
+        <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.75rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Live Session</p>
+        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 0 }}>Exercise Session</h1>
       </div>
 
       {mode === 'idle' && (
@@ -869,7 +869,7 @@ export default function Session() {
               type="button"
               onClick={() => setShowFaq(true)}
               title="Session help"
-              style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--border-default)', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--border-default)', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             >?</button>
           </div>
           {exercise === 'lunge' && (
@@ -892,7 +892,7 @@ export default function Session() {
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', transform: 'scaleX(-1)' }}>
                 <div style={{ textAlign: 'center' as const }}>
                   <div style={{
-                    fontSize: countdown === 0 ? '3.5rem' : '6rem', fontWeight: 900, lineHeight: 1,
+                    fontSize: countdown === 0 ? '3.5rem' : '6rem', fontWeight: 600, lineHeight: 1,
                     color: countdown === 0 ? 'var(--teal-500)' : countdown <= 3 ? '#22c55e' : '#f59e0b',
                     textShadow: '0 4px 20px rgba(0,0,0,0.5)', transition: 'color 0.2s, font-size 0.15s',
                   }}>
@@ -913,7 +913,7 @@ export default function Session() {
                 style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer', transform: 'scaleX(-1)', zIndex: 5 }}
               >
                 <div style={{ fontSize: '2.4rem' }}>📱 ↔ 🧍</div>
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem', textAlign: 'center' as const }}>Stand 2–3 metres away</div>
+                <div style={{ color: '#fff', fontWeight: 600, fontSize: '1.05rem', textAlign: 'center' as const }}>Stand 2–3 metres away</div>
                 <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.82rem', textAlign: 'center' as const, maxWidth: 220, lineHeight: 1.5 }}>Full body (head to ankles) must be visible. Tap to dismiss.</div>
               </div>
             )}
@@ -922,7 +922,7 @@ export default function Session() {
               <>
                 <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '7px', background: stUi.bg, border: `1px solid ${stUi.border}`, borderRadius: '99px', padding: '5px 14px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
                   <span style={{ width: 9, height: 9, borderRadius: '50%', background: stUi.dot, display: 'inline-block', flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: stUi.color }}>{sessionStatus.message}</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: stUi.color }}>{sessionStatus.message}</span>
                 </div>
                 {isYogaMode && yogaCfgUI && (
                   <div style={{ position: 'absolute', top: 46, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', background: 'rgba(109,40,217,0.82)', color: '#f3e8ff', borderRadius: '99px', padding: '3px 14px', fontSize: '0.7rem', fontStyle: 'italic', fontWeight: 500 }}>
@@ -936,13 +936,13 @@ export default function Session() {
                 )}
                 {/* Lunge: forward-leg side indicator */}
                 {exercise === 'lunge' && lungeForwardSide && (
-                  <div style={{ position: 'absolute', top: 46, right: 10, transform: 'scaleX(-1)', background: 'rgba(0,212,170,0.88)', color: '#000', borderRadius: '99px', padding: '3px 12px', fontSize: '0.72rem', fontWeight: 700, fontFamily: "'Space Mono', monospace", whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', top: 46, right: 10, transform: 'scaleX(-1)', background: 'rgba(0,212,170,0.88)', color: '#000', borderRadius: '99px', padding: '3px 12px', fontSize: '0.75rem', fontWeight: 600, fontFamily: "'Space Mono', monospace", whiteSpace: 'nowrap' }}>
                     {lungeForwardSide === 'right' ? '→ Right' : '← Left'}
                   </div>
                 )}
                 <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', background: vb.bg, border: `1px solid ${vb.border}`, borderRadius: '99px', padding: '4px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: vb.dot, display: 'inline-block', flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: vb.color }}>{vb.label}</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: vb.color }}>{vb.label}</span>
                 </div>
               </>
             )}
@@ -951,18 +951,18 @@ export default function Session() {
           <div style={{ flex: '0 0 188px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {isYogaMode ? (
               <div className="metric-card" style={{ border: `1px solid ${holdComplete ? 'var(--success)' : 'rgba(167,139,250,0.3)'}`, textAlign: 'center' }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Hold Time</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 700, lineHeight: 1, color: holdComplete ? 'var(--success)' : '#a78bfa' }}>{holdTime}s</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Hold Time</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 600, lineHeight: 1, color: holdComplete ? 'var(--success)' : '#a78bfa' }}>{holdTime}s</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>Target {yogaCfgUI?.holdTarget ?? 30}s</div>
                 <div style={{ marginTop: '10px', height: 4, background: 'var(--bg-overlay)', borderRadius: 2 }}>
                   <div style={{ width: `${Math.min(100, (holdTime / (yogaCfgUI?.holdTarget ?? 30)) * 100)}%`, height: '100%', background: holdComplete ? 'var(--success)' : '#7c3aed', borderRadius: 2, transition: 'width 0.3s' }} />
                 </div>
-                {holdComplete && <div style={{ marginTop: '6px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--success)', fontFamily: "'Space Mono', monospace" }}>COMPLETE</div>}
+                {holdComplete && <div style={{ marginTop: '6px', fontSize: '0.7rem', fontWeight: 600, color: 'var(--success)', fontFamily: "'Space Mono', monospace" }}>COMPLETE</div>}
               </div>
             ) : isPlankMode ? (
               <div className="metric-card" style={{ border: `1px solid ${plankScore >= 80 ? 'rgba(0,230,118,0.3)' : plankScore >= 60 ? 'rgba(255,184,48,0.3)' : 'rgba(255,68,68,0.3)'}`, textAlign: 'center' }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Alignment</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 700, lineHeight: 1, color: plankScore >= 80 ? 'var(--success)' : plankScore >= 60 ? 'var(--warning)' : 'var(--danger)' }}>{plankScore}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Alignment</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 600, lineHeight: 1, color: plankScore >= 80 ? 'var(--success)' : plankScore >= 60 ? 'var(--warning)' : 'var(--danger)' }}>{plankScore}</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>/100 · {plankSeconds}s held</div>
                 <div style={{ marginTop: '10px', height: 4, background: 'var(--bg-overlay)', borderRadius: 2 }}>
                   <div style={{ width: `${plankScore}%`, height: '100%', background: plankScore >= 80 ? 'var(--success)' : plankScore >= 60 ? 'var(--warning)' : 'var(--danger)', borderRadius: 2, transition: 'width 0.5s' }} />
@@ -970,8 +970,8 @@ export default function Session() {
               </div>
             ) : isPilatesMode && pilateCfgUI ? (
               <div className="metric-card" style={{ border: '1px solid rgba(244,114,182,0.3)', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Reps</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: '#f472b6' }}>{repCount}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Reps</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 600, lineHeight: 1, color: '#f472b6' }}>{repCount}</div>
                 <div style={{ fontSize: '0.7rem', color: '#f472b6', marginTop: '4px' }}>Target: {pilateCfgUI.targetLabel}</div>
               </div>
             ) : (
@@ -982,14 +982,14 @@ export default function Session() {
                 background: repFlash ? 'rgba(34,197,94,0.08)' : 'var(--bg-elevated)',
                 transition: 'all 0.15s',
               }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' as const, color: repFlash ? '#22c55e' : isAtBottom ? 'var(--teal-500)' : 'var(--text-tertiary)', transition: 'color 0.15s' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace", textTransform: 'uppercase' as const, color: repFlash ? '#22c55e' : isAtBottom ? 'var(--teal-500)' : 'var(--text-tertiary)', transition: 'color 0.15s' }}>
                   {repFlash ? '✓ REP!' : isAtBottom ? 'HOLDING' : 'REPS'}
                 </div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 700, lineHeight: 1, color: repFlash ? '#22c55e' : isAtBottom ? 'var(--teal-500)' : 'var(--text-primary)', transition: 'color 0.15s' }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 600, lineHeight: 1, color: repFlash ? '#22c55e' : isAtBottom ? 'var(--teal-500)' : 'var(--text-primary)', transition: 'color 0.15s' }}>
                   {repCount}
                 </div>
                 {repFlash ? (
-                  <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#22c55e', fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>
+                  <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#22c55e', fontFamily: "'Space Mono', monospace", fontWeight: 600 }}>
                     ✓ Counted!
                   </div>
                 ) : isAtBottom ? (
@@ -997,17 +997,17 @@ export default function Session() {
                     {bottomHoldSecs}s ↑ rise to count
                   </div>
                 ) : (
-                  <div style={{ marginTop: '8px', fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                  <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                     Go down to start
                   </div>
                 )}
               </div>
             )}
             <div className="metric-card" style={{ border: `1px solid ${inRange ? 'rgba(0,230,118,0.3)' : 'rgba(255,68,68,0.3)'}`, textAlign: 'center' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>{cfg.label}</div>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '2.5rem', fontWeight: 700, lineHeight: 1, color: inRange ? 'var(--success)' : 'var(--danger)' }}>{liveAngle !== null ? `${liveAngle}°` : '—'}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>{cfg.label}</div>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '2.5rem', fontWeight: 600, lineHeight: 1, color: inRange ? 'var(--success)' : 'var(--danger)' }}>{liveAngle !== null ? `${liveAngle}°` : '—'}</div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '5px' }}>Target {cfg.targetRange[0]}°–{cfg.targetRange[1]}°</div>
-              <div style={{ marginTop: '8px', padding: '3px 8px', borderRadius: '4px', background: inRange ? 'rgba(0,230,118,0.1)' : 'rgba(255,68,68,0.1)', color: inRange ? 'var(--success)' : 'var(--danger)', fontSize: '0.68rem', fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>
+              <div style={{ marginTop: '8px', padding: '3px 8px', borderRadius: '4px', background: inRange ? 'rgba(0,230,118,0.1)' : 'rgba(255,68,68,0.1)', color: inRange ? 'var(--success)' : 'var(--danger)', fontSize: '0.75rem', fontWeight: 600, fontFamily: "'Space Mono', monospace" }}>
                 {liveAngle === null ? 'DETECTING' : inRange ? 'IN RANGE ✓' : 'ADJUST'}
               </div>
             </div>
@@ -1020,7 +1020,7 @@ export default function Session() {
               {isPlankMode && <div style={{ fontSize: '0.7rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Alignment scored/sec</div>}
             </div>
             {isRunning && (
-              <button onClick={() => { void stopSession(); }} style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(255,68,68,0.3)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s' }}>
+              <button onClick={() => { void stopSession(); }} style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(255,68,68,0.3)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s' }}>
                 Stop Session
               </button>
             )}
@@ -1032,8 +1032,8 @@ export default function Session() {
         <div style={{ marginTop: '36px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap' as const, gap: '12px' }}>
             <div>
-              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 4 }}>Session Complete</p>
-              <h2 className="font-display" style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Session Report</h2>
+              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.75rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 4 }}>Session Complete</p>
+              <h2 className="font-display" style={{ fontSize: 'var(--text-2xl)', fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>Session Report</h2>
             </div>
             {repRecords.length > 0 && (
               <button
@@ -1057,8 +1057,8 @@ export default function Session() {
                 ['Duration', fmtDur(sessionDuration)],
               ] as [string, string][]).map(([label, value]) => (
                 <div key={label} className="metric-card" style={{ textAlign: 'center' as const }}>
-                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: 'var(--teal-500)', lineHeight: 1, marginBottom: 6 }}>{value}</div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>{label}</div>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 600, color: 'var(--teal-500)', lineHeight: 1, marginBottom: 6 }}>{value}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>{label}</div>
                 </div>
               ))}
             </div>
@@ -1079,7 +1079,7 @@ export default function Session() {
                 )}
                 {data.formCorrections.map((c, i) => (
                   <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.84rem' }}>
-                    <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: '0.72rem', color: priorityColor(c.priority) }}>[{c.priority.toUpperCase()}]</span>{' '}
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 600, fontSize: '0.72rem', color: priorityColor(c.priority) }}>[{c.priority.toUpperCase()}]</span>{' '}
                     <strong style={{ color: 'var(--text-primary)' }}>{c.bodyPart.replace(/_/g,' ')}</strong>
                     <span style={{ color: 'var(--text-secondary)' }}>{' — '}{c.instruction}</span>
                   </div>
@@ -1107,7 +1107,7 @@ export default function Session() {
                       <td style={{ padding: '9px 14px', fontWeight: 600, fontFamily: "'Space Mono', monospace", fontSize: '0.78rem' }}>Rep {r.num}</td>
                       <td style={{ padding: '9px 14px', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)' }}>{r.angle}°</td>
                       <td style={{ padding: '9px 14px' }}>
-                        <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: r.score >= 80 ? 'var(--success)' : r.score >= 60 ? 'var(--warning)' : 'var(--danger)' }}>{r.score}</span>
+                        <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 600, color: r.score >= 80 ? 'var(--success)' : r.score >= 60 ? 'var(--warning)' : 'var(--danger)' }}>{r.score}</span>
                         <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>/100</span>
                       </td>
                       <td style={{ padding: '9px 14px', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)' }}>{r.duration}s</td>
@@ -1160,7 +1160,7 @@ export default function Session() {
             style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', maxWidth: 520, width: '100%', maxHeight: '80vh', overflowY: 'auto' as const, padding: '28px 24px' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Session Guide</h2>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>Session Guide</h2>
               <button type="button" onClick={() => setShowFaq(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: '1.2rem', lineHeight: 1 }}>✕</button>
             </div>
             {[
@@ -1171,7 +1171,7 @@ export default function Session() {
               { title: '📄 Your Report', body: 'After stopping a session, AI analyses your form. Each rep is scored 0–100. The PDF export includes rep-by-rep data in FHIR R4 format for your physiotherapist.' },
             ].map(({ title, body }) => (
               <div key={title} style={{ marginBottom: 18 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--teal-500)', marginBottom: 4 }}>{title}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--teal-500)', marginBottom: 4 }}>{title}</div>
                 <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{body}</div>
               </div>
             ))}

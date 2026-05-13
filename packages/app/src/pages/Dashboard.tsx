@@ -40,7 +40,7 @@ function HealthGauge({ score }: { score: number }) {
       <circle cx={60} cy={60} r={r} fill="none" stroke={c} strokeWidth={10}
         strokeDasharray={`${arc * (anim / 100)} ${circ - arc * (anim / 100)}`} strokeLinecap="round"
         transform="rotate(135 60 60)" style={{ transition: 'stroke-dasharray 1.2s ease-out' }} />
-      <text x={60} y={56} textAnchor="middle" fill={c} fontSize={24} fontWeight={700}
+      <text x={60} y={56} textAnchor="middle" fill={c} fontSize={24} fontWeight={600}
         fontFamily="Space Mono,monospace">{anim}</text>
       <text x={60} y={72} textAnchor="middle" fill="#8892A4" fontSize={9}
         fontFamily="Space Mono,monospace">HEALTH SCORE</text>
@@ -243,17 +243,17 @@ export default function Dashboard() {
   const daysSinceLast = lastSession ? Math.floor((Date.now()-new Date(lastSession.date).getTime())/86400000) : Infinity;
 
   const card: React.CSSProperties = {background:'var(--bg-surface)',border:'1px solid var(--border-subtle)',borderRadius:16,padding:20};
-  const pTitle: React.CSSProperties = {fontSize:'0.68rem',fontWeight:700,color:'var(--text-tertiary)',textTransform:'uppercase',letterSpacing:'0.1em',fontFamily:"'Space Mono', monospace",marginBottom:14};
+  const pTitle: React.CSSProperties = {fontSize:'0.75rem',fontWeight:600,color:'var(--text-tertiary)',textTransform:'uppercase',letterSpacing:'0.1em',fontFamily:"'Space Mono', monospace",marginBottom:14};
   const sil = '#1a2438';
 
   return (
     <div style={{maxWidth:1100,margin:'0 auto',padding:'100px 24px 48px'}}>
       {/* Header */}
       <div style={{marginBottom:32}}>
-        <p style={{fontFamily:"'Space Mono', monospace",fontSize:'0.68rem',color:'var(--teal-500)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:6}}>
+        <p style={{fontFamily:"'Space Mono', monospace",fontSize:'0.75rem',color:'var(--teal-500)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:6}}>
           {sessions.length===0?'Welcome':'Welcome back'}
         </p>
-        <h1 style={{fontFamily:"'Syne', sans-serif",fontSize:'var(--text-3xl)',fontWeight:700,letterSpacing:'-0.02em',marginBottom:4}}>{firstName}</h1>
+        <h1 style={{fontFamily:"'Syne', sans-serif",fontSize:'var(--text-3xl)',fontWeight:600,letterSpacing:'-0.02em',marginBottom:4}}>{firstName}</h1>
         <p style={{color:'var(--text-secondary)',fontSize:'0.85rem'}}>
           {userProfile.primaryGoal.replace(/_/g,' ')} · {userProfile.fitnessLevel} ·{' '}
           <span style={{color:'var(--teal-500)',fontFamily:"'Space Mono', monospace",fontSize:'0.75rem'}}>{(userProfile.subscription??'free').toUpperCase()}</span>
@@ -338,7 +338,7 @@ export default function Dashboard() {
                 {label:'Action',text:insight.action,color:'var(--warning)',bg:'rgba(255,184,48,0.07)'},
               ].map(s=>(
                 <div key={s.label} style={{background:s.bg,borderRadius:10,padding:'10px 12px',borderLeft:`3px solid ${s.color}`}}>
-                  <div style={{fontSize:'0.6rem',fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:4,fontFamily:"'Space Mono', monospace"}}>{s.label}</div>
+                  <div style={{fontSize:'0.75rem',fontWeight:600,color:s.color,textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:4,fontFamily:"'Space Mono', monospace"}}>{s.label}</div>
                   <div style={{fontSize:'0.78rem',color:'var(--text-primary)',lineHeight:1.5}}>{s.text}</div>
                 </div>
               ))}
@@ -358,15 +358,15 @@ export default function Dashboard() {
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:12}}>
           {bioCards.map(({key,meta,latest,rows,inRange})=>(
             <div key={key} style={{background:'var(--bg-elevated)',borderRadius:12,padding:'12px 14px',border:`1px solid ${!inRange&&latest?'rgba(239,68,68,0.3)':'var(--border-subtle)'}`}}>
-              <div style={{fontSize:'0.63rem',color:'var(--text-tertiary)',fontFamily:"'Space Mono', monospace",marginBottom:6,textTransform:'uppercase',letterSpacing:'0.08em'}}>{meta.label}</div>
+              <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)',fontFamily:"'Space Mono', monospace",marginBottom:6,textTransform:'uppercase',letterSpacing:'0.08em'}}>{meta.label}</div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <div>
-                  <span style={{fontFamily:"'Space Mono', monospace",fontSize:'1.25rem',fontWeight:700,color:!inRange&&latest?'#ef4444':meta.color}}>{latest?latest.value:'—'}</span>
-                  <span style={{fontSize:'0.65rem',color:'var(--text-tertiary)',marginLeft:4}}>{meta.unit}</span>
+                  <span style={{fontFamily:"'Space Mono', monospace",fontSize:'1.25rem',fontWeight:600,color:!inRange&&latest?'#ef4444':meta.color}}>{latest?latest.value:'—'}</span>
+                  <span style={{fontSize:'0.75rem',color:'var(--text-tertiary)',marginLeft:4}}>{meta.unit}</span>
                 </div>
                 <Sparkline data={rows} color={!inRange&&latest?'#ef4444':meta.color}/>
               </div>
-              <div style={{fontSize:'0.6rem',color:'var(--text-tertiary)',marginTop:4}}>
+              <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)',marginTop:4}}>
                 {meta.low}–{meta.high} {meta.unit}
                 {!inRange&&latest&&<span style={{color:'#ef4444',marginLeft:4}}>⚠ out of range</span>}
               </div>
@@ -384,7 +384,7 @@ export default function Dashboard() {
             <button onClick={()=>navigate('/history')} style={{fontSize:'0.72rem',color:'var(--teal-500)',background:'none',border:'none',cursor:'pointer',fontFamily:"'Space Mono', monospace"}}>View history →</button>
           </div>
           <MiniHeatmap sessions={sessions}/>
-          <div style={{display:'flex',gap:16,marginTop:10,fontSize:'0.63rem',color:'var(--text-tertiary)'}}>
+          <div style={{display:'flex',gap:16,marginTop:10,fontSize:'0.75rem',color:'var(--text-tertiary)'}}>
             {[['#003D30','<55'],['#006B53','55-70'],['#00A882','70-85'],['#00D4AA','≥85']].map(([c,l])=>(
               <div key={l} style={{display:'flex',alignItems:'center',gap:4}}>
                 <div style={{width:10,height:10,background:c,borderRadius:2}}/>{l}%
@@ -399,7 +399,7 @@ export default function Dashboard() {
           <RadarChart axes={['STR','FLEX','BAL','END','POST','REC']} vals={radarVals}/>
           <div style={{display:'flex',flexDirection:'column',gap:4,marginTop:6}}>
             {['Strength','Flexibility','Balance','Endurance','Posture','Recovery'].map((lbl,i)=>(
-              <div key={lbl} style={{display:'flex',justifyContent:'space-between',fontSize:'0.65rem'}}>
+              <div key={lbl} style={{display:'flex',justifyContent:'space-between',fontSize:'0.75rem'}}>
                 <span style={{color:'var(--text-tertiary)'}}>{lbl}</span>
                 <span style={{color:'var(--teal-500)',fontFamily:"'Space Mono', monospace"}}>{Math.round(radarVals[i]!*100)}%</span>
               </div>
@@ -458,22 +458,22 @@ export default function Dashboard() {
                 </div>
               )}
               <div>
-                <div style={{fontSize:'0.68rem',color:'var(--text-tertiary)',marginBottom:3,fontFamily:"'Space Mono', monospace",textTransform:'uppercase',letterSpacing:'0.06em'}}>Recommended exercise</div>
+                <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)',marginBottom:3,fontFamily:"'Space Mono', monospace",textTransform:'uppercase',letterSpacing:'0.06em'}}>Recommended exercise</div>
                 <div style={{fontWeight:600,fontSize:'0.95rem',textTransform:'capitalize'}}>{lastSession.exercise.replace(/_/g,' ')}</div>
               </div>
               <div>
-                <div style={{fontSize:'0.68rem',color:'var(--text-tertiary)',marginBottom:3,fontFamily:"'Space Mono', monospace",textTransform:'uppercase',letterSpacing:'0.06em'}}>Target</div>
+                <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)',marginBottom:3,fontFamily:"'Space Mono', monospace",textTransform:'uppercase',letterSpacing:'0.06em'}}>Target</div>
                 <div style={{fontFamily:"'Space Mono', monospace",fontSize:'0.9rem',color:'var(--teal-500)'}}>3 × {Math.max(8,lastSession.reps)} reps</div>
               </div>
               <div>
-                <div style={{fontSize:'0.68rem',color:'var(--text-tertiary)',marginBottom:3,fontFamily:"'Space Mono', monospace",textTransform:'uppercase',letterSpacing:'0.06em'}}>Focus cue</div>
+                <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)',marginBottom:3,fontFamily:"'Space Mono', monospace",textTransform:'uppercase',letterSpacing:'0.06em'}}>Focus cue</div>
                 <div style={{fontSize:'0.8rem',color:'var(--text-secondary)',fontStyle:'italic',lineHeight:1.5}}>
                   {lastSession.formScore>=85?'Maintain excellent form — increase load slightly.':
                    lastSession.formScore>=70?'Keep hips aligned and core engaged throughout.':
                    'Slow down the eccentric phase — control over reps.'}
                 </div>
               </div>
-              <div style={{fontSize:'0.68rem',color:'var(--text-tertiary)'}}>Last: {new Date(lastSession.date).toLocaleDateString()} · score {lastSession.formScore}%</div>
+              <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)'}}>Last: {new Date(lastSession.date).toLocaleDateString()} · score {lastSession.formScore}%</div>
               <button className="btn-primary" onClick={()=>navigate('/session')}>Start Session →</button>
             </div>
           )}
