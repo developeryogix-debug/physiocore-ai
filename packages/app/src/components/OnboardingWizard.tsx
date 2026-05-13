@@ -118,7 +118,7 @@ function Chip<T extends string>({value,label,selected,onToggle}:{value:T;label:s
       border:`1.5px solid ${on?'var(--teal-500)':'rgba(255,255,255,0.1)'}`,
       background:on?'rgba(0,212,170,0.12)':'rgba(255,255,255,0.03)',
       color:on?'var(--teal-500)':'var(--text-secondary)',
-      fontWeight:on?700:400,fontSize:'0.83rem',cursor:'pointer',
+      fontWeight:on?600:400,fontSize:'0.83rem',cursor:'pointer',
       transition:'all 0.15s',fontFamily:'inherit',
     }}>
       {label}
@@ -218,17 +218,17 @@ export default function OnboardingWizard() {
     boxShadow:'0 32px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(0,212,170,0.04)',
     maxHeight:'90vh',overflowY:'auto',
   };
-  const heading: React.CSSProperties = {fontSize:'1.35rem',fontWeight:800,color:'var(--text-primary)',marginBottom:4,fontFamily:"'Syne', sans-serif"};
+  const heading: React.CSSProperties = {fontSize:'1.35rem',fontWeight:600,color:'var(--text-primary)',marginBottom:4,fontFamily:"'Syne', sans-serif"};
   const sub: React.CSSProperties = {fontSize:'0.875rem',color:'var(--text-secondary)',marginBottom:24,lineHeight:1.6};
   const row: React.CSSProperties = {display:'flex',gap:12};
   const chips: React.CSSProperties = {display:'flex',flexWrap:'wrap',gap:8,marginBottom:8};
-  const sectionLabel: React.CSSProperties = {fontSize:'0.75rem',fontWeight:700,color:'var(--text-tertiary)',marginBottom:8,marginTop:18,textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:"'Space Mono', monospace"};
+  const sectionLabel: React.CSSProperties = {fontSize:'0.75rem',fontWeight:600,color:'var(--text-tertiary)',marginBottom:8,marginTop:18,textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:"'Space Mono', monospace"};
   const selectStyle: React.CSSProperties = {padding:'9px 12px',border:'1.5px solid rgba(255,255,255,0.1)',borderRadius:8,fontSize:'0.9rem',background:'#121B2E',color:'var(--text-primary)',fontFamily:'inherit',cursor:'pointer'};
   const goalOn = (on:boolean): React.CSSProperties => ({
     textAlign:'left',padding:'14px 18px',borderRadius:12,
     border:`2px solid ${on?'var(--teal-500)':'rgba(255,255,255,0.08)'}`,
     background:on?'rgba(0,212,170,0.1)':'rgba(255,255,255,0.02)',
-    cursor:'pointer',fontWeight:on?700:400,fontSize:'0.93rem',
+    cursor:'pointer',fontWeight:on?600:400,fontSize:'0.93rem',
     color:on?'var(--teal-500)':'var(--text-secondary)',fontFamily:'inherit',transition:'all 0.15s',
   });
   const fitnessOn = (on:boolean): React.CSSProperties => ({
@@ -247,7 +247,7 @@ export default function OnboardingWizard() {
             <div key={i} style={{display:'flex',alignItems:'center',flex:i<STEPS.length-1?1:'unset',gap:8}}>
               <div title={label} style={{
                 width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
-                fontSize:'0.72rem',fontWeight:700,flexShrink:0,
+                fontSize:'0.72rem',fontWeight:600,flexShrink:0,
                 background: i<step?'var(--teal-500)':i===step?'rgba(0,212,170,0.15)':'rgba(255,255,255,0.05)',
                 color: i<step?'#000':i===step?'var(--teal-500)':'var(--text-tertiary)',
                 border: i===step?'2px solid var(--teal-500)': i<step?'2px solid var(--teal-500)':'2px solid transparent',
@@ -290,7 +290,7 @@ export default function OnboardingWizard() {
               </div>
               {(d.heightCm||d.weightKg)&&(
                 <div style={{background:'rgba(0,212,170,0.08)',border:'1px solid rgba(0,212,170,0.2)',borderRadius:10,padding:'10px 16px',display:'flex',alignItems:'center',gap:12}}>
-                  <span style={{fontFamily:"'Space Mono', monospace",fontSize:'1.5rem',fontWeight:800,color:'var(--teal-500)'}}>{bmi(d.heightCm,d.weightKg)}</span>
+                  <span style={{fontFamily:"'Space Mono', monospace",fontSize:'1.5rem',fontWeight:600,color:'var(--teal-500)'}}>{bmi(d.heightCm,d.weightKg)}</span>
                   <span style={{fontSize:'0.8rem',color:'var(--text-secondary)'}}>BMI (auto-calculated)</span>
                 </div>
               )}
@@ -339,7 +339,7 @@ export default function OnboardingWizard() {
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:4}}>
               {FITNESS.map(f=>(
                 <button key={f.value} type="button" onClick={()=>set('fitnessLevel',f.value)} style={fitnessOn(d.fitnessLevel===f.value)}>
-                  <div style={{fontWeight:700,fontSize:'0.9rem',color:d.fitnessLevel===f.value?'var(--teal-500)':'var(--text-primary)'}}>{f.label}</div>
+                  <div style={{fontWeight:600,fontSize:'0.9rem',color:d.fitnessLevel===f.value?'var(--teal-500)':'var(--text-primary)'}}>{f.label}</div>
                   <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)',marginTop:2}}>{f.desc}</div>
                 </button>
               ))}
@@ -411,7 +411,7 @@ export default function OnboardingWizard() {
               padding:'11px 28px',borderRadius:10,
               background:canNext?'var(--teal-500)':'rgba(255,255,255,0.08)',
               color:canNext?'#000':'var(--text-tertiary)',
-              border:'none',fontWeight:700,fontSize:'0.9rem',
+              border:'none',fontWeight:600,fontSize:'0.9rem',
               cursor:canNext?'pointer':'not-allowed',fontFamily:'inherit',
               boxShadow:canNext?'0 4px 20px rgba(0,212,170,0.3)':'none',
               transition:'all 0.2s',
@@ -422,7 +422,7 @@ export default function OnboardingWizard() {
             <button type="button" onClick={finish} style={{
               padding:'11px 28px',borderRadius:10,
               background:'linear-gradient(135deg, var(--teal-500), var(--blue-400))',
-              color:'#000',border:'none',fontWeight:700,fontSize:'0.95rem',
+              color:'#000',border:'none',fontWeight:600,fontSize:'0.95rem',
               cursor:'pointer',fontFamily:'inherit',
               boxShadow:'0 4px 24px rgba(0,212,170,0.35)',
             }}>

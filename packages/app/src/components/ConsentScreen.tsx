@@ -64,7 +64,7 @@ export default function ConsentScreen() {
             </svg>
           </div>
           <h1 style={{
-            fontFamily: "'Syne', sans-serif", fontWeight: 800,
+            fontFamily: "'Syne', sans-serif", fontWeight: 600,
             fontSize: '1.5rem', color: 'var(--text-primary)',
             letterSpacing: '-0.02em', marginBottom: '8px',
           }}>

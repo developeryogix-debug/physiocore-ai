@@ -112,12 +112,12 @@ export default function Login() {
               background: 'linear-gradient(135deg, var(--teal-500), var(--blue-400))',
               borderRadius: '10px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1rem', fontWeight: 700, color: '#000',
+              fontSize: '1rem', fontWeight: 600, color: '#000',
               fontFamily: "'Syne', sans-serif",
             }}>P</div>
             <span style={{
               fontFamily: "'Syne', sans-serif",
-              fontWeight: 800,
+              fontWeight: 600,
               fontSize: '1.25rem',
               color: 'var(--text-primary)',
               letterSpacing: '-0.02em',
@@ -285,7 +285,7 @@ export default function Login() {
           ) : (
             /* Magic link mode */
             <>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '1.1rem', marginBottom: '6px', color: 'var(--text-primary)' }}>
+              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: '1.1rem', marginBottom: '6px', color: 'var(--text-primary)' }}>
                 Passwordless Login
               </h2>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.82rem', marginBottom: '24px' }}>

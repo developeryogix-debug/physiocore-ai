@@ -124,7 +124,7 @@ function BodyMap({ conditions }: { conditions: string[] }) {
       {zones.flatMap((row, ri) => row.map((z, ci) =>
         z ? (
           <div key={`${ri}-${ci}`} title={z}
-            style={{ padding: '2px 6px', borderRadius: 4, fontSize: '0.62rem', fontWeight: active.has(z) ? 700 : 400,
+            style={{ padding: '2px 6px', borderRadius: 4, fontSize: '0.62rem', fontWeight: active.has(z) ? 600 : 400,
               background: active.has(z) ? '#fee2e2' : '#f1f5f9',
               color: active.has(z) ? '#b91c1c' : '#94a3b8',
               border: `1px solid ${active.has(z) ? '#fca5a5' : '#e2e8f0'}`,
@@ -267,7 +267,7 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
           { l: 'Avg Form', v: `${avg}/100` }, { l: 'Adherence', v: `${p.adherencePct}%` },
         ].map(s => (
           <div key={s.l} style={{ background: '#fff', borderRadius: 10, padding: '10px 14px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
-            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#334155' }}>{s.v}</div>
+            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155' }}>{s.v}</div>
             <div style={{ ...muted, fontSize: '0.68rem' }}>{s.l}</div>
           </div>
         ))}
@@ -324,7 +324,7 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
                   <td style={{ padding: '6px 10px' }}>{s.exercise}</td>
                   <td style={{ padding: '6px 10px' }}>{s.reps || '—'}</td>
                   <td style={{ padding: '6px 10px' }}>
-                    <span style={{ fontWeight: 700, color: s.formScore >= 80 ? '#15803d' : s.formScore >= 65 ? '#92400e' : '#b91c1c' }}>{s.formScore}</span>
+                    <span style={{ fontWeight: 600, color: s.formScore >= 80 ? '#15803d' : s.formScore >= 65 ? '#92400e' : '#b91c1c' }}>{s.formScore}</span>
                   </td>
                   <td style={{ padding: '6px 10px', color: '#64748b' }}>{s.peakAngle != null ? `${s.peakAngle}°` : '—'}</td>
                   <td style={{ padding: '6px 10px', color: '#64748b' }}>{s.durationMin} min</td>
@@ -343,7 +343,7 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
         <button onClick={() => setShowAI(v => !v)}
           style={{ width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#0f172a' }}>🔍 Why is this patient rated <span style={{ ...rc, borderRadius: 99, padding: '1px 8px', fontSize: '0.72rem' }}>{riskLvl} risk</span>?</span>
+            <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#0f172a' }}>🔍 Why is this patient rated <span style={{ ...rc, borderRadius: 99, padding: '1px 8px', fontSize: '0.72rem' }}>{riskLvl} risk</span>?</span>
           </div>
           <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{showAI ? '▲' : '▼'}</span>
         </button>
@@ -357,7 +357,7 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <span style={{ fontSize: '0.68rem', background: '#f1f5f9', borderRadius: 4, padding: '1px 6px', color: '#64748b' }}>Evidence {f.evidence}</span>
                     <span style={{ fontSize: '0.72rem', color: '#64748b' }}>×{f.weight}</span>
-                    <span style={{ fontWeight: 700, fontSize: '0.78rem', color: f.score >= 0.7 ? '#15803d' : f.score >= 0.4 ? '#92400e' : '#b91c1c' }}>{Math.round(f.score * 100)}%</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.78rem', color: f.score >= 0.7 ? '#15803d' : f.score >= 0.4 ? '#92400e' : '#b91c1c' }}>{Math.round(f.score * 100)}%</span>
                   </div>
                 </div>
                 <div style={{ height: 5, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
@@ -398,24 +398,24 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
       {/* SOAP note */}
       {soap && (
         <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 10, padding: '16px 20px', marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0369a1', marginBottom: 12 }}>
+          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0369a1', marginBottom: 12 }}>
             Clinical Progress Note — {p.name} · {new Date().toLocaleDateString()}
           </div>
           {(['S — Subjective', 'O — Objective', 'A — Assessment', 'P — Plan'] as const).map((label, i) => {
             const val = [soap.subjective, soap.objective, soap.assessment, soap.plan][i]!;
             return (
               <div key={label} style={{ marginBottom: 10 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.72rem', color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.72rem', color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{label}</div>
                 <div style={{ fontSize: '0.83rem', color: '#334155', lineHeight: 1.6 }}>{val}</div>
               </div>
             );
           })}
           <div style={{ borderTop: '1px solid #bae6fd', paddingTop: 10, marginTop: 4, marginBottom: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: '0.72rem', color: '#0369a1', marginBottom: 6 }}>CPT CODES</div>
+            <div style={{ fontWeight: 600, fontSize: '0.72rem', color: '#0369a1', marginBottom: 6 }}>CPT CODES</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {soap.cptCodes.map((code, i) => (
                 <div key={code} style={{ background: '#fff', border: '1px solid #bae6fd', borderRadius: 7, padding: '5px 10px', fontSize: '0.75rem' }}>
-                  <span style={{ fontWeight: 700, color: '#0369a1' }}>{code}</span>{' '}
+                  <span style={{ fontWeight: 600, color: '#0369a1' }}>{code}</span>{' '}
                   <span style={{ color: '#64748b' }}>{soap.cptDescriptions[i] ?? CPT_DESCRIPTIONS[code] ?? ''}</span>
                 </div>
               ))}
@@ -428,13 +428,13 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
       {/* HEP */}
       {hep && (
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '16px 20px' }}>
-          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#15803d', marginBottom: 12 }}>
+          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#15803d', marginBottom: 12 }}>
             🏠 Home Exercise Program — {p.name}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
             {hep.map((e, i) => (
               <div key={i} style={{ background: '#fff', borderRadius: 8, padding: '10px 14px', border: '1px solid #bbf7d0' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', marginBottom: 2 }}>{i + 1}. {e.name}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0f172a', marginBottom: 2 }}>{i + 1}. {e.name}</div>
                 <div style={{ fontSize: '0.78rem', color: '#475569', marginBottom: 4 }}>{e.description}</div>
                 <div style={{ display: 'flex', gap: 10, fontSize: '0.72rem', color: '#64748b', flexWrap: 'wrap' }}>
                   <span>📊 {e.sets} sets × {e.reps}</span>

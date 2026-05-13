@@ -233,7 +233,7 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
         <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="live-dot" />
-            <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '0.9rem' }}>PhysioCore AI Trainer</span>
+            <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '0.9rem' }}>PhysioCore AI Trainer</span>
             <span style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.6rem', color: 'var(--teal-500)', letterSpacing: '0.06em' }}>APAM · RYT-500 · CSCS · ISSN</span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -246,7 +246,7 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {messages.length === 0 && (
             <div style={{ margin: 'auto', textAlign: 'center', maxWidth: 560 }}>
-              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '1.2rem', fontWeight: 700, marginBottom: 8 }}>What can I help you with?</div>
+              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '1.2rem', fontWeight: 600, marginBottom: 8 }}>What can I help you with?</div>
               <p style={{ color: 'var(--text-tertiary)', fontSize: '0.82rem', marginBottom: 24 }}>Your expert physiotherapist, yoga teacher, strength coach, and nutritionist — all in one.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {QUICK_CHIPS.map(q => (
@@ -315,7 +315,7 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
               console.log('[Trainer] send button mousedown, text:', JSON.stringify(text));
               void sendRef.current(text);
             }}
-            style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: streaming ? 'rgba(255,68,68,0.2)' : (!input.trim() ? 'var(--bg-overlay)' : 'var(--teal-500)'), color: streaming ? 'var(--danger)' : (!input.trim() ? 'var(--text-tertiary)' : '#000'), cursor: !input.trim() && !streaming ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700, transition: 'all 0.15s', pointerEvents: 'auto' as const }}>
+            style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: streaming ? 'rgba(255,68,68,0.2)' : (!input.trim() ? 'var(--bg-overlay)' : 'var(--teal-500)'), color: streaming ? 'var(--danger)' : (!input.trim() ? 'var(--text-tertiary)' : '#000'), cursor: !input.trim() && !streaming ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 600, transition: 'all 0.15s', pointerEvents: 'auto' as const }}>
             {streaming ? '⏹' : '↑'}
           </button>
         </div>

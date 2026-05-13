@@ -233,7 +233,7 @@ function DonutChart({ protein, carbs, fat }: { protein: number; carbs: number; f
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--blue-400)" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...cA} />
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--amber-400)" strokeWidth={16} strokeLinecap="butt" transform="rotate(-90 70 70)" {...fA} />
         <text x={cx} y={cy - 6} textAnchor="middle" fontSize={10} fill="var(--text-tertiary)" fontFamily="Space Mono, monospace">KCAL</text>
-        <text x={cx} y={cy + 10} textAnchor="middle" fontSize={13} fontWeight="700" fill="var(--text-primary)" fontFamily="Space Mono, monospace">{total}</text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fontSize={13} fontWeight="600" fill="var(--text-primary)" fontFamily="Space Mono, monospace">{total}</text>
       </svg>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {[
@@ -244,7 +244,7 @@ function DonutChart({ protein, carbs, fat }: { protein: number; carbs: number; f
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem' }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
             <span style={{ color: 'var(--text-secondary)', minWidth: 52 }}>{label}</span>
-            <span style={{ fontWeight: 700, fontFamily: "'Space Mono', monospace", color: 'var(--text-primary)' }}>{g}g</span>
+            <span style={{ fontWeight: 600, fontFamily: "'Space Mono', monospace", color: 'var(--text-primary)' }}>{g}g</span>
             <span style={{ color: 'var(--text-tertiary)', fontFamily: "'Space Mono', monospace", fontSize: '0.72rem' }}>{kcal}kcal · {Math.round(pct * 100)}%</span>
           </div>
         ))}
@@ -256,7 +256,7 @@ function DonutChart({ protein, carbs, fat }: { protein: number; carbs: number; f
 function GradeBadge({ grade }: { grade: EvidenceGrade }) {
   const m = GRADE_META[grade];
   return (
-    <span style={{ background: m.bg, color: m.color, borderRadius: 4, padding: '2px 7px', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.03em' }}>
+    <span style={{ background: m.bg, color: m.color, borderRadius: 4, padding: '2px 7px', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.03em' }}>
       {m.label}
     </span>
   );
@@ -265,10 +265,10 @@ function GradeBadge({ grade }: { grade: EvidenceGrade }) {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const page: React.CSSProperties = { maxWidth: 1000, margin: '0 auto', padding: '100px 24px 48px' };
-const h1: React.CSSProperties = { fontFamily: "'Syne', sans-serif", fontSize: 'var(--text-3xl)', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 };
+const h1: React.CSSProperties = { fontFamily: "'Syne', sans-serif", fontSize: 'var(--text-3xl)', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 4 };
 const muted: React.CSSProperties = { color: 'var(--text-secondary)', fontSize: '0.82rem' };
 const card: React.CSSProperties = { background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 16, padding: '20px 24px', marginBottom: 20 };
-const sectionH: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontFamily: "'Space Mono', monospace" };
+const sectionH: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontFamily: "'Space Mono', monospace" };
 const btn: React.CSSProperties = { padding: '8px 18px', borderRadius: 8, background: 'var(--teal-500)', color: '#000', border: 'none', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' };
 const btnSm: React.CSSProperties = { padding: '5px 12px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--bg-elevated)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 500, color: 'var(--text-secondary)' };
 const tag: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 99, fontSize: '0.72rem', fontWeight: 600, fontFamily: "'Space Mono', monospace" };
@@ -495,27 +495,27 @@ export default function Nutrition() {
 
         <div style={{ ...row, marginBottom: 20 }}>
           <div style={statBlock}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--teal-500)' }}>{targetKcal}</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 600, color: 'var(--teal-500)' }}>{targetKcal}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Daily kcal target</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--teal-400)' }}>{proteinG}g</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 600, color: 'var(--teal-400)' }}>{proteinG}g</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Protein ({proteinPerKg}g/kg)</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--blue-400)' }}>{carbG}g</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 600, color: 'var(--blue-400)' }}>{carbG}g</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Carbohydrates</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--amber-400)' }}>{fatG}g</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 600, color: 'var(--amber-400)' }}>{fatG}g</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Fat</div>
           </div>
           <div style={statBlock}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--info)' }}>{hydrationMl}</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.5rem', fontWeight: 600, color: 'var(--info)' }}>{hydrationMl}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Hydration (ml/day)</div>
           </div>
           <div style={{ ...statBlock, border: '1px solid var(--border-teal)', background: 'var(--teal-dim)' }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal-500)' }}>{hydrationMl} + 500</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.9rem', fontWeight: 600, color: 'var(--teal-500)' }}>{hydrationMl} + 500</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: 4 }}>35ml/kg + 500ml/session</div>
           </div>
         </div>
@@ -576,7 +576,7 @@ export default function Nutrition() {
               <tbody>
                 {mealPlan.map((d, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#334155' }}>{d.day}</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 600, color: '#334155' }}>{d.day}</td>
                     <td style={{ padding: '8px 10px' }}>{d.breakfast}</td>
                     <td style={{ padding: '8px 10px' }}>{d.lunch}</td>
                     <td style={{ padding: '8px 10px' }}>{d.dinner}</td>
@@ -638,7 +638,7 @@ export default function Nutrition() {
                     background: inStack ? 'var(--teal-500)' : 'var(--bg-overlay)',
                     color: inStack ? '#000' : 'var(--text-secondary)',
                     border: inStack ? 'none' : '1px solid var(--border-default)',
-                    fontWeight: inStack ? 700 : 500,
+                    fontWeight: inStack ? 600 : 500,
                   }}
                   onClick={() => { toggleStack(s); }}
                 >
@@ -714,18 +714,18 @@ export default function Nutrition() {
 
             <div style={{ ...row, marginBottom: 16 }}>
               <div style={statBlock}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: 'var(--teal-500)' }}>{stack.length}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 600, color: 'var(--teal-500)' }}>{stack.length}</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Supplements</div>
               </div>
               <div style={statBlock}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: 'var(--success)' }}>~${stackCost}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '1.4rem', fontWeight: 600, color: 'var(--success)' }}>~${stackCost}</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>Est. monthly cost</div>
               </div>
             </div>
 
             {stackInteractions.length > 0 && (
               <div style={{ background: 'rgba(255,184,48,0.08)', border: '1px solid rgba(255,184,48,0.2)', borderRadius: 8, padding: '12px 16px' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--warning)', marginBottom: 6 }}>⚠ Interaction Warnings</div>
+                <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--warning)', marginBottom: 6 }}>⚠ Interaction Warnings</div>
                 {stackInteractions.map((w, i) => (
                   <div key={i} style={{ fontSize: '0.78rem', color: 'var(--warning)', marginBottom: 4, opacity: 0.85 }}>• {w}</div>
                 ))}

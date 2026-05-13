@@ -85,7 +85,7 @@ export default function Navigation() {
           border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50px',
           boxShadow:'0 8px 32px rgba(0,0,0,0.5)',
         }}>
-          <NavLink to="/dashboard" style={{fontFamily:"'Syne', sans-serif",fontWeight:700,fontSize:'0.88rem',color:'var(--teal-500)',textDecoration:'none',letterSpacing:'-0.01em'}}>
+          <NavLink to="/dashboard" style={{fontFamily:"'Syne', sans-serif",fontWeight:600,fontSize:'0.88rem',color:'var(--teal-500)',textDecoration:'none',letterSpacing:'-0.01em'}}>
             PhysioCore
           </NavLink>
           {user && (
@@ -94,7 +94,7 @@ export default function Navigation() {
                 width:30,height:30,borderRadius:'50%',
                 background:'linear-gradient(135deg,var(--teal-500),var(--blue-400))',
                 border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
-                fontSize:'0.65rem',fontWeight:700,color:'#000',fontFamily:"'Space Mono', monospace",
+                fontSize:'0.65rem',fontWeight:600,color:'#000',fontFamily:"'Space Mono', monospace",
               }}>
                 {initials||'?'}
               </button>
@@ -127,7 +127,7 @@ export default function Navigation() {
                     {isActive&&<div style={{position:'absolute',inset:-4,borderRadius:'50%',background:'rgba(0,212,170,0.12)'}}/>}
                     <div style={{position:'relative'}}><Icon/></div>
                   </div>
-                  <span style={{fontSize:'0.62rem',fontWeight:isActive?700:400,fontFamily:"'Space Mono', monospace",letterSpacing:'0.02em'}}>{label}</span>
+                  <span style={{fontSize:'0.62rem',fontWeight:isActive?600:400,fontFamily:"'Space Mono', monospace",letterSpacing:'0.02em'}}>{label}</span>
                 </>
               )}
             </NavLink>
@@ -150,7 +150,7 @@ export default function Navigation() {
     }}>
       {/* Brand */}
       <NavLink to="/dashboard" style={{
-        fontFamily:"'Syne', sans-serif",fontWeight:700,fontSize:'0.85rem',
+        fontFamily:"'Syne', sans-serif",fontWeight:600,fontSize:'0.85rem',
         color:'var(--teal-500)',letterSpacing:'-0.01em',textDecoration:'none',
         padding:'5px 14px',marginRight:'4px',
       }}>
@@ -224,7 +224,7 @@ export default function Navigation() {
             width:30,height:30,borderRadius:'50%',
             background:'linear-gradient(135deg,var(--teal-500),var(--blue-400))',
             border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
-            fontSize:'0.65rem',fontWeight:700,color:'#000',fontFamily:"'Space Mono', monospace",
+            fontSize:'0.65rem',fontWeight:600,color:'#000',fontFamily:"'Space Mono', monospace",
             flexShrink:0,transition:'opacity 0.15s',opacity:menuOpen?0.85:1,
           }}>
             {initials||'?'}
@@ -242,7 +242,7 @@ export default function Navigation() {
                 <div style={{fontSize:'0.72rem',color:'var(--text-tertiary)',fontFamily:"'Space Mono', monospace"}}>{user.email}</div>
                 <div style={{
                   display:'inline-block',marginTop:'6px',padding:'2px 8px',borderRadius:'20px',
-                  fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',
+                  fontSize:'0.65rem',fontWeight:600,textTransform:'uppercase' as const,letterSpacing:'0.06em',
                   background:userRole==='admin'?'rgba(255,184,48,0.15)':userRole==='clinician'?'rgba(77,184,255,0.15)':userRole==='org_admin'?'rgba(139,92,246,0.15)':'rgba(0,212,170,0.1)',
                   color:userRole==='admin'?'#f59e0b':userRole==='clinician'?'var(--blue-400)':userRole==='org_admin'?'#a78bfa':'var(--teal-500)',
                   border:`1px solid ${userRole==='admin'?'rgba(255,184,48,0.25)':userRole==='clinician'?'rgba(77,184,255,0.25)':userRole==='org_admin'?'rgba(139,92,246,0.25)':'var(--border-teal)'}`,

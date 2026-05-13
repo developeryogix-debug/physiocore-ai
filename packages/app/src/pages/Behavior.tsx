@@ -92,9 +92,9 @@ function ChurnGauge({ score }: { score: number }) {
             fill="none" stroke={color} strokeWidth={12} strokeLinecap="round"
           />
         )}
-        <text x={cx} y={cy - 4} textAnchor="middle" fontSize={22} fontWeight="800" fill={color}>{Math.round(pct * 100)}</text>
+        <text x={cx} y={cy - 4} textAnchor="middle" fontSize={22} fontWeight="600" fill={color}>{Math.round(pct * 100)}</text>
         <text x={cx} y={cy + 14} textAnchor="middle" fontSize={10} fill="#64748b">/100 risk</text>
-        <text x={cx} y={cy + 32} textAnchor="middle" fontSize={11} fontWeight="700" fill={color}>{level}</text>
+        <text x={cx} y={cy + 32} textAnchor="middle" fontSize={11} fontWeight="600" fill={color}>{level}</text>
       </svg>
     </div>
   );
@@ -128,10 +128,10 @@ function StreakCalendar({ presence }: { presence: boolean[] }) {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const page: React.CSSProperties = { maxWidth: 960, margin: '0 auto', padding: '100px 24px 48px' };
-const h1: React.CSSProperties = { fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 };
+const h1: React.CSSProperties = { fontSize: '1.75rem', fontWeight: 600, marginBottom: 4 };
 const muted: React.CSSProperties = { color: '#64748b', fontSize: '0.875rem' };
 const card: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '20px 24px', marginBottom: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' };
-const sectionH: React.CSSProperties = { fontSize: '1rem', fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 };
+const sectionH: React.CSSProperties = { fontSize: '1rem', fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 };
 const statBlock: React.CSSProperties = { background: '#f8fafc', borderRadius: 10, padding: '12px 16px', textAlign: 'center' };
 const badge: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '12px 16px', fontWeight: 600, fontSize: '0.85rem' };
 const habitRow: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 };
@@ -241,7 +241,7 @@ export default function Behavior() {
           { label: 'Motivation style', value: profile.motivationStyle, color: '#7c3aed' },
         ].map(s => (
           <div key={s.label} style={statBlock}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.color, textTransform: 'capitalize' as const }}>{s.value}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 600, color: s.color, textTransform: 'capitalize' as const }}>{s.value}</div>
             <div style={{ ...muted, fontSize: '0.72rem' }}>{s.label}</div>
           </div>
         ))}
@@ -286,11 +286,11 @@ export default function Behavior() {
           <StreakCalendar presence={presence} />
           <div style={{ marginTop: 14, display: 'flex', gap: 16 }}>
             <div style={statBlock}>
-              <div style={{ fontWeight: 800, fontSize: '1.3rem', color: '#6366f1' }}>{profile.streakDays}</div>
+              <div style={{ fontWeight: 600, fontSize: '1.3rem', color: '#6366f1' }}>{profile.streakDays}</div>
               <div style={{ ...muted, fontSize: '0.72rem' }}>current streak (days)</div>
             </div>
             <div style={statBlock}>
-              <div style={{ fontWeight: 800, fontSize: '1.3rem', color: '#22c55e' }}>{presence.filter(Boolean).length}</div>
+              <div style={{ fontWeight: 600, fontSize: '1.3rem', color: '#22c55e' }}>{presence.filter(Boolean).length}</div>
               <div style={{ ...muted, fontSize: '0.72rem' }}>sessions last 30 days</div>
             </div>
           </div>
@@ -300,7 +300,7 @@ export default function Behavior() {
       {/* Progressive difficulty alert */}
       {suggestUpgrade && (
         <div style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', border: '1px solid #86efac', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, color: '#15803d', marginBottom: 6 }}>🚀 Ready to level up?</div>
+          <div style={{ fontWeight: 600, color: '#15803d', marginBottom: 6 }}>🚀 Ready to level up?</div>
           <div style={{ fontSize: '0.875rem', color: '#166534' }}>
             Your last 3 sessions average a strong form score. PhysioCore AI recommends progressing to a more challenging variation — try adding load, increasing reps to 15, or advancing to a split squat / Romanian deadlift. Start your next session to unlock the next level.
           </div>
@@ -315,7 +315,7 @@ export default function Behavior() {
             const colors = interventionTypeColors[iv.type] ?? { bg: '#f8fafc', color: '#475569' };
             return (
               <div key={i} style={{ ...colors, borderRadius: 10, padding: '12px 16px', marginBottom: 10 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4 }}>
                   P{iv.priority} · {iv.type.replace(/_/g, ' ')}
                 </div>
                 <div style={{ fontSize: '0.875rem' }}>{iv.message}</div>
@@ -325,7 +325,7 @@ export default function Behavior() {
 
           {/* AI re-engagement message */}
           <div style={{ marginTop: 14, background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '14px 18px' }}>
-            <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#7c3aed', marginBottom: 8 }}>
+            <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#7c3aed', marginBottom: 8 }}>
               Personalized re-engagement message — {profile.motivationStyle} motivation style
             </div>
             {reMessage ? (
@@ -373,9 +373,9 @@ export default function Behavior() {
           {milestones.map(m => (
             <div key={m.label} style={{ ...badge, background: m.unlocked ? '#f0fdf4' : '#f8fafc', border: `1px solid ${m.unlocked ? '#86efac' : '#e2e8f0'}`, color: m.unlocked ? '#15803d' : '#94a3b8', flexDirection: 'column', textAlign: 'center', padding: '16px 12px', opacity: m.unlocked ? 1 : 0.6 }}>
               <span style={{ fontSize: '1.8rem', filter: m.unlocked ? 'none' : 'grayscale(1)' }}>{m.icon}</span>
-              <span style={{ fontWeight: 700, fontSize: '0.82rem', marginTop: 6 }}>{m.label}</span>
+              <span style={{ fontWeight: 600, fontSize: '0.82rem', marginTop: 6 }}>{m.label}</span>
               <span style={{ fontWeight: 400, fontSize: '0.72rem', color: m.unlocked ? '#15803d' : '#94a3b8', marginTop: 2 }}>{m.desc}</span>
-              {m.unlocked && <span style={{ marginTop: 6, fontSize: '0.7rem', fontWeight: 700, color: '#22c55e' }}>✓ Unlocked</span>}
+              {m.unlocked && <span style={{ marginTop: 6, fontSize: '0.7rem', fontWeight: 600, color: '#22c55e' }}>✓ Unlocked</span>}
             </div>
           ))}
         </div>

@@ -225,7 +225,7 @@ export default function Gym() {
           {programs.map(p => (
             <button key={p.id} onClick={() => selectProgram(p.id)}
               style={{ textAlign: 'left', padding: '18px 20px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', marginBottom: 4 }}>{p.name}</div>
+              <div style={{ fontWeight: 600, fontSize: '1rem', color: '#0f172a', marginBottom: 4 }}>{p.name}</div>
               <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 8 }}>{p.freq}</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {p.days.map(d => (
@@ -250,7 +250,7 @@ export default function Gym() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
+          <div style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
             {program.name}
           </div>
           <h1 style={{ margin: '0 0 2px', fontSize: '1.4rem', color: '#0f172a' }}>Today: {today.label}</h1>
@@ -285,7 +285,7 @@ export default function Gym() {
               <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.95rem', color: done ? '#16a34a' : '#0f172a' }}>{ex.label}</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: done ? '#16a34a' : '#0f172a' }}>{ex.label}</span>
                     {done && <span style={{ fontSize: '0.8rem' }}>✅</span>}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>{targetTxt}</div>

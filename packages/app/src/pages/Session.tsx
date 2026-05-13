@@ -925,12 +925,12 @@ export default function Session() {
                   <span style={{ fontSize: '0.8rem', fontWeight: 600, color: stUi.color }}>{sessionStatus.message}</span>
                 </div>
                 {isYogaMode && yogaCfgUI && (
-                  <div style={{ position: 'absolute', top: 46, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', background: 'rgba(109,40,217,0.82)', color: '#f3e8ff', borderRadius: '99px', padding: '3px 14px', fontSize: '0.7rem', fontStyle: 'italic', fontWeight: 500 }}>
+                  <div style={{ position: 'absolute', top: 46, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', background: 'rgba(109,40,217,0.82)', color: '#f3e8ff', borderRadius: '99px', padding: '3px 14px', fontSize: '0.75rem', fontStyle: 'italic', fontWeight: 500 }}>
                     {yogaCfgUI.sanskritName}
                   </div>
                 )}
                 {isPilatesMode && pilateCfgUI && (
-                  <div style={{ position: 'absolute', top: 46, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', background: 'rgba(219,39,119,0.85)', color: '#fdf2f8', borderRadius: '99px', padding: '3px 14px', fontSize: '0.7rem', fontWeight: 600 }}>
+                  <div style={{ position: 'absolute', top: 46, left: '50%', transform: 'translateX(-50%) scaleX(-1)', whiteSpace: 'nowrap', background: 'rgba(219,39,119,0.85)', color: '#fdf2f8', borderRadius: '99px', padding: '3px 14px', fontSize: '0.75rem', fontWeight: 600 }}>
                     Pilates · {pilateCfgUI.targetLabel}
                   </div>
                 )}
@@ -953,17 +953,17 @@ export default function Session() {
               <div className="metric-card" style={{ border: `1px solid ${holdComplete ? 'var(--success)' : 'rgba(167,139,250,0.3)'}`, textAlign: 'center' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Hold Time</div>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 600, lineHeight: 1, color: holdComplete ? 'var(--success)' : '#a78bfa' }}>{holdTime}s</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>Target {yogaCfgUI?.holdTarget ?? 30}s</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>Target {yogaCfgUI?.holdTarget ?? 30}s</div>
                 <div style={{ marginTop: '10px', height: 4, background: 'var(--bg-overlay)', borderRadius: 2 }}>
                   <div style={{ width: `${Math.min(100, (holdTime / (yogaCfgUI?.holdTarget ?? 30)) * 100)}%`, height: '100%', background: holdComplete ? 'var(--success)' : '#7c3aed', borderRadius: 2, transition: 'width 0.3s' }} />
                 </div>
-                {holdComplete && <div style={{ marginTop: '6px', fontSize: '0.7rem', fontWeight: 600, color: 'var(--success)', fontFamily: "'Space Mono', monospace" }}>COMPLETE</div>}
+                {holdComplete && <div style={{ marginTop: '6px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--success)', fontFamily: "'Space Mono', monospace" }}>COMPLETE</div>}
               </div>
             ) : isPlankMode ? (
               <div className="metric-card" style={{ border: `1px solid ${plankScore >= 80 ? 'rgba(0,230,118,0.3)' : plankScore >= 60 ? 'rgba(255,184,48,0.3)' : 'rgba(255,68,68,0.3)'}`, textAlign: 'center' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Alignment</div>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '3rem', fontWeight: 600, lineHeight: 1, color: plankScore >= 80 ? 'var(--success)' : plankScore >= 60 ? 'var(--warning)' : 'var(--danger)' }}>{plankScore}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>/100 · {plankSeconds}s held</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>/100 · {plankSeconds}s held</div>
                 <div style={{ marginTop: '10px', height: 4, background: 'var(--bg-overlay)', borderRadius: 2 }}>
                   <div style={{ width: `${plankScore}%`, height: '100%', background: plankScore >= 80 ? 'var(--success)' : plankScore >= 60 ? 'var(--warning)' : 'var(--danger)', borderRadius: 2, transition: 'width 0.5s' }} />
                 </div>
@@ -972,7 +972,7 @@ export default function Session() {
               <div className="metric-card" style={{ border: '1px solid rgba(244,114,182,0.3)', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Reps</div>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '4rem', fontWeight: 600, lineHeight: 1, color: '#f472b6' }}>{repCount}</div>
-                <div style={{ fontSize: '0.7rem', color: '#f472b6', marginTop: '4px' }}>Target: {pilateCfgUI.targetLabel}</div>
+                <div style={{ fontSize: '0.75rem', color: '#f472b6', marginTop: '4px' }}>Target: {pilateCfgUI.targetLabel}</div>
               </div>
             ) : (
               <div className="metric-card" style={{
@@ -1006,7 +1006,7 @@ export default function Session() {
             <div className="metric-card" style={{ border: `1px solid ${inRange ? 'rgba(0,230,118,0.3)' : 'rgba(255,68,68,0.3)'}`, textAlign: 'center' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>{cfg.label}</div>
               <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '2.5rem', fontWeight: 600, lineHeight: 1, color: inRange ? 'var(--success)' : 'var(--danger)' }}>{liveAngle !== null ? `${liveAngle}°` : '—'}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '5px' }}>Target {cfg.targetRange[0]}°–{cfg.targetRange[1]}°</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '5px' }}>Target {cfg.targetRange[0]}°–{cfg.targetRange[1]}°</div>
               <div style={{ marginTop: '8px', padding: '3px 8px', borderRadius: '4px', background: inRange ? 'rgba(0,230,118,0.1)' : 'rgba(255,68,68,0.1)', color: inRange ? 'var(--success)' : 'var(--danger)', fontSize: '0.75rem', fontWeight: 600, fontFamily: "'Space Mono', monospace" }}>
                 {liveAngle === null ? 'DETECTING' : inRange ? 'IN RANGE ✓' : 'ADJUST'}
               </div>
@@ -1015,9 +1015,9 @@ export default function Session() {
               <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                 {isYogaMode ? yogaCfgUI!.englishName : exercise.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}
               </div>
-              {isYogaMode && <div style={{ fontSize: '0.7rem', color: '#a78bfa', fontStyle: 'italic', marginTop: '2px', fontFamily: "'Noto Serif', serif" }}>{yogaCfgUI!.sanskritName}</div>}
-              {isPilatesMode && pilateCfgUI && !isPlankMode && <div style={{ fontSize: '0.7rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Target: {pilateCfgUI.targetLabel}</div>}
-              {isPlankMode && <div style={{ fontSize: '0.7rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Alignment scored/sec</div>}
+              {isYogaMode && <div style={{ fontSize: '0.75rem', color: '#a78bfa', fontStyle: 'italic', marginTop: '2px', fontFamily: "'Noto Serif', serif" }}>{yogaCfgUI!.sanskritName}</div>}
+              {isPilatesMode && pilateCfgUI && !isPlankMode && <div style={{ fontSize: '0.75rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Target: {pilateCfgUI.targetLabel}</div>}
+              {isPlankMode && <div style={{ fontSize: '0.75rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Alignment scored/sec</div>}
             </div>
             {isRunning && (
               <button onClick={() => { void stopSession(); }} style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(255,68,68,0.3)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s' }}>
@@ -1092,12 +1092,12 @@ export default function Session() {
 
           {repRecords.length > 0 && (
             <div style={{ marginTop: '20px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const, fontSize: '0.7rem' }}>Rep by Rep Breakdown</div>
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const, fontSize: '0.75rem' }}>Rep by Rep Breakdown</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-elevated)' }}>
                     {['Rep', 'Angle', 'Score', 'Time', 'Quality'].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left' as const, fontWeight: 600, color: 'var(--text-tertiary)', fontSize: '0.7rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left' as const, fontWeight: 600, color: 'var(--text-tertiary)', fontSize: '0.75rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1121,12 +1121,12 @@ export default function Session() {
 
           {repRecords.length > 0 && (
             <div style={{ marginTop: '16px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '0.7rem', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>Next Session Prescription</div>
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '0.75rem', fontFamily: "'Space Mono', monospace", color: 'var(--text-secondary)', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>Next Session Prescription</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-elevated)' }}>
                     {['Exercise', 'Sets × Reps', 'Focus'].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left' as const, fontWeight: 600, color: 'var(--text-tertiary)', fontSize: '0.7rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left' as const, fontWeight: 600, color: 'var(--text-tertiary)', fontSize: '0.75rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>

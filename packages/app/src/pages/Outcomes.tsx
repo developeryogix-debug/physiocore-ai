@@ -35,7 +35,7 @@ function Slider({ value, min, max, onChange, color = 'var(--teal-500)' }: {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))}
         style={{ flex: 1, accentColor: color }} />
-      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.9rem', color, fontWeight: 700, minWidth: 28, textAlign: 'right' }}>{value}</span>
+      <span style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.9rem', color, fontWeight: 600, minWidth: 28, textAlign: 'right' }}>{value}</span>
     </div>
   );
 }
@@ -126,7 +126,7 @@ export default function Outcomes() {
     <div style={{ padding: '100px 24px 80px', maxWidth: 800, margin: '0 auto' }}>
       <div style={{ marginBottom: 32 }}>
         <p style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Clinical Outcomes</p>
-        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, margin: 0 }}>Outcome Measures</h1>
+        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, margin: 0 }}>Outcome Measures</h1>
         <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontSize: '0.85rem' }}>RCT-ready · CONSORT-compatible · REDCap / SPSS export</p>
       </div>
 
@@ -134,7 +134,7 @@ export default function Outcomes() {
 
       {/* PSFS */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>PSFS — Patient-Specific Functional Scale</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 4 }}>PSFS — Patient-Specific Functional Scale</h2>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', marginBottom: 16 }}>Rate 3 activities you find difficult (0 = unable, 10 = full ability)</p>
         {activities.map((act, i) => (
           <div key={i} style={{ marginBottom: 16 }}>
@@ -157,7 +157,7 @@ export default function Outcomes() {
 
       {/* NPRS */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>NPRS — Numeric Pain Rating Scale</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 4 }}>NPRS — Numeric Pain Rating Scale</h2>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', marginBottom: 16 }}>Current pain level (0 = no pain, 10 = worst imaginable)</p>
         <Slider value={painScore} min={0} max={10} onChange={setPainScore} color={painScore >= 7 ? 'var(--danger)' : painScore >= 4 ? 'var(--warning)' : 'var(--success)'} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: 4 }}>
@@ -177,7 +177,7 @@ export default function Outcomes() {
 
       {/* GROC */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>GROC — Global Rating of Change</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 4 }}>GROC — Global Rating of Change</h2>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', marginBottom: 16 }}>Compared to when you first came in, how would you describe your condition overall? (−7 = vastly worse, +7 = completely recovered)</p>
         <Slider value={grocScore} min={-7} max={7} onChange={setGrocScore} color={grocScore > 0 ? 'var(--success)' : grocScore < 0 ? 'var(--danger)' : 'var(--text-tertiary)'} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: 4 }}>
@@ -195,7 +195,7 @@ export default function Outcomes() {
 
       {/* PHQ-4 */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>PHQ-4 — Mental Wellbeing Screen</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 4 }}>PHQ-4 — Mental Wellbeing Screen</h2>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', marginBottom: 16 }}>Over the last 2 weeks, how often have you been bothered by: (0=Not at all, 1=Several days, 2=More than half, 3=Nearly every day)</p>
         {PHQ4_QUESTIONS.map((q, i) => (
           <div key={i} style={{ marginBottom: 14 }}>

@@ -72,7 +72,7 @@ export default function Landing() {
           borderRadius: 99,
           padding: '6px 18px',
           fontSize: '0.72rem',
-          fontWeight: 700,
+          fontWeight: 600,
           color: 'var(--teal-500)',
           letterSpacing: '0.08em',
           textTransform: 'uppercase' as const,
@@ -85,7 +85,7 @@ export default function Landing() {
         {/* Headline */}
         <h1 className="animate-in font-display" style={{
           fontSize: 'var(--text-hero)',
-          fontWeight: 800,
+          fontWeight: 600,
           lineHeight: 1.05,
           letterSpacing: '-0.03em',
           maxWidth: 840,
@@ -149,7 +149,7 @@ export default function Landing() {
         <p style={{
           textAlign: 'center',
           fontSize: '0.7rem',
-          fontWeight: 700,
+          fontWeight: 600,
           color: 'var(--text-tertiary)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase' as const,
@@ -198,7 +198,7 @@ export default function Landing() {
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <p style={{
             fontSize: '0.7rem',
-            fontWeight: 700,
+            fontWeight: 600,
             color: 'var(--teal-500)',
             letterSpacing: '0.12em',
             textTransform: 'uppercase' as const,
@@ -209,7 +209,7 @@ export default function Landing() {
           </p>
           <h2 className="font-display" style={{
             fontSize: 'var(--text-3xl)',
-            fontWeight: 700,
+            fontWeight: 600,
             letterSpacing: '-0.02em',
             color: 'var(--text-primary)',
             marginBottom: 12,
@@ -250,7 +250,7 @@ export default function Landing() {
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <p style={{
               fontSize: '0.7rem',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--teal-500)',
               letterSpacing: '0.12em',
               textTransform: 'uppercase' as const,
@@ -261,7 +261,7 @@ export default function Landing() {
             </p>
             <h2 className="font-display" style={{
               fontSize: 'var(--text-2xl)',
-              fontWeight: 700,
+              fontWeight: 600,
               letterSpacing: '-0.02em',
               color: 'var(--text-primary)',
               marginBottom: 8,
@@ -322,7 +322,7 @@ export default function Landing() {
                           fontFamily: "'Space Mono', monospace",
                           fontSize: '0.85rem',
                           color: v ? 'var(--success)' : 'var(--text-tertiary)',
-                          fontWeight: v ? 700 : 400,
+                          fontWeight: v ? 600 : 400,
                         }}>
                           {v ? '✓' : '–'}
                         </span>
@@ -350,7 +350,7 @@ export default function Landing() {
         <div style={{ textAlign: 'center' as const, marginBottom: 40 }}>
           <p style={{
             fontSize: '0.7rem',
-            fontWeight: 700,
+            fontWeight: 600,
             color: 'var(--teal-500)',
             letterSpacing: '0.12em',
             textTransform: 'uppercase' as const,
@@ -361,7 +361,7 @@ export default function Landing() {
           </p>
           <h2 className="font-display" style={{
             fontSize: 'var(--text-2xl)',
-            fontWeight: 700,
+            fontWeight: 600,
             letterSpacing: '-0.02em',
             marginBottom: 8,
           }}>
@@ -378,7 +378,7 @@ export default function Landing() {
               <div style={{
                 fontFamily: "'Space Mono', monospace",
                 fontSize: '0.95rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 color: 'var(--teal-500)',
                 marginBottom: 6,
               }}>
@@ -410,7 +410,7 @@ export default function Landing() {
         }} />
         <h2 className="font-display" style={{
           fontSize: 'var(--text-3xl)',
-          fontWeight: 700,
+          fontWeight: 600,
           letterSpacing: '-0.02em',
           marginBottom: 16,
           color: 'var(--text-primary)',

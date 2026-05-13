@@ -271,7 +271,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
               <span className="live-dot" />
               <span style={{
                 fontFamily: "'Syne', sans-serif",
-                fontWeight: 700,
+                fontWeight: 600,
                 fontSize: '0.85rem',
                 color: 'var(--text-primary)',
               }}>
@@ -519,7 +519,7 @@ export function AiChatPanel({ pageContext, quickPrompts = [] }: AiChatPanelProps
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                fontWeight: 700,
+                fontWeight: 600,
                 transition: 'all 0.15s',
                 pointerEvents: 'auto' as const,
               }}

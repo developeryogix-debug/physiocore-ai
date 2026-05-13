@@ -183,14 +183,14 @@ export default function Settings() {
     <div style={{ padding: '100px 24px 80px', maxWidth: 760, margin: '0 auto' }}>
       <div style={{ marginBottom: 32 }}>
         <p style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Settings</p>
-        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, margin: 0 }}>Profile & Preferences</h1>
+        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, margin: 0 }}>Profile & Preferences</h1>
       </div>
 
       {profileMsg && <div style={{ background: 'var(--teal-dim)', border: '1px solid var(--border-teal)', color: 'var(--teal-500)', borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: '0.85rem' }}>{profileMsg}</div>}
 
       {/* ── Profile ── */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>Edit Profile</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 16 }}>Edit Profile</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
             <span style={label}>Full Name</span>
@@ -224,7 +224,7 @@ export default function Settings() {
 
       {/* ── Biometrics ── */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>Biometrics Tracker</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 4 }}>Biometrics Tracker</h2>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', marginBottom: 16 }}>Log manual readings — stored securely in Supabase Singapore region</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {METRICS.map(m => {
@@ -254,7 +254,7 @@ export default function Settings() {
 
       {/* ── Notifications ── */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>Notifications</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 16 }}>Notifications</h2>
         {[
           { label: 'Weekly email report', checked: weeklyEmail, onChange: setWeeklyEmail },
           { label: 'Session reminder', checked: sessionReminder, onChange: setSessionReminder },
@@ -275,7 +275,7 @@ export default function Settings() {
 
       {/* ── Data & Privacy ── */}
       <div style={card}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>Data & Privacy (PDPA)</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 4 }}>Data & Privacy (PDPA)</h2>
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', marginBottom: 16 }}>Your data is stored in Supabase Singapore region and never shared with third parties.</p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button onClick={() => void exportAllData()} className="btn-ghost" style={{ fontSize: '0.82rem' }}>↓ Export All My Data (JSON)</button>
@@ -296,7 +296,7 @@ export default function Settings() {
 
       {/* ── Account ── */}
       <div style={{ ...card, marginBottom: 80 }}>
-        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>Account</h2>
+        <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '1rem', marginBottom: 16 }}>Account</h2>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 16 }}>Signed in as <strong>{user?.email}</strong></p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
           <button onClick={() => void sendPasswordReset()} className="btn-ghost" style={{ fontSize: '0.82rem' }}>Send Password Reset Email</button>

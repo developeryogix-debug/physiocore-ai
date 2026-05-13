@@ -7,7 +7,7 @@ import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
 
 const pageStyle: React.CSSProperties = { maxWidth: '960px', margin: '0 auto', padding: '100px 24px 48px' };
-const headingStyle: React.CSSProperties = { fontSize: '1.75rem', fontWeight: 700, marginBottom: '8px' };
+const headingStyle: React.CSSProperties = { fontSize: '1.75rem', fontWeight: 600, marginBottom: '8px' };
 const subheadStyle: React.CSSProperties = { color: 'var(--color-text-muted)', marginBottom: '28px', fontSize: '0.9rem' };
 const primaryBtnStyle: React.CSSProperties = { padding: '10px 28px', borderRadius: 'var(--radius-md)', background: 'var(--color-primary)', color: '#fff', border: 'none', fontWeight: 600, fontSize: '0.9rem', marginBottom: '28px', cursor: 'pointer' };
 const disabledBtnStyle: React.CSSProperties = { ...primaryBtnStyle, background: '#94a3b8', cursor: 'not-allowed' };
@@ -104,7 +104,7 @@ export default function Assessment() {
           <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '10px' }}>Retention interventions</h2>
           {interventions.map((iv, i) => (
             <div key={i} style={interventionStyle}>
-              <span style={{ fontWeight: 700, marginRight: '6px', textTransform: 'uppercase', fontSize: '0.75rem', color: 'var(--color-primary)' }}>
+              <span style={{ fontWeight: 600, marginRight: '6px', textTransform: 'uppercase', fontSize: '0.75rem', color: 'var(--color-primary)' }}>
                 P{iv.priority} · {iv.type.replace(/_/g, ' ')}
               </span>
               {iv.message}
@@ -182,7 +182,7 @@ export default function Assessment() {
               </p>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', borderRadius: 'var(--radius-md)', background: '#f8fafc', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Churn risk</span>
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.8rem', color: CHURN_COLORS[data.churnRisk.level] ?? 'var(--color-text)' }}>
+                <span style={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.8rem', color: CHURN_COLORS[data.churnRisk.level] ?? 'var(--color-text)' }}>
                   {data.churnRisk.level}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>({Math.round(data.churnRisk.score * 100)}%)</span>

@@ -17,7 +17,7 @@ function Pill({ label, color }: { label: string; color: string }) {
     purple: { bg: 'rgba(139,92,246,0.12)', c: '#a78bfa' },
   };
   const s = map[color] ?? map['teal']!;
-  return <span style={{ padding: '2px 10px', borderRadius: 99, background: s.bg, color: s.c, fontSize: '0.7rem', fontWeight: 700, ...MONO }}>{label}</span>;
+  return <span style={{ padding: '2px 10px', borderRadius: 99, background: s.bg, color: s.c, fontSize: '0.7rem', fontWeight: 600, ...MONO }}>{label}</span>;
 }
 
 export default function Admin() {
@@ -85,7 +85,7 @@ export default function Admin() {
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '100px 24px 48px' }}>
       <div style={{ marginBottom: 28 }}>
         <p style={{ ...MONO, fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Super Admin</p>
-        <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 0 }}>Admin Panel</h1>
+        <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 0 }}>Admin Panel</h1>
       </div>
 
       {/* Tab bar */}
@@ -143,7 +143,7 @@ export default function Admin() {
           {showCreateOrg && (
             <div onClick={() => setShowCreateOrg(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
               <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 16, padding: '28px 24px', width: '100%', maxWidth: 420 }}>
-                <h3 style={{ margin: '0 0 20px', fontWeight: 700 }}>Create Organisation</h3>
+                <h3 style={{ margin: '0 0 20px', fontWeight: 600 }}>Create Organisation</h3>
                 <form onSubmit={e => { void handleCreateOrg(e); }} style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
                   {[
                     { label: 'Org Name', key: 'name', placeholder: 'City Physio Clinic', type: 'text' },
@@ -216,7 +216,7 @@ export default function Admin() {
               { label: 'Sessions Today', value: stats.totalSessionsToday.toString() },
             ].map(s => (
               <div key={s.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: '18px 20px', textAlign: 'center' as const }}>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--teal-500)', ...MONO }}>{s.value}</div>
+                <div style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--teal-500)', ...MONO }}>{s.value}</div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: 4 }}>{s.label}</div>
               </div>
             ))}

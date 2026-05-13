@@ -94,7 +94,7 @@ export default function OrgDashboard() {
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '100px 24px 48px' }}>
       <div style={{ marginBottom: 28 }}>
         <p style={{ ...MONO, fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 6 }}>{org.type.replace('_',' ')}</p>
-        <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 0 }}>{org.name}</h1>
+        <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 0 }}>{org.name}</h1>
       </div>
 
       {/* Summary cards */}
@@ -105,7 +105,7 @@ export default function OrgDashboard() {
           { label: 'High-Risk %',  value: `${highRiskPct}%` },
         ].map(s => (
           <div key={s.label} className="metric-card" style={{ textAlign: 'center' as const }}>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--teal-500)', ...MONO }}>{s.value}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--teal-500)', ...MONO }}>{s.value}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
@@ -134,10 +134,10 @@ export default function OrgDashboard() {
               return (
                 <div key={m.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: '16px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,var(--teal-500),var(--blue-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#000', ...MONO }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,var(--teal-500),var(--blue-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#000', ...MONO }}>
                       {(m.profile?.full_name ?? m.user_id.slice(0,2)).toUpperCase().slice(0,2)}
                     </div>
-                    <span style={{ padding: '2px 10px', borderRadius: 99, background: rc.bg, color: rc.c, fontSize: '0.7rem', fontWeight: 700, ...MONO }}>{m.role}</span>
+                    <span style={{ padding: '2px 10px', borderRadius: 99, background: rc.bg, color: rc.c, fontSize: '0.7rem', fontWeight: 600, ...MONO }}>{m.role}</span>
                   </div>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{m.profile?.full_name || 'Unnamed'}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: 2 }}>Joined {new Date(m.joined_at).toLocaleDateString()}</div>
@@ -172,7 +172,7 @@ export default function OrgDashboard() {
                     <td style={{ padding: '11px 16px', ...MONO, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{p.clinician_id.slice(0,8)}…</td>
                     <td style={{ padding: '11px 16px', color: 'var(--text-tertiary)', fontSize: '0.78rem' }}>{new Date(p.assigned_at).toLocaleDateString()}</td>
                     <td style={{ padding: '11px 16px' }}>
-                      <span style={{ padding: '2px 10px', borderRadius: 99, background: p.status === 'active' ? 'rgba(0,212,170,0.12)' : 'rgba(255,68,68,0.12)', color: p.status === 'active' ? 'var(--teal-500)' : 'var(--danger)', fontSize: '0.7rem', fontWeight: 700, ...MONO }}>{p.status}</span>
+                      <span style={{ padding: '2px 10px', borderRadius: 99, background: p.status === 'active' ? 'rgba(0,212,170,0.12)' : 'rgba(255,68,68,0.12)', color: p.status === 'active' ? 'var(--teal-500)' : 'var(--danger)', fontSize: '0.7rem', fontWeight: 600, ...MONO }}>{p.status}</span>
                     </td>
                   </tr>
                 ))}
@@ -206,7 +206,7 @@ export default function OrgDashboard() {
       {showInvite && (
         <div onClick={() => { setShowInvite(false); setInviteStatus(null); setInviteLink(null); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 16, padding: '28px 24px', width: '100%', maxWidth: 420 }}>
-            <h3 style={{ margin: '0 0 20px', fontWeight: 700 }}>Invite Clinician</h3>
+            <h3 style={{ margin: '0 0 20px', fontWeight: 600 }}>Invite Clinician</h3>
             <form onSubmit={e => { void handleInvite(e); }} style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
               {[
                 { label: 'Full Name', key: 'name', placeholder: 'Dr. Jane Smith', type: 'text' },

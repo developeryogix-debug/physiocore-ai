@@ -148,7 +148,7 @@ export default function Clinician() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>Clinician Mode</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 600, marginBottom: 4 }}>Clinician Mode</h1>
           <p style={{ ...muted, marginTop: 2 }}>Patient deep dives · SOAP notes · HEP generator · FHIR R4 · AI transparency</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' as const }}>
@@ -171,7 +171,7 @@ export default function Clinician() {
           { label: 'Avg Form Score',   value: `${avgFormScore}/100`,         sub: 'across sessions' },
         ].map(s => (
           <div key={s.label} style={{ background: '#fff', border: `1px solid ${s.warn ? '#fca5a5' : '#e2e8f0'}`, borderRadius: 12, padding: '14px 18px', textAlign: 'center' }}>
-            <div style={{ fontWeight: 700, fontSize: '1.25rem', color: s.warn ? '#b91c1c' : '#0f172a' }}>{s.value}</div>
+            <div style={{ fontWeight: 600, fontSize: '1.25rem', color: s.warn ? '#b91c1c' : '#0f172a' }}>{s.value}</div>
             <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 2 }}>{s.label}</div>
             <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{s.sub}</div>
           </div>
@@ -181,14 +181,14 @@ export default function Clinician() {
       {/* ── Real patients from DB ── */}
       {!loadingDb && dbPatients.length > 0 && (
         <div style={{ marginBottom: 28 }}>
-          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
+          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
             Your Patients ({dbPatients.length})
           </p>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
               <thead><tr style={{ background: '#f8fafc' }}>
                 {['Patient', 'Status', 'Assigned'].map(h => (
-                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left' as const, fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left' as const, fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>
@@ -198,7 +198,7 @@ export default function Clinician() {
                       {p.profile?.full_name ?? `Patient ${p.patient_id.slice(0, 8)}…`}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{ padding: '2px 10px', borderRadius: 99, background: p.status === 'active' ? '#dcfce7' : '#fee2e2', color: p.status === 'active' ? '#15803d' : '#b91c1c', fontSize: '0.7rem', fontWeight: 700 }}>
+                      <span style={{ padding: '2px 10px', borderRadius: 99, background: p.status === 'active' ? '#dcfce7' : '#fee2e2', color: p.status === 'active' ? '#15803d' : '#b91c1c', fontSize: '0.7rem', fontWeight: 600 }}>
                         {p.status}
                       </span>
                     </td>
@@ -216,7 +216,7 @@ export default function Clinician() {
       {/* ── Demo patient list ── */}
       <div>
         {dbPatients.length === 0 && !loadingDb && (
-          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
+          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
             Demo Patients — invite real patients above to replace this
           </p>
         )}
@@ -241,7 +241,7 @@ export default function Clinician() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: isOpen ? '#6366f1' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1rem', color: isOpen ? '#fff' : '#475569', flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: isOpen ? '#6366f1' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '1rem', color: isOpen ? '#fff' : '#475569', flexShrink: 0 }}>
                       {p.name[0]}
                     </div>
                     <div>
@@ -251,20 +251,20 @@ export default function Clinician() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 700, color: '#0369a1' }}>{p.sessions.length}</div>
+                      <div style={{ fontWeight: 600, color: '#0369a1' }}>{p.sessions.length}</div>
                       <div style={{ ...muted, fontSize: '0.7rem' }}>sessions</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 700, color: p.adherencePct >= 80 ? '#15803d' : p.adherencePct >= 60 ? '#92400e' : '#b91c1c' }}>{p.adherencePct}%</div>
+                      <div style={{ fontWeight: 600, color: p.adherencePct >= 80 ? '#15803d' : p.adherencePct >= 60 ? '#92400e' : '#b91c1c' }}>{p.adherencePct}%</div>
                       <div style={{ ...muted, fontSize: '0.7rem' }}>adherence</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 700, color: avg >= 80 ? '#15803d' : avg >= 65 ? '#92400e' : '#b91c1c' }}>
+                      <div style={{ fontWeight: 600, color: avg >= 80 ? '#15803d' : avg >= 65 ? '#92400e' : '#b91c1c' }}>
                         {avg} <span style={{ color: trend === '↑' ? '#22c55e' : trend === '↓' ? '#ef4444' : '#94a3b8', fontSize: '1rem' }}>{trend}</span>
                       </div>
                       <div style={{ ...muted, fontSize: '0.7rem' }}>avg score</div>
                     </div>
-                    <span style={{ ...cr, borderRadius: 99, padding: '3px 10px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase' as const }}>
+                    <span style={{ ...cr, borderRadius: 99, padding: '3px 10px', fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase' as const }}>
                       {p.churnRisk} risk
                     </span>
                     <span style={{ ...muted, fontSize: '0.75rem' }}>{isOpen ? '▲' : '▼'}</span>
@@ -289,7 +289,7 @@ export default function Clinician() {
       {showInvite && (
         <div onClick={() => { setShowInvite(false); setInviteMsg(''); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '28px 24px', width: '100%', maxWidth: 420, boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 6px', fontWeight: 700, color: '#0f172a' }}>Invite Patient</h3>
+            <h3 style={{ margin: '0 0 6px', fontWeight: 600, color: '#0f172a' }}>Invite Patient</h3>
             <p style={{ ...muted, fontSize: '0.8rem', marginBottom: 20 }}>They will receive an email with a signup link tied to your account.</p>
             <form onSubmit={e => { void handleInvitePatient(e); }} style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
               {[

@@ -158,7 +158,7 @@ export default function History() {
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <p style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Session History</p>
-        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, margin: 0 }}>Your Training Record</h1>
+        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, margin: 0 }}>Your Training Record</h1>
       </div>
 
       {/* Stats row */}
@@ -170,7 +170,7 @@ export default function History() {
           { label: 'Best Score', value: stats.best ? `${stats.best}/100` : '—' },
         ].map(({ label, value }) => (
           <div key={label} className="metric-card" style={{ textAlign: 'center', padding: '16px 8px' }}>
-            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--teal-500)' }}>{value}</div>
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '1.5rem', fontWeight: 600, color: 'var(--teal-500)' }}>{value}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
           </div>
         ))}
@@ -178,7 +178,7 @@ export default function History() {
 
       {/* Heatmap */}
       <div style={card}>
-        <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '0.9rem', marginBottom: 12 }}>52-Week Activity Map</h3>
+        <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>52-Week Activity Map</h3>
         <Heatmap sessions={sessions} />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>Less</span>
@@ -191,14 +191,14 @@ export default function History() {
 
       {/* Trend chart */}
       <div style={card}>
-        <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '0.9rem', marginBottom: 12 }}>Form Score Trend</h3>
+        <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>Form Score Trend</h3>
         <TrendChart sessions={filtered} />
       </div>
 
       {/* Session list */}
       <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-          <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '0.9rem', margin: 0 }}>Session Timeline</h3>
+          <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>Session Timeline</h3>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {EXERCISES.map(ex => (
               <button key={ex} onClick={() => setFilter(ex)} style={{
@@ -229,7 +229,7 @@ export default function History() {
                 setExpanded(next);
               }} style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontFamily: "'Space Mono',monospace", color: score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warning)' : 'var(--danger)', fontWeight: 700, flexShrink: 0 }}>{score}</div>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontFamily: "'Space Mono',monospace", color: score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warning)' : 'var(--danger)', fontWeight: 600, flexShrink: 0 }}>{score}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)', textTransform: 'capitalize' }}>{(s.exercise || '').replace(/_/g, ' ')}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: "'Space Mono',monospace" }}>
@@ -253,7 +253,7 @@ export default function History() {
       {/* Personal bests */}
       {personalBests.length > 0 && (
         <div style={card}>
-          <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: '0.9rem', marginBottom: 12 }}>Personal Bests</h3>
+          <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '0.9rem', marginBottom: 12 }}>Personal Bests</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
@@ -266,7 +266,7 @@ export default function History() {
               {personalBests.map(s => (
                 <tr key={s.exercise} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '8px', textTransform: 'capitalize' }}>{s.exercise.replace(/_/g, ' ')}</td>
-                  <td style={{ padding: '8px', fontFamily: "'Space Mono',monospace", color: 'var(--teal-500)', fontWeight: 700 }}>{s.avg_score}/100</td>
+                  <td style={{ padding: '8px', fontFamily: "'Space Mono',monospace", color: 'var(--teal-500)', fontWeight: 600 }}>{s.avg_score}/100</td>
                   <td style={{ padding: '8px', color: 'var(--text-secondary)', fontFamily: "'Space Mono',monospace", fontSize: '0.75rem' }}>{new Date(s.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
                   <td style={{ padding: '8px', color: 'var(--text-secondary)' }}>{s.reps}</td>
                 </tr>
