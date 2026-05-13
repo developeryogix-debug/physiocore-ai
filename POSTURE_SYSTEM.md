@@ -1,6 +1,6 @@
 # PhysioCore AI — Posture Analysis System
-**Version:** 1.0  
-**Last updated:** 13 May 2026  
+**Version:** 1.1  
+**Last updated:** 14 May 2026  
 **Priority:** Phase 1 — Build alongside Clinical Knowledge Foundation
 
 ---
@@ -14,10 +14,11 @@ A structured, camera-based postural assessment protocol that captures 4 cardinal
 ## Clinical Protocol — 4-View Capture Sequence
 
 ### Setup Requirements
-- Distance from camera: 2.5–3 metres
-- Camera height: umbilicus level (navel height)
-- Background: plain, contrasting with patient's clothing
-- Lighting: even, no shadows behind patient
+- Distance from camera: **1.5–2.5 metres** (see §Camera Calibration Standards)
+- Camera height: **100–120 cm** (navel level)
+- Camera rotation: **≤2° from horizontal** (use phone spirit level)
+- Background: plain, high contrast with patient's clothing
+- Lighting: **minimum 300 lux**, no backlight, no shadows behind patient
 - Clothing: fitted (not baggy) — shoulders, hips, knees visible
 - Footwear: bare feet preferred, or flat shoes
 
@@ -303,6 +304,64 @@ Analyse these postural measurements and provide:
 Format output as structured JSON for FHIR storage.
 Evidence grade for each recommendation: A/B/C/D.
 ```
+
+---
+
+## Camera Calibration Standards (Evidence-Based)
+
+### Evidence Base
+
+| Study | Key Finding | Relevance |
+|---|---|---|
+| Pausic et al. (2010) *J Sports Sci Med* | Optimal distance 1.5 m at 115 cm height; ICC 0.78–0.99 for frontal plane | Distance + height standard |
+| Lau & Armstrong (2011) *Man Ther* | Orthogonal camera alignment essential; lateral deviation >5° degrades angle accuracy | Camera rotation constraint |
+| PAViR Protocol (2025) *PMC12939593* | Standardised camera protocol achieves 86%+ accuracy vs radiographic gold standard for sagittal curvature | Full protocol validation |
+
+### Required Setup Parameters
+
+| Parameter | Required | Rationale |
+|---|---|---|
+| Distance | 1.5–2.5 m | <1.5 m causes barrel distortion; >2.5 m reduces landmark resolution |
+| Camera height | 100–120 cm (navel level) | Minimises parallax error for hip/knee angle measurement |
+| Camera rotation | ≤2° from horizontal | >2° introduces systematic error in all horizontal measurements |
+| Background | Plain, high contrast with clothing | Required for MediaPipe landmark confidence ≥0.65 |
+| Minimum illumination | 300 lux | Below 300 lux: MediaPipe confidence drops, lateral landmarks fail |
+| Backlight | None | Silhouettes cause posterior landmark failure |
+
+### Validated Measurement Error (Protocol Followed)
+
+| Plane | Measurement Error | ICC Range | Source |
+|---|---|---|---|
+| Frontal plane angles | ±2° | 0.78–0.99 | Pausic et al. 2010 |
+| Sagittal plane angles | ±3–5° vs radiographic | 0.82–0.96 | PAViR 2025 (PMC12939593) |
+| Head forward posture (cm) | ±0.5 cm | 0.91 | Lau & Armstrong 2011 |
+
+### Clinical Scope Limitations
+
+**This system is NOT suitable for:**
+- Scoliosis Cobb angle measurement >10° — requires standing AP spine X-ray (SOSORT guidelines)
+- Post-surgical hardware assessment — metallic implants affect landmark detection
+- Active acute pain — patient cannot maintain natural standing posture
+- BMI >40 — subcutaneous tissue may obscure bony landmarks on MediaPipe
+
+**This system IS appropriate for:**
+- Postural screening and monitoring in non-acute patients
+- Tracking change over time (≥4-week intervals)
+- Pre-exercise risk stratification in gym/wellness settings
+- Patient education and home programme motivation
+
+### Pre-Assessment Checklist (UI must enforce)
+
+```
+☐ Patient standing still for ≥5 seconds before countdown begins
+☐ Both feet fully visible in frame
+☐ No jewellery obscuring shoulder/hip landmarks
+☐ Camera level confirmed (phone tilt sensor <2°)
+☐ Room lighting adequate (app lux sensor check)
+☐ MediaPipe landmark confidence ≥0.65 on all 4 cardinal landmarks (shoulders + hips)
+```
+
+If any check fails → show amber warning before capture. Do not block — let clinician override with note.
 
 ---
 
