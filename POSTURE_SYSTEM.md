@@ -221,6 +221,34 @@ headForwardPosture = landmarks[8].x - landmarks[12].x  // normalised distance
 
 ---
 
+## Evidence-Based Accuracy Standards
+
+Camera angle critically impacts 2D posture measurement accuracy (Lau & Armstrong, Applied Ergonomics 2011). Orthogonal views produce significantly more accurate estimates than angled views.
+
+Clinical accuracy under standardised protocol:
+- Frontal plane angles: ±2° (ICC 0.78-0.99)
+  Source: Fortin et al. BMC Musculoskeletal Disorders 2008
+- Sagittal plane angles: ±3-5° vs radiographic gold standard
+  Source: PAViR system validation PMC12939593 2025
+- Landmark detection: 86%+ accuracy when correctly positioned
+  Source: PAViR 2025
+
+Required setup for clinical-grade accuracy:
+- Distance: 1.5-2.0 metres (validated by Pausic et al. 2010)
+- Camera height: 100-120cm (navel level)
+- Camera rotation: ≤2° from horizontal
+- Lighting: minimum 300 lux, no backlight
+- Clothing: fitted, landmarks visible
+
+Current system limitations (document honestly):
+- No physical distance calibration
+- No lens distortion correction for wide-angle phone cameras
+- 2D only — rotational deformities (scoliosis >10°) need X-ray
+- Not validated for post-surgical hardware assessment
+- Not a substitute for hands-on clinical examination
+
+---
+
 ## Report Output
 
 ### Posture Report Card
