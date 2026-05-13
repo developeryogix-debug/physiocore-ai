@@ -68,6 +68,24 @@ export default function Admin() {
     setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, role } : u));
   }
 
+  async function copyToClipboard(text: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return success;
+    }
+  }
+
   async function handleCopyInvite(orgId: string, email: string, orgName: string) {
     if (!user) return;
     const token = crypto.randomUUID();
@@ -75,10 +93,9 @@ export default function Admin() {
     const invite = await createInvite({ org_id: orgId, invited_by: user.id, email: email || 'admin@org.com', role: 'clinician', token, expires_at });
     if (!invite) { console.error('Failed to create invite'); return; }
     const link = `https://app-dteam1-mmcv.vercel.app/signup?invite=${invite.token}`;
-    await navigator.clipboard.writeText(link).catch(() => undefined);
+    await copyToClipboard(link);
     void sendClinicianInvite({ toEmail: email || 'admin@org.com', toName: 'Org Admin', orgAdminName: 'Platform Admin', orgName, inviteToken: invite.token });
     setCopiedLink(link);
-    setTimeout(() => setCopiedLink(null), 3000);
   }
 
   const inputSt: React.CSSProperties = { width: '100%', padding: '9px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 8, color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'inherit', boxSizing: 'border-box' as const };
@@ -136,8 +153,11 @@ export default function Admin() {
           </div>
 
           {copiedLink && (
-            <div style={{ padding: '10px 16px', background: 'rgba(0,212,170,0.08)', border: '1px solid var(--border-teal)', borderRadius: 8, fontSize: '0.8rem', color: 'var(--teal-500)', marginBottom: 12 }}>
-              ✓ Invite link copied to clipboard (email sent if RESEND key set)
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--teal-500)', borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Mono', monospace", fontSize: '0.72rem', wordBreak: 'break-all', color: 'var(--teal-500)' }}>
+                {copiedLink}
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', margin: '6px 0 0' }}>Link copied to clipboard. Share this with the admin.</p>
             </div>
           )}
 
