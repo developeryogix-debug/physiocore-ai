@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@physiocore/supabase';
+import { useUserProfile } from '../hooks/useUserProfile.js';
+import { extractMeasurements, analysePosture } from '../lib/agents/postureClient.js';
+import type { PostureReport } from '../lib/agents/postureClient.js';
+import PostureReportCard from '../components/PostureReportCard.js';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -226,6 +234,7 @@ async function loadLandmarker(): Promise<Landmarker | null> {
 
 export default function PostureAssessment() {
   const navigate = useNavigate();
+  const { userProfile } = useUserProfile();
 
   const videoRef          = useRef<HTMLVideoElement>(null);
   const overlayCanvasRef  = useRef<HTMLCanvasElement>(null);
@@ -245,6 +254,10 @@ export default function PostureAssessment() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [showCue, setShowCue]         = useState(false);
   const [isRetake, setIsRetake]       = useState(false);
+  const [analysing, setAnalysing]     = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [postureReport, setPostureReport] = useState<PostureReport | null>(null);
+  const [savedToDb, setSavedToDb]     = useState(false);
 
   const countdownColor = isHold ? '#00E676'
     : countdown !== null && countdown <= 3 ? '#FF4444'
@@ -416,6 +429,51 @@ export default function PostureAssessment() {
     }, 2000);
   }, [startCamera, renderLoop, runCountdown, stopCamera]);
 
+  // ── Posture analysis ─────────────────────────────────────────────────────────
+
+  const handleAnalyse = useCallback(async () => {
+    const anteriorLms  = frames.anterior?.landmarks ?? null;
+    const lateralLms   = frames.rightLateral?.landmarks ?? null;
+
+    setAnalysing(true);
+    setAnalysisError(null);
+    setSavedToDb(false);
+
+    try {
+      const measurements = extractMeasurements(anteriorLms, lateralLms);
+
+      const conditions = (userProfile?.injuries ?? [])
+        .filter(i => i.isActive)
+        .map(i => i.bodyPart);
+
+      const report = await analysePosture(measurements, conditions);
+      setPostureReport(report);
+
+      // Save to Supabase posture_assessments
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        await db.from('posture_assessments').insert({
+          user_id:       user.id,
+          date:          new Date().toISOString().split('T')[0],
+          overall_score: report.overallScore,
+          findings:      report.findings,
+          grid_images: {
+            anterior:     frames.anterior?.dataUrl  ?? null,
+            rightLateral: frames.rightLateral?.dataUrl ?? null,
+            posterior:    frames.posterior?.dataUrl ?? null,
+            leftLateral:  frames.leftLateral?.dataUrl  ?? null,
+          },
+        });
+        setSavedToDb(true);
+      }
+    } catch (err) {
+      setAnalysisError(err instanceof Error ? err.message : 'Analysis failed. Please try again.');
+    } finally {
+      setAnalysing(false);
+    }
+  }, [frames, userProfile]);
+
   // ── Cleanup ──────────────────────────────────────────────────────────────────
 
   useEffect(() => () => {
@@ -573,8 +631,8 @@ export default function PostureAssessment() {
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-ghost" onClick={() => { void handleStart(); }}>Retake All</button>
-            <button className="btn-primary" disabled title="Coming soon — Phase 2" style={{ opacity: 0.45, cursor: 'not-allowed' }}>
-              Analyse Posture
+            <button className="btn-primary" onClick={() => { void handleAnalyse(); }} disabled={analysing}>
+              {analysing ? 'Analysing…' : 'Analyse Posture'}
             </button>
           </div>
         </div>
@@ -624,15 +682,13 @@ export default function PostureAssessment() {
           ))}
         </div>
 
-        {/* Phase 2 teaser */}
-        <div style={{ marginTop: '2rem', padding: '1.25rem 1.5rem', background: 'var(--teal-dim)', border: '1px solid var(--border-teal)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal-500)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            Angle measurements and AI analysis (Janda pattern detection, muscle imbalance mapping) coming in Phase 2.
-          </span>
-        </div>
+        {analysisError && (
+          <div style={{ marginTop: '1rem', color: 'var(--danger)', fontSize: '0.875rem', padding: '0.75rem 1rem', background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.25)', borderRadius: '8px' }}>
+            {analysisError}
+          </div>
+        )}
+
+        {postureReport && <PostureReportCard report={postureReport} savedToDb={savedToDb} />}
       </div>
     </div>
   );
