@@ -1,5 +1,74 @@
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
+// ── ROM Agent types ──────────────────────────────────────────────────────────
+
+export interface SessionSummary {
+  date: string;
+  exercise: string;
+  reps: number;
+  avg_score: number;    // 0–100 form score (proxy for ROM quality)
+  top_deviation: string;
+  ai_feedback_summary: string;
+  pain_before?: number;
+  pain_after?: number;
+}
+
+export interface JointROM {
+  joint: string;
+  movement: string;
+  normalMax: number;            // degrees, from jointDatabase
+  estimatedROMPercent: number;  // 0–100% of normalMax
+  estimatedDegrees: number;     // normalMax × estimatedROMPercent/100
+  deficitPercent: number;       // 100 - estimatedROMPercent
+  clinicallySignificant: boolean; // deficit >20%
+  sessionCount: number;
+  lastMeasuredAt: string;
+  citation: string;
+  confidence: 'high' | 'medium' | 'low';
+  dataSource: 'session_score_proxy';
+}
+
+export interface Asymmetry {
+  joint: string;
+  movement: string;
+  leftScoreAvg: number;
+  rightScoreAvg: number;
+  asymmetryPercent: number;   // |left - right| / max(left,right) × 100
+  dominantSide: 'left' | 'right';
+  clinicallySignificant: boolean; // >10%
+}
+
+export interface Trend {
+  joint: string;
+  movement: string;
+  exercise: string;
+  direction: 'improving' | 'declining' | 'stable';
+  slopePerSession: number;    // avg score change per session
+  sessionsAnalysed: number;
+}
+
+export interface ROMReport {
+  agentId: 'rom-agent';
+  version: '1.0.0';
+  patientId: string;
+  generatedAt: string;
+
+  joints: Record<string, JointROM>;
+  overallMobility: number;      // 0–100 weighted average
+  asymmetries: Asymmetry[];
+  trends: Trend[];
+
+  clinicalSummary: string;      // Claude Haiku generated
+  dataCompleteness: number;     // 0–1 fraction of expected joints with data
+  sessionsAnalysed: number;
+
+  evidenceGrade: EvidenceGrade;
+  citation: string;
+  processingMs: number;
+}
+
+
+
 export type EvidenceGrade = 'A' | 'B' | 'C' | 'D';
 
 export interface RedFlagAlert {

@@ -1,4 +1,5 @@
 export { GaitAgent } from './gait/GaitAgent.js';
+export { ROMAgent }  from './rom/ROMAgent.js';
 export type {
   FrameData,
   GaitReport,
@@ -7,4 +8,9 @@ export type {
   NormalizedLandmark,
   RedFlagAlert,
   EvidenceGrade,
+  SessionSummary,
+  JointROM,
+  Asymmetry,
+  Trend,
+  ROMReport,
 } from './types/findings.js';
