@@ -25,12 +25,7 @@ const EQUIPMENT: Array<{value: Equipment; label: string}> = [
   {value:'resistance_bands', label:'Resistance Bands'},
   {value:'foam_roller',      label:'Foam Roller'},
   {value:'dumbbells',        label:'Dumbbells'},
-  {value:'kettlebell',       label:'Kettlebell'},
-  {value:'barbell',          label:'Barbell'},
   {value:'pull_up_bar',      label:'Pull-up Bar'},
-  {value:'cable_machine',    label:'Cable Machine'},
-  {value:'treadmill',        label:'Treadmill'},
-  {value:'stationary_bike',  label:'Stationary Bike'},
 ];
 
 type ShapeProps = {kind:'e';cx:number;cy:number;rx:number;ry:number} | {kind:'r';x:number;y:number;w:number;h:number;rx?:number};

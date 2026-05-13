@@ -1,6 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { pdf } from '@react-pdf/renderer';
-import { SessionReportPDF } from '../components/SessionReportPDF.js';
 import { useLocation } from 'react-router-dom';
 import type { PoseFrame, PoseLandmark, AgentResult, FeedbackResponse } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
@@ -253,6 +251,23 @@ function playBeep(freq = 440, dur = 0.12, isDouble = false) {
 export default function Session() {
   const { userProfile } = useUserProfile();
   const profile = userProfile ?? MOCK_PROFILE;
+
+  // ── Equipment-based exercise filtering ───────────────────────────────────
+  const equipment = profile.preferences.equipmentAvailable;
+  const hasYogaMat    = equipment.includes('yoga_mat');
+  const hasDumbbells  = equipment.includes('dumbbells');
+  const hasBands      = equipment.includes('resistance_bands');
+
+  const GYM_BODYWEIGHT: ExerciseKey[] = ['squat', 'pushup', 'lunge', 'glute_bridge'];
+  const GYM_DUMBBELL:   ExerciseKey[] = ['shoulder_press', 'bent_over_row', 'hip_thrust', 'deadlift'];
+  const availableGym = [...GYM_BODYWEIGHT, ...(hasDumbbells ? GYM_DUMBBELL : [])] as ExerciseKey[];
+
+  const PILATES_BODYWEIGHT: PilatesKey[] = ['plank_hold'];
+  const availablePilates = hasYogaMat ? PILATES_POSES : PILATES_BODYWEIGHT;
+  const availableYoga    = hasYogaMat ? YOGA_POSES   : ([] as YogaKey[]);
+
+  // Resistance band physio exercises — shown but disabled (no pose tracking yet)
+  const BAND_PHYSIO = hasBands ? ['monster_walk', 'clamshell'] : [];
 
   const location = useLocation();
   const [exercise, setExercise] = useState<SessionKey>(() => {
@@ -822,6 +837,11 @@ export default function Session() {
         })),
       }, null, 2);
 
+      const [{ pdf }, { SessionReportPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/SessionReportPDF.js'),
+      ]);
+
       const blob = await pdf(
         <SessionReportPDF
           exercise={exercise as string}
@@ -871,23 +891,35 @@ export default function Session() {
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
             <select value={exercise} onChange={(e) => { setExercise(e.target.value as SessionKey); }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '0.85rem', minWidth: '260px', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', fontFamily: "'Figtree', sans-serif" }}>
               <optgroup label="Exercises">
-                {EXERCISES.map((ex) => <option key={ex} value={ex}>{ex.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                {availableGym.map((ex) => <option key={ex} value={ex}>{ex.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
               </optgroup>
-              <optgroup label="Yoga">
-                {YOGA_POSES.map((key) => <option key={key} value={key}>{YOGA_CONFIG[key].englishName} — {YOGA_CONFIG[key].sanskritName}</option>)}
-              </optgroup>
-              <optgroup label="Pilates">
-                {PILATES_POSES.map((key) => {
+              {availableYoga.length > 0 && (
+                <optgroup label="Yoga">
+                  {availableYoga.map((key) => <option key={key} value={key}>{YOGA_CONFIG[key].englishName} — {YOGA_CONFIG[key].sanskritName}</option>)}
+                </optgroup>
+              )}
+              <optgroup label={hasYogaMat ? 'Pilates' : 'Pilates (add Yoga Mat to unlock more)'}>
+                {availablePilates.map((key) => {
                   const pc = PILATES_CONFIG[key];
                   const name = key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
                   return <option key={key} value={key}>{name} — {pc.targetLabel}</option>;
                 })}
               </optgroup>
+              {BAND_PHYSIO.length > 0 && (
+                <optgroup label="Resistance Band (tracking coming soon)">
+                  {BAND_PHYSIO.map((key) => {
+                    const meta = EXERCISE_LIBRARY[key];
+                    return <option key={key} value={key} disabled>{meta?.displayName ?? key}</option>;
+                  })}
+                </optgroup>
+              )}
               <optgroup label="Physiotherapy (prescription only)">
-                {EXERCISE_KEYS_BY_CATEGORY.physiotherapy.map((key) => {
-                  const meta = EXERCISE_LIBRARY[key]!;
-                  return <option key={key} value={key} disabled>{meta.displayName}</option>;
-                })}
+                {EXERCISE_KEYS_BY_CATEGORY.physiotherapy
+                  .filter(k => !BAND_PHYSIO.includes(k))
+                  .map((key) => {
+                    const meta = EXERCISE_LIBRARY[key]!;
+                    return <option key={key} value={key} disabled>{meta.displayName}</option>;
+                  })}
               </optgroup>
             </select>
             <button onClick={() => { void startSession(); }} className="btn-primary">
