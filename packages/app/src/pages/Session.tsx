@@ -160,6 +160,21 @@ function generatePrescription(exercise: ExerciseKey, records: RepRecord[]): Arra
       { name: 'Face Pull', sets: '3×15', focus: 'Rear delt and rotator cuff balance' },
       { name: 'Thoracic Extension', sets: '3×10', focus: 'Overhead mobility prerequisite' },
     ],
+    hip_thrust: [
+      { name: tooFast > many * 0.3 ? 'Tempo Hip Thrust 3-1-2' : 'Single-Leg Hip Thrust', sets: '3×10', focus: tooFast > many * 0.3 ? '3s down, 1s squeeze at top, 2s up' : 'Unilateral gluteus maximus activation and pelvic stability' },
+      { name: 'Clamshell', sets: '3×15/side', focus: 'Gluteus medius activation — prevents hip drop' },
+      { name: 'Hip Flexor Stretch', sets: '3×30s/side', focus: 'Opposing hip flexors limit full hip extension range' },
+    ],
+    glute_bridge: [
+      { name: 'Hip Thrust', sets: '3×12', focus: 'Loaded hip extension — progress from floor to bench' },
+      { name: 'Dead Bug', sets: '3×8/side', focus: 'Lumbar stabilisation with contralateral limb loading' },
+      { name: 'Monster Walk', sets: '2×20 steps', focus: 'Gluteus medius dynamic activation pattern' },
+    ],
+    bent_over_row: [
+      { name: tooFast > many * 0.3 ? 'Tempo Bent Row 2-1-3' : 'Single-Arm Dumbbell Row', sets: '3×10', focus: tooFast > many * 0.3 ? 'Control eccentric phase — eliminate momentum' : 'Scapular retraction through full range' },
+      { name: 'Face Pull', sets: '3×15', focus: 'Posterior rotator cuff balance — pairs with horizontal pull' },
+      { name: 'Cat-Cow Mobilisation', sets: '3×10', focus: 'Lumbar mobility for safe hinge position maintenance' },
+    ],
   };
   return base[exercise];
 }
