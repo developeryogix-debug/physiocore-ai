@@ -241,12 +241,26 @@ All pages need `padding-top: 100px` to clear nav.
 
 ---
 
-## Major Milestone — 14 May 2026
+## Session — 14 May 2026
 
-**First real payment processed: $12/month Pro plan.**
-Stripe live payments confirmed working end-to-end.
-Doctor On Click Stripe account connected to PhysioCore AI.
-B2C revenue pipeline fully operational.
+### Major Milestones
+- **FIRST REAL PAYMENT**: $12/month Pro plan via Stripe
+- **Phase 1 COMPLETE**: all 12 joints, 26 exercises, 12 red flags, posture capture
+- PostureAgent AI analysis live with Claude Sonnet
+- Bundle reduced: 2.1MB → 789KB initial load
+- B2B pricing page: Clinic $99, Studio $49, Enterprise custom
+- Equipment filtering: exercises match user's available equipment
+- Phase 2 plan documented: `docs/PHASE2_ASSESSMENT_SWARM.md` (892 lines)
+
+### Phase 2 Design Decisions
+| Question | Decision |
+|---|---|
+| SpecialTestsAgent input | Voice-guided (hands-free for clinician) |
+| GaitAgent processing | Client-side MediaPipe (privacy-first, no upload) |
+| FHIR storage | Supabase, export on demand |
+| AdversarialAgent | Separate Claude Opus call |
+| Assessment frequency | Monthly posture; each session ROM + pain |
+| Special tests availability | Clinician mode only |
 
 ---
 
@@ -296,8 +310,9 @@ B2C revenue pipeline fully operational.
 
 ## Next Build Priorities
 
-1. PostureAgent AI analysis (grid overlay must be done first)
-2. Bundle splitting — 2.1MB → <600KB per chunk
-3. 9 remaining joints complete (clinical knowledge)
-4. Stripe live keys when ready to charge
-5. Assessment agent swarm (Phase 2)
+1. Phase 2 Session A: PostureAgent grid overlay completion
+2. Phase 2 Session B: GaitAgent (walking analysis, client-side MediaPipe)
+3. Phase 2 Session C: ROMAgent (range of motion from session data)
+4. Stripe: change statement descriptor to "PhysioCore AI"
+5. Supabase: run posture_assessments table migration
+6. PWA manifest (add to home screen)
