@@ -241,6 +241,15 @@ All pages need `padding-top: 100px` to clear nav.
 
 ---
 
+## Major Milestone — 14 May 2026
+
+**First real payment processed: $12/month Pro plan.**
+Stripe live payments confirmed working end-to-end.
+Doctor On Click Stripe account connected to PhysioCore AI.
+B2C revenue pipeline fully operational.
+
+---
+
 ## Session — 13 May 2026
 
 ### Completed
