@@ -48,12 +48,19 @@ export default function Admin() {
     e.preventDefault();
     if (!user) return;
     setOrgSaving(true); setOrgError('');
-    const org = await createOrg({ ...orgForm, created_by: user.id });
-    if (!org) { setOrgError('Failed to create. Check slug is unique.'); setOrgSaving(false); return; }
-    setOrgs(prev => [org, ...prev]);
-    setShowCreateOrg(false);
-    setOrgForm({ name: '', type: 'clinic', slug: '', contact_email: '' });
-    setOrgSaving(false);
+    try {
+      const org = await createOrg({ ...orgForm, created_by: user.id });
+      if (!org) { setOrgError('Failed to create organisation.'); return; }
+      setOrgs(prev => [org, ...prev]);
+      setShowCreateOrg(false);
+      setOrgForm({ name: '', type: 'clinic', slug: '', contact_email: '' });
+    } catch (err: unknown) {
+      const e = err as { message?: string; hint?: string };
+      console.error('Full error:', err);
+      setOrgError(e?.message || e?.hint || JSON.stringify(err) || 'Unknown error');
+    } finally {
+      setOrgSaving(false);
+    }
   }
 
   async function handleRoleChange(userId: string, role: string) {

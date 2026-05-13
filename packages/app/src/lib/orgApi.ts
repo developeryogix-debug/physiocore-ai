@@ -76,7 +76,11 @@ export async function createOrg(org: {
   name: string; type: string; slug: string; contact_email: string; created_by: string;
 }): Promise<Organisation | null> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  const { data } = await db.from('organisations').insert(org).select().single();
+  const { data, error } = await db.from('organisations').insert(org).select().single();
+  if (error) {
+    console.error('Supabase error:', error.code, error.message, error.details, error.hint);
+    throw error;
+  }
   return data as Organisation | null;
 }
 
