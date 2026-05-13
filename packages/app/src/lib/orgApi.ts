@@ -135,10 +135,14 @@ export async function getOrgPatients(orgId: string): Promise<ClinicianPatient[]>
 // ── Invites ───────────────────────────────────────────────────────────────────
 
 export async function createInvite(invite: {
-  org_id: string; invited_by: string; email: string; role: string;
+  org_id: string; invited_by: string; email: string; role: string; token: string; expires_at: string;
 }): Promise<Invite | null> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  const { data } = await db.from('invites').insert(invite).select().single();
+  const { data, error } = await db.from('invites').insert(invite).select().single();
+  if (error) {
+    console.error('createInvite error:', error.code, error.message, error.details, error.hint);
+    return null;
+  }
   return data as Invite | null;
 }
 

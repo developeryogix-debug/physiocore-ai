@@ -68,13 +68,15 @@ export default function Admin() {
     setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, role } : u));
   }
 
-  async function handleCopyInvite(orgId: string, email: string) {
+  async function handleCopyInvite(orgId: string, email: string, orgName: string) {
     if (!user) return;
-    const invite = await createInvite({ org_id: orgId, invited_by: user.id, email: email || 'admin@org.com', role: 'clinician' });
-    if (!invite) return;
-    const link = getInviteLink(invite.token);
+    const token = crypto.randomUUID();
+    const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const invite = await createInvite({ org_id: orgId, invited_by: user.id, email: email || 'admin@org.com', role: 'clinician', token, expires_at });
+    if (!invite) { console.error('Failed to create invite'); return; }
+    const link = `https://app-dteam1-mmcv.vercel.app/signup?invite=${invite.token}`;
     await navigator.clipboard.writeText(link).catch(() => undefined);
-    void sendClinicianInvite({ toEmail: email || 'admin@org.com', toName: 'Org Admin', orgAdminName: 'Platform Admin', orgName: '', inviteToken: invite.token });
+    void sendClinicianInvite({ toEmail: email || 'admin@org.com', toName: 'Org Admin', orgAdminName: 'Platform Admin', orgName, inviteToken: invite.token });
     setCopiedLink(link);
     setTimeout(() => setCopiedLink(null), 3000);
   }
@@ -125,7 +127,7 @@ export default function Admin() {
                     <td style={{ padding: '11px 16px', color: 'var(--text-secondary)' }}>{o.country}</td>
                     <td style={{ padding: '11px 16px', color: 'var(--text-tertiary)', fontSize: '0.78rem' }}>{new Date(o.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '11px 16px' }}>
-                      <button onClick={() => void handleCopyInvite(o.id, o.contact_email ?? '')} className="btn-ghost" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>Invite Admin</button>
+                      <button onClick={() => void handleCopyInvite(o.id, o.contact_email ?? '', o.name)} className="btn-ghost" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>Invite Admin</button>
                     </td>
                   </tr>
                 ))}
