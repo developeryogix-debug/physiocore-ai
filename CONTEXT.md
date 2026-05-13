@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 13 May 2026
+Last updated: 14 May 2026
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -263,10 +263,32 @@ All pages need `padding-top: 100px` to clear nav.
 
 ---
 
+## Session — 13–14 May 2026
+
+### Completed
+- `packages/clinical/` scaffolded and workspace conflict resolved
+- `packages/agents/clinical/src/safetyRules.ts` — 12 APA red flags, hard-coded, zero-temperature (Phase 1c)
+- `packages/clinical/src/joints/` — shoulder, knee, lumbar with real primary citations
+- `packages/app/src/lib/exerciseLibrary.ts` — 26 exercises, Latin muscle names, ICD-10, CPT codes
+- `packages/app/src/pages/PostureAssessment.tsx` — 4-view capture, countdown timer, audio beeps
+- `packages/app/src/pages/Pricing.tsx` — 3 tiers (Free / Pro / Clinical), Stripe checkout stubs
+- `VISION.md` and `POSTURE_SYSTEM.md` added to repo
+- `CLAUDE.md` updated with global vision reference (read at session start)
+- Navigation: Posture link added
+- Admin panel: 5 organisations now live
+- Design fixes: font floor 0.75rem, btn border-radius, font-weight ceiling 600
+
+### In Progress
+- 9 remaining joints: elbow, wrist, hip, ankle, cervical, thoracic, SI, TMJ, foot
+- Posture grid overlay rendering (PostureAssessment)
+- Bundle splitting (2.1MB → target <600KB chunks)
+
+---
+
 ## Next Build Priorities
 
-1. Invite Admin flow for each org
-2. Stripe B2C pricing page
-3. Design fixes (typography, pill buttons, font-weight 600)
-4. PWA (add to home screen)
-5. Patient invite flow — end-to-end test
+1. PostureAgent AI analysis (grid overlay must be done first)
+2. Bundle splitting — 2.1MB → <600KB per chunk
+3. 9 remaining joints complete (clinical knowledge)
+4. Stripe live keys when ready to charge
+5. Assessment agent swarm (Phase 2)
