@@ -151,6 +151,12 @@ importers:
         specifier: ^6.0.7
         version: 6.4.2(@types/node@22.19.18)(tsx@4.21.0)
 
+  packages/clinical:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/orchestrator:
     dependencies:
       '@physiocore/behavior-agent':
