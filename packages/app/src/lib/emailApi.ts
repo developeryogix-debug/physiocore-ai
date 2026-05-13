@@ -7,20 +7,24 @@
  */
 
 const RESEND_KEY = import.meta.env.VITE_RESEND_API_KEY as string | undefined;
-const FROM_EMAIL = 'PhysioCore AI <noreply@physiocore.ai>';
-const APP_URL    = typeof window !== 'undefined' ? window.location.origin : 'https://physiocore.ai';
+const FROM_EMAIL = 'onboarding@resend.dev';
+const APP_URL    = typeof window !== 'undefined' ? window.location.origin : 'https://app-dteam1-mmcv.vercel.app';
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  console.log('[emailApi] API key exists:', !!RESEND_KEY);
   if (!RESEND_KEY) {
     console.warn('[emailApi] VITE_RESEND_API_KEY not set — email not sent. Invite link:', html.match(/href="([^"]+)"/)?.[1]);
     return false;
   }
   try {
+    console.log('[emailApi] Sending to:', to, 'from:', FROM_EMAIL);
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
     });
+    const body = await res.json().catch(() => null);
+    console.log('[emailApi] Resend response:', res.status, body);
     return res.ok;
   } catch (e) {
     console.error('[emailApi] send failed', e);

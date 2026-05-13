@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env['RESEND_API_KEY'] ?? '');
 const TO = 'devkapilicloud@gmail.com';
-const FROM = 'PhysioCore Monitor <monitor@physiocore.ai>';
+const FROM = 'onboarding@resend.dev';
 
 export interface AlertPayload {
   service: string;
