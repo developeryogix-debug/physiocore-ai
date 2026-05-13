@@ -155,12 +155,31 @@ function generatePrescription(exercise: ExerciseKey, records: RepRecord[]): Arra
   return base[exercise];
 }
 
-function exportReport(exercise: ExerciseKey, records: RepRecord[], feedbackData: FeedbackResponse | undefined, sessionDuration: number, viewMode: ViewMode, userName: string, sessionNum: number) {
-  const avgScore = records.length > 0 ? Math.round(records.reduce((s, r) => s + r.score, 0) / records.length) : 0;
+/**
+ * exportReport — generates a proper PDF file and triggers a direct browser download.
+ * Uses @react-pdf/renderer via dynamic import so the ~1 MB PDF bundle only loads
+ * on demand (not on initial page load).
+ */
+async function exportReport(
+  exercise: ExerciseKey,
+  records: RepRecord[],
+  feedbackData: FeedbackResponse | undefined,
+  sessionDuration: number,
+  viewMode: ViewMode,
+  userName: string,
+  sessionNum: number,
+): Promise<void> {
+  // Pre-compute derived values
+  const avgScore  = records.length > 0 ? Math.round(records.reduce((s, r) => s + r.score, 0) / records.length) : 0;
   const bestScore = records.length > 0 ? Math.max(...records.map(r => r.score)) : 0;
-  const tension = records.reduce((s, r) => s + r.duration, 0).toFixed(0);
-  const mins = Math.floor(sessionDuration / 60); const secs = Math.round(sessionDuration % 60);
-  const fhirJson = JSON.stringify({
+  const tension   = records.reduce((s, r) => s + r.duration, 0).toFixed(0);
+  const mins      = Math.floor(sessionDuration / 60);
+  const secs      = Math.round(sessionDuration % 60);
+  const dateStr   = new Date().toISOString().split('T')[0] as string;
+  const exerciseLabel = exercise.replace(/_/g, '-');
+  const filename  = `${userName}_${exerciseLabel}_${dateStr}_S${sessionNum}`;
+
+  const fhirJson  = JSON.stringify({
     resourceType: 'Bundle', type: 'collection',
     entry: records.map(r => ({
       resource: {
@@ -170,41 +189,42 @@ function exportReport(exercise: ExerciseKey, records: RepRecord[], feedbackData:
         component: [
           { code: { text: 'Peak Angle' }, valueQuantity: { value: r.angle, unit: 'deg' } },
           { code: { text: 'Form Score' }, valueQuantity: { value: r.score } },
-          { code: { text: 'Duration' }, valueQuantity: { value: r.duration, unit: 's' } },
-          { code: { text: 'Flag' }, valueString: r.flag },
+          { code: { text: 'Duration' },   valueQuantity: { value: r.duration, unit: 's' } },
+          { code: { text: 'Flag' },       valueString: r.flag },
         ],
       },
     })),
   }, null, 2);
-  const repRows = records.map(r => `<tr><td>Rep ${r.num}</td><td>${r.angle}°</td><td style="color:${r.score>=80?'#16a34a':r.score>=60?'#92400e':'#dc2626'};font-weight:700">${r.score}/100</td><td>${r.duration}s</td><td>${r.flag==='good'?'✅ Good':r.flag==='too_fast'?'⚠️ Too fast':'⚠️ Shallow'}</td></tr>`).join('');
-  const presRows = generatePrescription(exercise, records).map(p => `<tr><td><strong>${p.name}</strong></td><td>${p.sets}</td><td>${p.focus}</td></tr>`).join('');
-  const fbHtml = feedbackData ? `<h2>AI Feedback</h2><p>${feedbackData.summary}</p>${feedbackData.safetyWarnings.length ? `<p><strong>Safety warnings:</strong> ${feedbackData.safetyWarnings.join('; ')}</p>` : ''}${feedbackData.formCorrections.map(c => `<p><strong>[${c.priority.toUpperCase()}] ${c.bodyPart.replace(/_/g,' ')}:</strong> ${c.instruction}</p>`).join('')}<p style="color:#10b981;font-style:italic">${feedbackData.motivationalMessage}</p>` : '';
-  const dateStr = new Date().toISOString().split('T')[0];
-  const exerciseLabel = exercise.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
-  const filename = `${userName}_${exerciseLabel}_${dateStr}_S${sessionNum}`;
-  const html = `<!DOCTYPE html><html><head><title>${filename}</title><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1e293b}h1{color:#1e40af;margin-bottom:4px}h2{color:#1e293b;margin-top:28px;border-bottom:2px solid #e2e8f0;padding-bottom:6px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{padding:9px 14px;text-align:left;border:1px solid #e2e8f0;font-size:0.875rem}th{background:#f8fafc;font-weight:600;color:#475569}tr:nth-child(even) td{background:#f8fafc}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:8px}.stat{text-align:center;padding:14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px}.sv{font-size:1.8rem;font-weight:800;color:#0369a1}.sl{font-size:0.7rem;color:#64748b;margin-top:3px;font-weight:600}pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;font-size:0.72rem;overflow:auto;white-space:pre-wrap}@media print{pre{white-space:pre-wrap}}</style></head><body>
-<h1>PhysioCore AI — Session Report</h1>
-<p style="color:#64748b;font-size:0.875rem"><strong>Exercise:</strong> ${exercise.replace(/_/g,' ')} &nbsp;·&nbsp; <strong>View mode:</strong> ${viewMode} &nbsp;·&nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-<h2>Metrics Summary</h2>
-<div class="grid">
-  <div class="stat"><div class="sv">${records.length}</div><div class="sl">Total Reps</div></div>
-  <div class="stat"><div class="sv">${avgScore}</div><div class="sl">Avg Score /100</div></div>
-  <div class="stat"><div class="sv">${bestScore}</div><div class="sl">Best Score /100</div></div>
-  <div class="stat"><div class="sv">${tension}s</div><div class="sl">Time Under Tension</div></div>
-  <div class="stat"><div class="sv">${mins}m ${secs}s</div><div class="sl">Session Duration</div></div>
-</div>
-${fbHtml}
-<h2>Rep by Rep Breakdown</h2>
-<table><thead><tr><th>Rep</th><th>Angle</th><th>Score</th><th>Time</th><th>Quality</th></tr></thead><tbody>${repRows}</tbody></table>
-<h2>Next Session Prescription</h2>
-<table><thead><tr><th>Exercise</th><th>Sets × Reps</th><th>Focus</th></tr></thead><tbody>${presRows}</tbody></table>
-<h2>FHIR R4 Observation Bundle</h2>
-<pre>${fhirJson}</pre>
-</body></html>`;
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, '_blank');
-  win?.addEventListener('load', () => { win.print(); setTimeout(() => URL.revokeObjectURL(url), 10000); });
+
+  // Lazy-load react-pdf (only downloaded when user clicks Export)
+  const [{ pdf }, { default: SessionReportPDF }] = await Promise.all([
+    import('@react-pdf/renderer'),
+    import('../components/SessionReportPDF.js'),
+  ]);
+
+  const doc = SessionReportPDF({
+    exercise, viewMode, sessionNum, userName,
+    sessionDate: dateStr,
+    avgScore, bestScore, tension, mins, secs,
+    records,
+    feedback: feedbackData ? {
+      summary:          feedbackData.summary,
+      formCorrections:  feedbackData.formCorrections.map(c => ({ bodyPart: c.bodyPart, priority: c.priority, instruction: c.instruction })),
+      motivationalMessage: feedbackData.motivationalMessage,
+      nextSteps:        feedbackData.nextSteps,
+      safetyWarnings:   feedbackData.safetyWarnings,
+    } : undefined,
+    prescription: generatePrescription(exercise, records) ?? [],
+    fhirJson,
+  });
+
+  const blob = await pdf(doc).toBlob();
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `${filename}.pdf` });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 const _lastVoiceMs = { t: 0 };
@@ -1020,10 +1040,15 @@ export default function Session() {
               <h2 className="font-display" style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Session Report</h2>
             </div>
             {repRecords.length > 0 && (
-              <button onClick={() => {
+              <button onClick={e => {
+                const btn = e.currentTarget;
+                btn.textContent = 'Generating PDF…';
+                btn.setAttribute('disabled', 'true');
                 const firstName = ((userProfile?.name || profile?.name || 'User').split(' ')[0] || 'User').replace(/[^a-zA-Z0-9]/g, '') || 'User';
                 const sessionNum = (JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[]).length;
-                exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode, firstName, sessionNum);
+                void exportReport(exercise as ExerciseKey, repRecords, feedbackData, sessionDuration, viewMode, firstName, sessionNum)
+                  .then(() => { btn.textContent = '✓ PDF Downloaded'; setTimeout(() => { btn.textContent = 'Export for Physiotherapist ↓'; btn.removeAttribute('disabled'); }, 2500); })
+                  .catch(() => { btn.textContent = 'Export for Physiotherapist ↓'; btn.removeAttribute('disabled'); });
               }} className="btn-ghost" style={{ fontSize: '0.82rem' }}>
                 Export for Physiotherapist ↓
               </button>
