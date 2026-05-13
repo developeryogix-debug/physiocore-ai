@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 11 May 2026
+Last updated: 13 May 2026
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -241,13 +241,32 @@ All pages need `padding-top: 100px` to clear nav.
 
 ---
 
+## Session — 13 May 2026
+
+### Completed
+- Multi-tenant organisation system live
+- 4 organisations created: Doctor On Click (clinic), progressive (wellness_retreat), devyogastudio (yoga_studio), dpw (gym)
+- Admin panel working at /admin
+- User guide v1.1 PDF completed by Cowork
+- react-pdf session export fixed
+- SQL migrations all run
+- RLS policies fixed (user_id vs id column)
+
+### Org Structure
+| Role | Identity |
+|---|---|
+| Super Admin | devkapiltech@gmail.com |
+| Org: clinic | doctor-on-click |
+| Org: wellness | phy-retreat |
+| Org: yoga | devyoga-studio |
+| Org: gym | city-gym |
+
+---
+
 ## Next Build Priorities
 
-1. Connect Vercel → developeryogix-debug/physiocore-ai → confirm API routes work
-2. Add Vercel env vars: RESEND_API_KEY, CRON_SECRET, SUPABASE_SERVICE_ROLE_KEY
-3. Onboarding dark theme (Clinical Noir restyle)
-4. /history — session timeline, form score chart, heatmap
-5. /outcomes — PSFS, NPRS, GROC questionnaires
-6. /settings — profile edit + biometrics tracker
-7. /trainer — dedicated AI chat page (streaming, voice)
-8. Dashboard 8-panel upgrade
+1. Invite Admin flow for each org
+2. Stripe B2C pricing page
+3. Design fixes (typography, pill buttons, font-weight 600)
+4. PWA (add to home screen)
+5. Patient invite flow — end-to-end test
