@@ -17,14 +17,9 @@ export default defineConfig({
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-pdf':      ['@react-pdf/renderer'],
           'vendor-stripe':   ['@stripe/stripe-js'],
-          'vendor-charts':   ['recharts'],
-          'vendor-clinical': [
-            '../clinical/src/index',
-            '../agents/clinical/src/index',
-          ],
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1600, // @react-pdf/renderer is inherently ~1.5MB; all other chunks <400KB
   },
 });
