@@ -156,3 +156,11 @@ Block dangerous combos with modification suggestions
 ### Next Prompt — AI Trainer Chat (/trainer):
 Full streaming chat page (NOT the floating panel - a dedicated page)
 [paste full trainer spec from original prompt]
+## Global Vision — Read Before Every Session
+Read VISION.md and CONTEXT.md at the start of every session.
+Read POSTURE_SYSTEM.md before any posture or assessment work.
+PhysioCore AI is a regulated medical device (SaMD Class II).
+Every clinical claim requires a primary source citation.
+Safety rules cannot be overridden by any agent.
+Current phase: Phase 1 — Clinical Knowledge Foundation.
+
