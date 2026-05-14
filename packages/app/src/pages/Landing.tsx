@@ -27,7 +27,7 @@ const TECH_FACTS = [
   { stat: 'Mifflin-St Jeor', label: 'TDEE energy equation',           cite: 'Mifflin MD et al., 1990' },
   { stat: 'FHIR R4',         label: 'HL7 interoperability standard',  cite: 'HL7 International, 2019' },
   { stat: '1.6–2.2 g/kg',   label: 'Evidence protein targets',       cite: 'Stokes T et al., 2018' },
-  { stat: 'Claude Sonnet',   label: 'AI reasoning + web search',      cite: 'Anthropic, 2025' },
+  { stat: 'Clinical AI',     label: 'Advanced reasoning + web search', cite: 'Anthropic, 2025' },
 ];
 
 const STEPS = [

@@ -272,7 +272,7 @@ export default function GaitAssessment() {
       <div style={{width:56,height:56,borderRadius:'50%',border:'3px solid #1a2535',borderTopColor:'var(--teal-500)',animation:'spin 1s linear infinite'}}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <p style={{color:'var(--teal-500)',fontWeight:600}}>Analysing gait pattern…</p>
-      <p style={{color:'var(--text-secondary)',fontSize:'0.8rem'}}>{metrics?.framesAnalysed??0} frames · Claude Sonnet interpreting</p>
+      <p style={{color:'var(--text-secondary)',fontSize:'0.8rem'}}>{metrics?.framesAnalysed??0} frames · AI interpreting</p>
     </div>
   );
 

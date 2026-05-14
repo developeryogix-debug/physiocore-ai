@@ -21,6 +21,8 @@ interface ROMTest {
   view: 'anterior' | 'lateral-right' | 'lateral-left'; voiceCue: string;
   normalMin: number; normalMax: number; higherIsBetter: boolean;
   lmA: number; lmB: number; lmC: number; clinicalLabel: string;
+  complement?: boolean;   // report as 180-geometric (hip/knee flexion anatomical conversion)
+  lmCFallback?: number;   // fallback landmark C when primary visibility < 0.4
 }
 interface ROMResult {
   key: string; joint: string; movement: string; side: 'right' | 'left';
@@ -52,16 +54,16 @@ const TESTS: ROMTest[] = [
     normalMin:155, normalMax:180, higherIsBetter:true,  lmA:23, lmB:11, lmC:13, clinicalLabel:'160–180°' },
   { key:'hflex-r', joint:'Hip',      movement:'Flexion',   side:'right', view:'lateral-right',
     voiceCue:'RIGHT side to camera. Lift RIGHT knee toward your chest as high as you can. Hold.',
-    normalMin:55,  normalMax:70,  higherIsBetter:false, lmA:12, lmB:24, lmC:26, clinicalLabel:'110–125°' },
+    normalMin:110, normalMax:125, higherIsBetter:true,  complement:true, lmA:12, lmB:24, lmC:26, clinicalLabel:'110–125°' },
   { key:'hflex-l', joint:'Hip',      movement:'Flexion',   side:'left',  view:'lateral-left',
     voiceCue:'LEFT side to camera. Lift LEFT knee toward chest as high as you can. Hold.',
-    normalMin:55,  normalMax:70,  higherIsBetter:false, lmA:11, lmB:23, lmC:25, clinicalLabel:'110–125°' },
+    normalMin:110, normalMax:125, higherIsBetter:true,  complement:true, lmA:11, lmB:23, lmC:25, clinicalLabel:'110–125°' },
   { key:'kflex-r', joint:'Knee',     movement:'Flexion',   side:'right', view:'lateral-right',
     voiceCue:'RIGHT side to camera. Bend RIGHT knee — heel toward your buttock. Hold.',
-    normalMin:30,  normalMax:50,  higherIsBetter:false, lmA:24, lmB:26, lmC:28, clinicalLabel:'130–145°' },
+    normalMin:130, normalMax:145, higherIsBetter:true,  complement:true, lmA:24, lmB:26, lmC:28, lmCFallback:30, clinicalLabel:'130–145°' },
   { key:'kflex-l', joint:'Knee',     movement:'Flexion',   side:'left',  view:'lateral-left',
     voiceCue:'LEFT side to camera. Bend LEFT knee — heel toward your buttock. Hold.',
-    normalMin:30,  normalMax:50,  higherIsBetter:false, lmA:23, lmB:25, lmC:27, clinicalLabel:'130–145°' },
+    normalMin:130, normalMax:145, higherIsBetter:true,  complement:true, lmA:23, lmB:25, lmC:27, lmCFallback:29, clinicalLabel:'130–145°' },
 ];
 
 const BONES: [number,number][] = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[0,7],[0,8]];
@@ -86,13 +88,27 @@ function beep(isHold: boolean) {
   } catch { /* ignore */ }
 }
 
-function liveAngle(lms: MPLandmark[], t: ROMTest): number {
-  const a = lms[t.lmA], b = lms[t.lmB], c = lms[t.lmC];
-  if (!a || !b || !c) return 0;
+function computeAngleResult(lms: MPLandmark[], t: ROMTest): { angle: number; warn: boolean; bad: boolean } {
+  const a = lms[t.lmA], b = lms[t.lmB];
+  let c = lms[t.lmC];
+  let warn = false;
+  // Ankle can disappear behind body during knee flexion — fall back to heel
+  if (c && (c.visibility ?? 1) < 0.4 && t.lmCFallback !== undefined) {
+    const cf = lms[t.lmCFallback];
+    if (cf && (cf.visibility ?? 1) >= 0.35) { c = cf; warn = true; }
+  }
+  const visA = a?.visibility ?? 1, visB = b?.visibility ?? 1, visC = c?.visibility ?? 1;
+  if (!a || !b || !c || visA < 0.5 || visB < 0.5 || visC < 0.35) return { angle: 0, warn, bad: true };
   const v1 = { x: a.x - b.x, y: a.y - b.y }, v2 = { x: c.x - b.x, y: c.y - b.y };
   const dot = v1.x * v2.x + v1.y * v2.y;
   const mag = Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y);
-  return Math.round(Math.acos(Math.min(1, Math.max(-1, mag < 1e-6 ? 1 : dot / mag))) * 180 / Math.PI);
+  let angle = Math.round(Math.acos(Math.min(1, Math.max(-1, mag < 1e-6 ? 1 : dot / mag))) * 180 / Math.PI);
+  if (t.complement) angle = 180 - angle;
+  return { angle, warn, bad: false };
+}
+
+function liveAngle(lms: MPLandmark[], t: ROMTest): number {
+  return computeAngleResult(lms, t).angle;
 }
 
 function romStatus(angle: number, t: ROMTest): ROMResult['status'] {
@@ -238,8 +254,10 @@ export default function GuidedROMAssessment() {
   const [tidx, setTidx]         = useState(0);
   const [cntdn, setCntdn]       = useState<number | null>(null);
   const [isHold, setIsHold]     = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [angle, setAngle]       = useState<number | null>(null);
   const [captured, setCaptured] = useState<Record<string, number>>({});
+  const [lmWarn, setLmWarn]     = useState<string | null>(null);
   const [camErr, setCamErr]     = useState<string | null>(null);
   const [results, setResults]   = useState<ROMResult[]>([]);
   const [interp, setInterp]     = useState<Interp | null>(null);
@@ -282,7 +300,12 @@ export default function GuidedROMAssessment() {
           }
           ctx.fillStyle = '#00D4AA';
           for (const lm of lms) { if (!lm || (lm.visibility ?? 1) < 0.3) continue; ctx.beginPath(); ctx.arc(lm.x * w, lm.y * h, 4, 0, Math.PI * 2); ctx.fill(); }
-          const tst = TESTS[ti]; if (tst) setAngle(liveAngle(lms, tst));
+          const tst = TESTS[ti];
+          if (tst) {
+            const res = computeAngleResult(lms, tst);
+            setAngle(res.bad ? null : res.angle);
+            setLmWarn(res.bad ? 'Landmark lost — move closer' : res.warn ? 'Using heel landmark' : null);
+          }
         }
       } catch { /**/ }
     }
@@ -290,20 +313,28 @@ export default function GuidedROMAssessment() {
   }, []);
 
   const runTest = useCallback((idx: number, onDone: () => void) => {
-    const tst = TESTS[idx]!; setTidx(idx); setIsHold(false); setCntdn(null); setAngle(null);
+    const tst = TESTS[idx]!; setTidx(idx); setIsHold(false); setCntdn(null); setAngle(null); setLmWarn(null);
+    setShowGuide(true);
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => renderLoop(idx));
     speak(tst.voiceCue);
     tmRef.current = setTimeout(() => {
+      setShowGuide(false);
       let tick = 8; setCntdn(tick);
       const iv = setInterval(() => {
         tick--;
         if (tick > 0) { setCntdn(tick); beep(false); }
         else {
           clearInterval(iv); setCntdn(null); setIsHold(true); beep(true);
-          const a = lastLmsRef.current ? liveAngle(lastLmsRef.current, tst) : 0;
-          setCaptured(p => ({ ...p, [tst.key]: a }));
-          tmRef.current = setTimeout(() => { setIsHold(false); onDone(); }, 1500);
+          const res = lastLmsRef.current ? computeAngleResult(lastLmsRef.current, tst) : null;
+          if (!res || res.bad) {
+            setLmWarn('Landmark lost — please retake');
+            setIsHold(false);
+            onDone();
+          } else {
+            setCaptured(p => ({ ...p, [tst.key]: res.angle }));
+            tmRef.current = setTimeout(() => { setIsHold(false); onDone(); }, 1500);
+          }
         }
       }, 1000);
     }, 2500);
@@ -440,7 +471,7 @@ Respond with JSON only — no markdown:
           Voice cues guide each movement. Results compared to <em>Norkin &amp; White 2016</em> reference values.
         </p>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.6, marginBottom: 24 }}>
-          Allow <strong style={{ color: 'var(--text-primary)' }}>10 minutes</strong> in a clear space 2–3 m from the camera. Claude Sonnet analysis included.
+          Allow <strong style={{ color: 'var(--text-primary)' }}>10 minutes</strong> in a clear space 2–3 m from the camera. AI clinical analysis included.
         </p>
         <div style={{ background: 'rgba(255,184,48,0.07)', border: '1px solid rgba(255,184,48,0.2)', borderRadius: 8, padding: '12px 16px', marginBottom: 28, fontSize: '0.8rem', color: '#FFB830', lineHeight: 1.5 }}>
           ⚠ Camera estimates ±5–10° precision. Not a substitute for clinical goniometry. Stop if you feel pain.
@@ -456,19 +487,26 @@ Respond with JSON only — no markdown:
 
   if (phase === 'capturing') {
     const prog = Math.round(((tidx + 1) / TESTS.length) * 100);
-    const aStatus = angle !== null ? romStatus(angle, cur) : null;
+
     return (
       <div style={{ minHeight: '100vh', background: '#000', paddingTop: 72, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {camErr ? <div style={{ color: '#FF4444', padding: 40 }}>{camErr}</div> : <>
           <div style={{ position: 'relative', width: '100%', maxWidth: 800 }}>
             <video ref={videoRef} muted playsInline style={{ width: '100%', borderRadius: 12, display: 'block' }} />
             <canvas ref={overlayRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-            {angle !== null && <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(5,8,16,0.85)', border: `2px solid ${aStatus ? statusClr(aStatus) : 'var(--teal-500)'}`, borderRadius: 10, padding: '8px 14px', textAlign: 'center' }}>
-              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '2rem', fontWeight: 700, color: aStatus ? statusClr(aStatus) : 'var(--teal-500)' }}>{angle}°</div>
-              <div style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)' }}>LIVE</div>
+            {showGuide && <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(5,8,16,0.72)', borderRadius: 12, gap: 12 }}>
+              <MovementGuide testKey={cur.key} />
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.7rem', color: '#4DB8FF', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{cur.joint} {cur.movement}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Get into position…</div>
+            </div>}
+            {angle !== null && !showGuide && <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(5,8,16,0.88)', border: `2px solid ${angleColor(angle, cur)}`, borderRadius: 10, padding: '8px 14px', textAlign: 'center', minWidth: 90 }}>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: '2rem', fontWeight: 700, color: angleColor(angle, cur) }}>{angle}°</div>
+              <div style={{ fontSize: '0.58rem', color: '#4DB8FF', letterSpacing: '0.06em', marginTop: 1 }}>TARGET: {cur.clinicalLabel}</div>
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-tertiary)', marginTop: 2 }}>LIVE</div>
             </div>}
             {cntdn !== null && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontFamily: "'Space Mono',monospace", fontSize: '5rem', fontWeight: 700, color: '#FFB830', textShadow: '0 0 30px rgba(255,184,48,0.8)' }}>{cntdn}</div>}
             {isHold && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontFamily: "'Space Mono',monospace", fontSize: '2.5rem', fontWeight: 700, color: '#00E676', textShadow: '0 0 30px rgba(0,230,118,0.8)' }}>HOLD ✓</div>}
+            {lmWarn && <div style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', background: 'rgba(255,68,68,0.92)', border: '1px solid #FF4444', borderRadius: 8, padding: '7px 16px', fontSize: '0.8rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>⚠ {lmWarn}</div>}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: '0 0 12px 12px' }}>
               <div style={{ height: '100%', width: `${prog}%`, background: 'var(--teal-500)', transition: 'width 0.5s', borderRadius: '0 0 12px 12px' }} />
             </div>
@@ -528,7 +566,7 @@ Respond with JSON only — no markdown:
   if (phase === 'analysing') return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-void)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
       <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,var(--teal-500),var(--blue-400))', animation: 'pulse 1.5s ease-in-out infinite' }} />
-      <div style={{ fontFamily: "'Space Mono',monospace", color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>Analysing with Claude Sonnet…</div>
+      <div style={{ fontFamily: "'Space Mono',monospace", color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>Analysing with Clinical AI…</div>
     </div>
   );
 
@@ -552,7 +590,7 @@ Respond with JSON only — no markdown:
         </div>
 
         {interp && <div style={{ background: 'rgba(0,212,170,0.06)', border: '1px solid var(--border-teal)', borderRadius: 12, padding: '18px 22px', marginBottom: 20 }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--teal-500)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Clinical Interpretation · Claude Sonnet</div>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--teal-500)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Clinical Interpretation</div>
           <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>{interp.summary}</p>
           {interp.referral && <div style={{ marginTop: 12, padding: '8px 14px', background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: 8, fontSize: '0.8rem', color: '#FF4444' }}>⚠ Physiotherapy referral recommended.</div>}
         </div>}
@@ -594,11 +632,28 @@ Respond with JSON only — no markdown:
         </div>
 
         {/* Asymmetry flags */}
-        {asymmetries.length > 0 && <div style={{ background: 'rgba(255,184,48,0.06)', border: '1px solid rgba(255,184,48,0.25)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#FFB830', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Bilateral Asymmetries &gt;10°</div>
-          {asymmetries.map((a, i) => <div key={i} style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
-            <strong style={{ color: 'var(--text-primary)' }}>{a.joint} {a.movement}:</strong> R {a.rightDeg}° vs L {a.leftDeg}° — Δ{a.diff}° asymmetry
-          </div>)}
+        {asymmetries.length > 0 && <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#FFB830', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Mono',monospace" }}>Bilateral Asymmetries &gt;10°</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {asymmetries.map((a, i) => {
+              const severity = a.diff >= 20 ? 'significant' : 'mild';
+              const bdr = severity === 'significant' ? '#FF4444' : '#FFB830';
+              return <div key={i} style={{ background: severity === 'significant' ? 'rgba(255,68,68,0.06)' : 'rgba(255,184,48,0.06)', border: `1px solid ${bdr}40`, borderLeft: `3px solid ${bdr}`, borderRadius: 10, padding: '14px 18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{severity === 'significant' ? '⚠' : '△'} {a.joint} {a.movement}</span>
+                  <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono',monospace", fontSize: '0.78rem', fontWeight: 700, color: bdr }}>{a.diff}° asymmetry</span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 7px', borderRadius: 20, background: `${bdr}18`, color: bdr, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{severity === 'significant' ? 'Clinically significant' : 'Mild'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.76rem', color: 'var(--blue-400)' }}>R {a.rightDeg}°</span>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.76rem' }}>vs</span>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.76rem', color: '#a78bfa' }}>L {a.leftDeg}°</span>
+                </div>
+                <div style={{ fontSize: '0.81rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>{asymmetryInterpretation(a)}</div>
+                <div style={{ marginTop: 8, fontSize: '0.66rem', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>Reference: Norkin &amp; White, Measurement of Joint Motion, 5th ed. 2016</div>
+              </div>;
+            })}
+          </div>
         </div>}
 
         {/* Joint findings */}

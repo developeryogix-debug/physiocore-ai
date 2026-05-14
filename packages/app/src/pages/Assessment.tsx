@@ -49,7 +49,7 @@ const PROGRESS_STEPS = [
   '📐 ROMAgent measuring range...',
   '📍 PainMapAgent mapping symptoms...',
   '📊 FunctionalAgent scoring...',
-  '⚖️ AdversarialAgent (Claude Opus) red-teaming...',
+  '⚖️ AdversarialAgent red-teaming...',
   '📋 ConsensusAgent building report...',
   '✅ Assessment complete',
 ];

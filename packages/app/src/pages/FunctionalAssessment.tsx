@@ -558,7 +558,7 @@ export default function FunctionalAssessment() {
             {/* AI Summary */}
             <div style={{ ...card, borderColor: 'var(--border-teal)' }}>
               <div style={{ fontSize: '0.72rem', color: C.teal, fontFamily: "'Space Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
-                AI Clinical Summary — Claude Haiku
+                AI Clinical Summary
               </div>
               {loadingAI ? (
                 <div style={{ color: C.ter, fontStyle: 'italic' }}>Generating clinical summary…</div>

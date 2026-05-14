@@ -340,7 +340,7 @@ Respond with JSON only:
   if (phase==='analysing') return (
     <div style={{minHeight:'100vh',background:'var(--bg-void)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:20}}>
       <div style={{width:48,height:48,borderRadius:12,background:'linear-gradient(135deg,var(--teal-500),var(--blue-400))',animation:'pulse 1.5s ease-in-out infinite'}} />
-      <div style={{fontFamily:"'Space Mono',monospace",color:'var(--text-tertiary)',fontSize:'0.82rem'}}>Analysing with Claude Sonnet…</div>
+      <div style={{fontFamily:"'Space Mono',monospace",color:'var(--text-tertiary)',fontSize:'0.82rem'}}>Analysing with Clinical AI…</div>
     </div>
   );
 
@@ -361,7 +361,7 @@ Respond with JSON only:
         </div>
 
         {interp&&<div style={{background:'rgba(0,212,170,0.06)',border:'1px solid var(--border-teal)',borderRadius:12,padding:'18px 22px',marginBottom:20}}>
-          <div style={{fontSize:'0.7rem',fontWeight:600,color:'var(--teal-500)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:8}}>Clinical Interpretation · Claude Sonnet</div>
+          <div style={{fontSize:'0.7rem',fontWeight:600,color:'var(--teal-500)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:8}}>Clinical Interpretation</div>
           <p style={{color:'var(--text-primary)',fontSize:'0.9rem',lineHeight:1.7,margin:0}}>{interp.summary}</p>
           {interp.referral&&<div style={{marginTop:12,padding:'8px 14px',background:'rgba(255,68,68,0.1)',border:'1px solid rgba(255,68,68,0.3)',borderRadius:8,fontSize:'0.8rem',color:'#FF4444'}}>⚠ Physiotherapy referral recommended based on these findings.</div>}
         </div>}
