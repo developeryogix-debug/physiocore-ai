@@ -22,6 +22,7 @@ export { SpecialTestsAgent, createSpecialTestsAgent } from './specialTests/Speci
 export { ConservativeAgent }      from './treatment/ConservativeAgent.js';
 export { EarlyMobAgent }          from './treatment/EarlyMobAgent.js';
 export { TreatmentArbiterAgent }  from './treatment/TreatmentArbiterAgent.js';
+export { ProgressionAgent }       from './treatment/ProgressionAgent.js';
 export type {
   LoadingStrategy,
   TreatmentPlan,
