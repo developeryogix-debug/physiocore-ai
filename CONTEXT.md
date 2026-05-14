@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 15 May 2026
+Last updated: 15 May 2026 (post ROM assessment deploy)
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
