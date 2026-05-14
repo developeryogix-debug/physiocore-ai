@@ -1,3 +1,146 @@
+// ─── PostureReport (minimal schema for adversarial review) ──────────────────
+
+export interface PostureReport {
+  agentId: 'posture-agent';
+  version: '1.0.0';
+  patientId: string;
+  generatedAt: string;
+  headForwardPostureCm: number;
+  thoracicKyphosisDeg: number;
+  lumbarLordosisDeg: number;
+  pelvicTiltDeg: number;
+  shoulderHeightDiffCm: number;
+  pelvisObliquityDeg: number;
+  spinalDeviationDeg: number;
+  kneeValgusRightDeg: number;
+  kneeValgusLeftDeg: number;
+  flags: string[];
+  clinicalSummary: string;
+  evidenceGrade: EvidenceGrade;
+  processingMs: number;
+}
+
+// ─── AdversarialAgent I/O ────────────────────────────────────────────────────
+
+export interface AdversarialInput {
+  postureReport?:      PostureReport;
+  gaitReport?:         GaitReport;
+  romReport?:          ROMReport;
+  painMapOutput?:      PainMapOutput;
+  functionalReport?:   FunctionalReport;
+  specialTestsReport?: SpecialTestsReport;
+  userProfile:         SlimUserProfile;
+}
+
+export interface Critique {
+  targetAgent:     string;              // e.g. 'gait-agent', 'rom-agent'
+  finding:         string;             // specific flaw found
+  severity:        'minor' | 'moderate' | 'critical';
+  recommendation:  string;             // what should have been done / flagged
+}
+
+export interface AdversarialReport {
+  agentId:                       'adversarial-agent';
+  version:                       '1.0.0';
+  patientId:                     string;
+  generatedAt:                   string;
+  critiques:                     Critique[];
+  overallConfidence:             'high' | 'medium' | 'low';
+  safetyGapsFound:               string[];
+  recommendAdditionalAssessment: string[];
+  approvedForConsensus:          boolean;   // false if any critique.severity === 'critical'
+  processingMs:                  number;
+}
+
+// Slim profile sent to adversarial — no PII beyond clinically relevant fields
+export interface SlimUserProfile {
+  ageYears:       number;
+  sex:            'male' | 'female' | 'other';
+  primaryGoal:    string;
+  activeInjuries: Array<{ bodyPart: string; type: string; severity: number }>;
+  conditions:     Array<{ name: string; icdCode?: string }>;
+  medications:    Array<{ name: string }>;
+}
+
+// PainMapOutput alias for adversarial consumption (matches painMapAgent.ts PainMapReport)
+export type PainMapOutput = {
+  riskLevel:              'green' | 'moderate' | 'high' | 'red_flag';
+  painTrend:              string;
+  redFlags:               string[];
+  clinicalSummary:        string;
+  differentialHypotheses: string[];
+  safeToExercise:         boolean;
+  icd10Codes:             string[];
+};
+
+// ─── SpecialTestsAgent I/O ────────────────────────────────────────────────────
+
+/**
+ * A single orthopaedic special test result as recorded by the clinician.
+ * testId = test name used as a stable key (e.g. 'Lachman Test').
+ */
+export interface CompletedTest {
+  testId:  string;
+  result:  'positive' | 'negative' | 'unclear';
+  notes?:  string;
+}
+
+/**
+ * An orthopaedic special test selected by SpecialTestsAgent.selectTests().
+ * Includes voice guide for SpeechSynthesis and pre-computed likelihood ratios.
+ */
+export interface SelectedSpecialTest {
+  testId:          string;
+  testName:        string;
+  joint:           string;
+  targetPathology: string;   // derived from procedure "= positive for X"
+  sensitivity:     number;   // 0–1
+  specificity:     number;   // 0–1
+  positiveLR:      number;   // sensitivity / (1 - specificity)
+  negativeLR:      number;   // (1 - sensitivity) / specificity
+  voiceGuide:      string;   // SpeechSynthesis-ready instruction string
+  procedureText:   string;   // original clinical procedure description
+  citation:        string;
+  needsReview?:    true;
+  priority:        'high' | 'medium' | 'low';  // positiveLR ≥5 high, ≥2 medium, <2 low
+}
+
+/** A probable diagnosis produced by Phase B interpretation. */
+export interface LikelyDiagnosis {
+  name:                string;
+  icd10:               string;
+  probability:         'high' | 'moderate' | 'low';
+  postTestProbability: number;    // 0–1 Bayesian posterior
+  supportingTests:     string[];  // positive test names that support this
+  opposingTests:       string[];  // negative tests that argue against this
+}
+
+/**
+ * Full output of SpecialTestsAgent.
+ * phase 'selection'     — only selectedTests populated (Phase A complete).
+ * phase 'interpretation' — all fields populated after Phase B.
+ */
+export interface SpecialTestsReport {
+  agentId:  'special-tests-agent';
+  version:  '1.0.0';
+  joint:    string;
+  phase:    'selection' | 'interpretation';
+
+  // ── Phase A ──────────────────────────────────────────────────────────────
+  selectedTests: SelectedSpecialTest[];
+
+  // ── Phase B (undefined until interpretResults() called) ──────────────────
+  findings?:            string[];         // key clinical findings in plain language
+  positiveTests?:       string[];         // names of positive tests
+  likelyDiagnoses?:     LikelyDiagnosis[];
+  referralRecommended?: boolean;
+  referralReason?:      string | null;
+  clinicalSummary?:     string;           // Claude Sonnet, 3 sentences
+
+  evidenceGrade: EvidenceGrade;
+  processingMs:  number;
+}
+
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 // ── ROM Agent types ──────────────────────────────────────────────────────────

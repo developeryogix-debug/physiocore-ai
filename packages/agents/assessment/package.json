@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
+    "@physiocore/clinical": "workspace:*",
     "@physiocore/types": "workspace:*"
   },
   "devDependencies": {

@@ -48,6 +48,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.36.3
         version: 0.36.3
+      '@physiocore/clinical':
+        specifier: workspace:*
+        version: link:../../clinical
       '@physiocore/types':
         specifier: workspace:*
         version: link:../../types
