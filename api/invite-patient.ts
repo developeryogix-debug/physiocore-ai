@@ -100,24 +100,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Forbidden — clinician or admin role required' });
   }
 
-  // Generate Supabase invite link via service role.
-  // generateLink type:'invite' creates the user + magic link WITHOUT auto-sending
-  // Supabase's own generic email — we send our branded email instead.
-  const { data: linkData, error: linkErr } = await adminSb.auth.admin.generateLink({
-    type: 'invite',
-    email,
-    options: {
-      data: { org_id: orgId, role: 'patient', invited_by: clinicianId },
-      redirectTo: `${APP_URL}/onboard`,
+  // Call Supabase Auth Admin REST directly (avoids SDK type issues).
+  // POST /auth/v1/admin/generate_link — type:'invite' creates user + magic link
+  // WITHOUT sending Supabase's generic email (we send our branded Resend email).
+  const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+    method: 'POST',
+    headers: {
+      apikey:          SUPABASE_SVC_KEY,
+      Authorization:   `Bearer ${SUPABASE_SVC_KEY}`,
+      'Content-Type':  'application/json',
     },
+    body: JSON.stringify({
+      type:        'invite',
+      email,
+      data:        { org_id: orgId, role: 'patient', invited_by: clinicianId },
+      redirect_to: `${APP_URL}/onboard`,
+    }),
   });
+  const authJson = await authRes.json() as {
+    action_link?: string;
+    id?: string;
+    msg?: string;
+    error_description?: string;
+  };
 
-  if (linkErr || !linkData) {
-    return res.status(500).json({ error: linkErr?.message ?? 'Failed to generate invite link' });
+  if (!authRes.ok || !authJson.action_link) {
+    return res.status(500).json({
+      error: authJson.msg ?? authJson.error_description ?? 'Failed to generate invite link',
+    });
   }
 
-  const userId    = linkData.user.id;
-  const inviteUrl = linkData.properties.action_link;
+  const userId    = authJson.id ?? '';
+  const inviteUrl = authJson.action_link;
 
   // Send branded Resend email (non-fatal if Resend key missing)
   await sendBrandedEmail(email, patientName ?? '', inviteUrl).catch(() => undefined);
