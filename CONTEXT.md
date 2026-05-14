@@ -260,22 +260,38 @@ All pages need `padding-top: 100px` to clear nav.
 - **Posture PDF export ✅ BUILT** — patient variant (grid images, score, recommendations) + clinician variant (measurements, deviation table, FHIR reference)
 - **Phase 3 plan ✅ DOCUMENTED** — treatment planning swarm; see `docs/PHASE3_TREATMENT_SWARM.md`
 
-### Phase 2 Agent Status — ALL COMPLETE ✅
+### Phase 2 — ALL COMPLETE ✅
+
+#### Agents
 | Agent | Status | Notes |
 |---|---|---|
 | GaitAgent | ✅ BUILT | `src/gait/GaitAgent.ts` — step symmetry, cadence, trunk sway, arm swing, Trendelenburg; Evidence B, Krebs 1985 |
-| ROMAgent | ✅ BUILT | `src/rom/ROMAgent.ts` — score-as-proxy model; type errors fixed |
+| ROMAgent | ✅ BUILT | `src/rom/ROMAgent.ts` — score-as-proxy model |
 | PainMapAgent | ✅ BUILT | `src/pain/painMapAgent.ts` — red flag detection (Greenhalgh 2010), risk levels, ICD-10, Haiku differentials |
-| FunctionalAgent | ✅ BUILT | `src/functional/FunctionalAgent.ts` — PSFS/TUG/30s Chair Stand; Evidence A; Stratford 1995, Podsiadlo 1991, Jones 1999 |
-| SpecialTestsAgent | ✅ BUILT | `src/specialTests/SpecialTestsAgent.ts` — voice-guided; Phase A (test selection) + Phase B (LR interpretation); clinician mode only |
-| AdversarialAgent | ✅ BUILT | `src/adversarial/AdversarialAgent.ts` — Claude Opus; red-teams all Phase 1+2 findings; `approvedForConsensus` gate |
-| ConsensusAgent | ✅ BUILT | `src/consensus/ConsensusAgent.ts` — Sonnet 4.6; evidence-weighted synthesis; FHIR R4 CarePlan; SOAP note; partial report on rejection |
-| AssessmentOrchestrator | ✅ BUILT | `src/orchestrator/AssessmentOrchestrator.ts` — 4-phase parallel execution; SafetyRuleEngine gate; timeout policy |
+| FunctionalAgent | ✅ BUILT | `src/functional/FunctionalAgent.ts` — PSFS/TUG/30s Chair Stand; Stratford 1995, Podsiadlo 1991, Jones 1999 |
+| SpecialTestsAgent | ✅ BUILT | `src/specialTests/SpecialTestsAgent.ts` — voice-guided; Phase A + Phase B; clinician mode only |
+| AdversarialAgent | ✅ BUILT | `src/adversarial/AdversarialAgent.ts` — Claude Opus; `approvedForConsensus` gate |
+| ConsensusAgent | ✅ BUILT | `src/consensus/ConsensusAgent.ts` — Sonnet 4.6; FHIR R4 CarePlan; SOAP note |
+| AssessmentOrchestrator | ✅ BUILT | `src/orchestrator/AssessmentOrchestrator.ts` — 4-phase parallel; SafetyRuleEngine gate |
 
-### In Progress
-- **Assessment UI ⏳** — `/assessment` page wiring AssessmentOrchestrator to React UI; all 8 agents complete, UI integration pending
+#### UI Pages
+| Page | Route | Status |
+|---|---|---|
+| PostureAssessment | `/posture` | ✅ 4-view capture + PDF export (7 pages, patient + clinician) |
+| GuidedROMAssessment | `/rom-assessment` | ✅ 12 measures, 6 joints, MediaPipe live angle, Claude Sonnet interp |
+| GaitAssessment | `/gait-assessment` | ✅ |
+| FunctionalAssessment | `/functional` | ✅ |
+| PainMap | `/pain-map` | ✅ interactive body map, NPRS, Supabase sync |
+| Assessment (full swarm) | `/assessment` | ✅ AssessmentOrchestrator wired |
 
-### Phase 2 Design Decisions
+#### Infrastructure
+- `full_assessments` Supabase table ✅
+- `rom_assessments` Supabase table ✅
+- `posture_assessments` Supabase table ✅
+- `health-check v2` ✅ — 8 parallel checks, CostWatchAgent, 4h dedup, Resend alerts
+- Posture PDF 7-page export (patient + clinician variant) ✅
+
+#### Phase 2 Design Decisions
 | Question | Decision |
 |---|---|
 | SpecialTestsAgent input | Voice-guided (hands-free for clinician) |
@@ -284,6 +300,46 @@ All pages need `padding-top: 100px` to clear nav.
 | AdversarialAgent | Separate Claude Opus call |
 | Assessment frequency | Monthly posture; each session ROM + pain |
 | Special tests availability | Clinician mode only |
+
+---
+
+## Session — 15 May 2026
+
+### Phase 3 — Treatment Planning Swarm
+
+Spec: `docs/PHASE3_TREATMENT_PLANNING.md`  
+Package: `packages/agents/assessment/src/treatment/`  
+Types: `packages/agents/assessment/src/types/phase3.ts`
+
+#### Agent Status
+| Agent | Status | Model | File |
+|---|---|---|---|
+| ConservativeAgent | ✅ BUILT | claude-sonnet-4-6 | `treatment/ConservativeAgent.ts` |
+| EarlyMobAgent | ✅ BUILT | claude-sonnet-4-6 | `treatment/EarlyMobAgent.ts` |
+| TreatmentArbiterAgent | ⏳ NEXT | claude-opus-4-7, 600 tokens | `treatment/TreatmentArbiterAgent.ts` |
+| ProgressionAgent | ⏳ NEXT | claude-haiku-4-5-20251001, 500 tokens | `treatment/ProgressionAgent.ts` |
+| PrescriptionAgent | ⏳ NEXT | claude-haiku-4-5-20251001, 800 tokens | `treatment/PrescriptionAgent.ts` |
+| TreatmentOrchestrator | ⏳ NEXT | — | `treatment/TreatmentOrchestrator.ts` |
+
+#### Architecture
+```
+ConsensusAgent report
+    ├── ConservativeAgent (Sonnet) ──┐
+    └── EarlyMobAgent (Sonnet) ──────┤
+                                     ▼
+                          TreatmentArbiterAgent (Opus, brief)
+                                     ▼
+                          PrescriptionAgent (Haiku) → FHIR R4 CarePlan
+                                     │
+                              (every 4 sessions)
+                                     ▼
+                          ProgressionAgent (Haiku) → advance/hold/regress/modify
+```
+
+#### Phase 3 Type Definitions
+`PlanningInput`, `TreatmentPlan`, `TreatmentPhase`, `ArbiterInput`, `ArbiterVerdict`,
+`ProgressionInput`, `ProgressionOutput`, `FinalTreatmentPlan`, `WeekByWeekSchedule`
+— all in `src/types/phase3.ts`, exported from `src/index.ts`.
 
 ---
 
@@ -332,11 +388,13 @@ All pages need `padding-top: 100px` to clear nav.
 
 ## Next Build Priorities
 
-1. Assessment UI — `/assessment` page wired to real AssessmentOrchestrator
-2. End-to-end assessment test — full patient flow through all 8 agents
-3. Phase 3: Treatment planning swarm
-4. Voice physiotherapist agent (Cartesia / ElevenLabs)
-5. First Doctor On Click patient invite
-6. Stripe: change statement descriptor to "PhysioCore AI"
-7. Supabase: run posture_assessments + assessment_sessions table migrations
-8. Dashboard 8-panel upgrade
+1. Phase 3: TreatmentArbiterAgent (Opus) — compare plans on 6 axes, produce ArbiterVerdict
+2. Phase 3: ProgressionAgent (Haiku) — linear regression on form scores, advance/hold/regress
+3. Phase 3: PrescriptionAgent (Haiku) — FHIR R4 CarePlan + week-by-week schedule
+4. Phase 3: TreatmentOrchestrator — wire all 5 agents, expose to Assessment UI
+5. Voice physiotherapist agent (Cartesia / ElevenLabs)
+6. First Doctor On Click patient invite
+7. Stripe: change statement descriptor to "PhysioCore AI"
+8. Supabase: run rom_assessments + full_assessments table migrations
+9. Dashboard 8-panel upgrade
+10. Onboard page Clinical Noir redesign

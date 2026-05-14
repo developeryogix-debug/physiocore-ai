@@ -17,6 +17,23 @@ export { AdversarialAgent }  from './adversarial/AdversarialAgent.js';
 export { ConsensusAgent }    from './consensus/ConsensusAgent.js';
 export type { PainMapInput, PainMapReport, PainRegion, PainQuality, PainBehaviour } from './pain/painMapAgent.js';
 export { SpecialTestsAgent, createSpecialTestsAgent } from './specialTests/SpecialTestsAgent.js';
+
+// Phase 3 — Treatment Planning
+export { ConservativeAgent } from './treatment/ConservativeAgent.js';
+export { EarlyMobAgent }     from './treatment/EarlyMobAgent.js';
+export type {
+  LoadingStrategy,
+  TreatmentPlan,
+  TreatmentPhase,
+  PlanningInput,
+  ArbiterInput,
+  ArbiterVerdict,
+  ProgressionInput,
+  ProgressionOutput,
+  FinalTreatmentPlan,
+  WeekByWeekSchedule,
+  PrescribedExerciseP3,
+} from './types/phase3.js';
 export type {
   FrameData,
   GaitReport,

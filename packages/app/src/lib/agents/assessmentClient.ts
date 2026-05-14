@@ -188,3 +188,71 @@ export async function runFullAssessment(ctx: DataContext): Promise<AssessmentOut
     referralRecommended:   typeof parsed.referralRecommended === 'boolean' ? parsed.referralRecommended : false,
   };
 }
+
+// ─── Gait analysis (browser-safe, Claude Sonnet via fetch) ───────────────────
+
+export interface GaitMetricsSummary {
+  cadence:        number;
+  stepSymmetry:   number;
+  trunkSway:      'normal'|'mild'|'moderate'|'severe';
+  armSwing:       'symmetrical'|'reduced_right'|'reduced_left'|'absent';
+  trendelenburg:  'absent'|'positive_left'|'positive_right';
+  heelStrike:     'normal'|'flat_foot'|'toe_strike'|'antalgic';
+  antalgic:       boolean;
+  antalgicSide:   'left'|'right'|null;
+  dataQuality:    'good'|'acceptable'|'poor'|'insufficient';
+  framesAnalysed: number;
+}
+
+export interface GaitFlag {
+  name: string; phase: string; severity: string; likelyCause: string;
+}
+export interface GaitReferralFlag {
+  type: string; description: string; immediateAction: string; emergencyLevel: string;
+}
+export interface GaitAnalysisOutput {
+  flags:           string[];
+  gaitDeviations:  GaitFlag[];
+  referralFlags:   GaitReferralFlag[];
+  clinicalSummary: string;
+}
+
+export async function runGaitAnalysis(m: GaitMetricsSummary): Promise<GaitAnalysisOutput> {
+  const key = (import.meta.env as Record<string,string|undefined>)['VITE_ANTHROPIC_KEY'] ?? '';
+  const prompt =
+`You are a clinical physiotherapist interpreting observational gait analysis.
+Evidence basis: Krebs DE et al. Phys Ther. 1985;65(7):1027-1033 (Grade B).
+
+METRICS:
+- Cadence: ${m.cadence.toFixed(1)} steps/min (normal 90–130)
+- Step symmetry: ${m.stepSymmetry.toFixed(1)}% (100=perfect; normal ≥90%)
+- Trunk sway: ${m.trunkSway}
+- Arm swing: ${m.armSwing}
+- Trendelenburg: ${m.trendelenburg}
+- Heel strike: ${m.heelStrike}
+- Antalgic gait: ${m.antalgic ? `YES — ${m.antalgicSide} side` : 'NO'}
+- Data quality: ${m.dataQuality} (${m.framesAnalysed} frames)
+
+Return ONLY valid JSON:
+{"flags":["string"],"gaitDeviations":[{"name":"string","phase":"stance|swing|overall","severity":"mild|moderate|severe","likelyCause":"string"}],"referralFlags":[{"type":"string","description":"string","immediateAction":"string","emergencyLevel":"monitor|urgent_referral|call_999"}],"clinicalSummary":"2–3 sentences max"}
+Rules: flag referral only for positive Trendelenburg, cadence <60, severe antalgic, or neurological pattern. Poor/insufficient data → state in summary, keep flags minimal.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key':key, 'anthropic-version':'2023-06-01', 'content-type':'application/json', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600, messages:[{role:'user',content:prompt}] }),
+    });
+    const j = await resp.json() as { content?:{type:string;text:string}[] };
+    const txt = j.content?.[0]?.text ?? '{}';
+    const p = JSON.parse(txt.match(/\{[\s\S]*\}/)?.[0] ?? '{}') as Partial<GaitAnalysisOutput>;
+    return {
+      flags:          Array.isArray(p.flags)          ? p.flags          : [],
+      gaitDeviations: Array.isArray(p.gaitDeviations) ? p.gaitDeviations : [],
+      referralFlags:  Array.isArray(p.referralFlags)  ? p.referralFlags  : [],
+      clinicalSummary: typeof p.clinicalSummary === 'string' ? p.clinicalSummary : 'Gait analysis complete.',
+    };
+  } catch {
+    return { flags:[], gaitDeviations:[], referralFlags:[], clinicalSummary:'Gait analysis complete. Manual review recommended.' };
+  }
+}
