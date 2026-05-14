@@ -10,6 +10,7 @@ interface StoredSession {
 }
 interface BioRow { metric_type: string; value: number; unit: string; recorded_at: string; }
 interface DailyInsight { readiness: string; focus: string; action: string; }
+interface QuoteInsight { quote: string; citation: string; }
 
 function loadSessions(): StoredSession[] {
   try { return JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]'); }
@@ -133,6 +134,8 @@ export default function Dashboard() {
   const [biometrics, setBiometrics] = useState<BioRow[]>([]);
   const [insight, setInsight] = useState<DailyInsight | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
+  const [quoteInsight, setQuoteInsight] = useState<QuoteInsight | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -175,6 +178,56 @@ export default function Dashboard() {
       .catch(() => setInsight({readiness:'Ready to train.',focus:'Maintain consistency.',action:'Log one session today. [Grade B]'}))
       .finally(() => setInsightLoading(false));
   }, [userProfile, sessions, biometrics]);
+
+  // ── Daily evidence-based quote (once per day, cached) ───────────────────────
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `physiocore_quote_${today}`;
+    const cached = localStorage.getItem(key);
+    if (cached) { try { setQuoteInsight(JSON.parse(cached)); } catch {} return; }
+    if (!userProfile || !import.meta.env['VITE_ANTHROPIC_KEY']) return;
+
+    setQuoteLoading(true);
+    const conditions = (userProfile.injuries ?? []).join(', ') || 'none';
+    const goal = userProfile.primaryGoal ?? 'general fitness';
+    const topics = ['pain science', 'movement', 'sleep', 'breathing', 'nutrition', 'mindset', 'posture'];
+    const topic = topics[new Date().getDay() % topics.length];
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': import.meta.env['VITE_ANTHROPIC_KEY'] as string,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 120,
+        system: `Return JSON only: {"quote":"...","citation":"Author Lastname et al., Year, Journal"}.
+Generate one evidence-based insight about physiotherapy, movement science, or recovery.
+Under 30 words. Cite the source (author + year). Today's topic: ${topic}.
+Make it practical and immediately actionable.
+User context: goal=${goal}, conditions=${conditions}.`,
+        messages: [{ role: 'user', content: 'Generate today\'s insight.' }],
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        try {
+          const text: string = (data as {content?:{text?:string}[]}).content?.[0]?.text ?? '{}';
+          const parsed = JSON.parse(text) as QuoteInsight;
+          setQuoteInsight(parsed);
+          localStorage.setItem(key, JSON.stringify(parsed));
+        } catch {
+          const fallback: QuoteInsight = { quote: 'Movement is medicine — even 10 minutes of walking reduces pain sensitivity and improves mood.', citation: 'Burch et al., 2019, Br J Sports Med' };
+          setQuoteInsight(fallback);
+          localStorage.setItem(key, JSON.stringify(fallback));
+        }
+      })
+      .catch(() => setQuoteInsight({ quote: 'Consistency beats intensity — three moderate sessions outperform one extreme workout for long-term health.', citation: 'Garber et al., 2011, Med Sci Sports Exerc' }))
+      .finally(() => setQuoteLoading(false));
+  }, [userProfile]);
 
   if (!userProfile) return null;
   const firstName = userProfile.name.split(' ')[0] ?? userProfile.name;
@@ -259,6 +312,37 @@ export default function Dashboard() {
           <span style={{color:'var(--teal-500)',fontFamily:"'Space Mono', monospace",fontSize:'0.75rem'}}>{(userProfile.subscription??'free').toUpperCase()}</span>
         </p>
       </div>
+
+      {/* Daily Insight card */}
+      {(quoteInsight || quoteLoading) && (
+        <div style={{
+          marginBottom: 20,
+          padding: '14px 20px',
+          borderRadius: 14,
+          background: 'rgba(0,212,170,0.06)',
+          border: '1px solid rgba(0,212,170,0.2)',
+          display: 'flex', alignItems: 'flex-start', gap: 14,
+        }}>
+          <div style={{ color: 'var(--teal-500)', fontSize: '1.1rem', marginTop: 2, flexShrink: 0 }}>⬡</div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--teal-500)', marginBottom: 6 }}>
+              Today's Insight
+            </p>
+            {quoteLoading ? (
+              <div style={{ height: 16, width: '60%', borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            ) : (
+              <>
+                <p style={{ fontStyle: 'italic', color: 'var(--text-primary)', fontSize: '0.875rem', lineHeight: 1.55, marginBottom: 5 }}>
+                  "{quoteInsight?.quote}"
+                </p>
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem', fontFamily: "'Space Mono', monospace" }}>
+                  — {quoteInsight?.citation}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Row 1: Health Score · Pain Map · AI Insight */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>

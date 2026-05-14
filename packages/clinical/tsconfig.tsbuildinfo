@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/jointdatabase.ts","./src/types.ts","./src/joints/ankle.ts","./src/joints/cervical.ts","./src/joints/elbow.ts","./src/joints/foot.ts","./src/joints/hip.ts","./src/joints/knee.ts","./src/joints/lumbar.ts","./src/joints/shoulder.ts","./src/joints/si.ts","./src/joints/thoracic.ts","./src/joints/tmj.ts","./src/joints/wrist.ts"],"version":"5.9.3"}
