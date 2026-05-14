@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@physiocore/supabase';
+import { acceptInvite } from '../lib/orgApi.js';
 
 export type UserRole = 'patient' | 'clinician' | 'trainer' | 'org_admin' | 'admin';
 
@@ -93,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       await db.from('profiles').upsert({ user_id: data.user.id, full_name: fullName, role: 'patient' });
       if (inviteToken) {
-        const { acceptInvite } = await import('../lib/orgApi.js');
         const result = await acceptInvite(inviteToken, data.user.id);
         if (result) {
           setUserRole(result.role as UserRole);
