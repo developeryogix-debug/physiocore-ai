@@ -81,8 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     patientName?: string;
   };
 
-  if (!email || !orgId || !clinicianId) {
-    return res.status(400).json({ error: 'Missing required fields: email, orgId, clinicianId' });
+  if (!email || !clinicianId) {
+    return res.status(400).json({ error: 'Missing required fields: email, clinicianId' });
   }
 
   const adminSb = createClient(SUPABASE_URL, SUPABASE_SVC_KEY, {
@@ -133,7 +133,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId    = authJson.id ?? '';
   const inviteUrl = authJson.action_link;
 
-  // Send branded Resend email (non-fatal if Resend key missing)
+  // Send branded Resend email
+  if (!RESEND_KEY) {
+    return res.status(200).json({ success: true, userId, warning: 'RESEND_API_KEY not set — invite link generated but email NOT sent. Add RESEND_API_KEY in Vercel environment variables.' });
+  }
   await sendBrandedEmail(email, patientName ?? '', inviteUrl).catch(() => undefined);
 
   // Track invite in table (non-fatal — used for audit log)

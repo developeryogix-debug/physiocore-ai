@@ -198,9 +198,13 @@ export default function Clinician() {
           patientName: inviteName || undefined,
         }),
       });
-      const json = await res.json() as { success?: boolean; error?: string };
+      const json = await res.json() as { success?: boolean; error?: string; warning?: string };
       if (!res.ok || !json.success) {
         setInviteMsg(json.error ?? 'Failed to send invite. Try again.');
+      } else if (json.warning) {
+        setInviteMsg(`⚠ ${json.warning}`);
+        setInviteEmail('');
+        setInviteName('');
       } else {
         setInviteMsg('Invite sent! Patient will receive an email with their login link.');
         setInviteEmail('');
@@ -213,6 +217,11 @@ export default function Clinician() {
   }
 
   const inputSt: React.CSSProperties = { width: '100%', padding: '9px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, color: '#0f172a', fontSize: '0.85rem', fontFamily: 'inherit', boxSizing: 'border-box' as const };
+  const inviteMsgIsErr  = inviteMsg.startsWith('Failed') || inviteMsg.startsWith('Network') || inviteMsg.startsWith('Missing');
+  const inviteMsgIsWarn = inviteMsg.startsWith('⚠');
+  const inviteMsgBg     = inviteMsgIsErr ? '#fee2e2' : inviteMsgIsWarn ? '#fef9c3' : '#dcfce7';
+  const inviteMsgBdr    = inviteMsgIsErr ? '#fca5a5' : inviteMsgIsWarn ? '#fcd34d' : '#86efac';
+  const inviteMsgClr    = inviteMsgIsErr ? '#b91c1c' : inviteMsgIsWarn ? '#78350f' : '#15803d';
 
   function avgScore(p: MockPatient) {
     return p.sessions.length ? Math.round(p.sessions.reduce((s, x) => s + x.formScore, 0) / p.sessions.length) : 0;
@@ -381,9 +390,7 @@ export default function Clinician() {
                 </div>
               ))}
               {inviteMsg && (
-                <div style={{ padding: '10px 14px', background: inviteMsg.startsWith('Failed') ? '#fee2e2' : '#dcfce7', border: `1px solid ${inviteMsg.startsWith('Failed') ? '#fca5a5' : '#86efac'}`, borderRadius: 8, fontSize: '0.8rem', color: inviteMsg.startsWith('Failed') ? '#b91c1c' : '#15803d' }}>
-                  {inviteMsg}
-                </div>
+                <div style={{ padding: '10px 14px', background: inviteMsgBg, border: `1px solid ${inviteMsgBdr}`, borderRadius: 8, fontSize: '0.8rem', color: inviteMsgClr }}>{inviteMsg}</div>
               )}
               <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                 <button type="button" onClick={() => { setShowInvite(false); setInviteMsg(''); }} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 500 }}>Cancel</button>
