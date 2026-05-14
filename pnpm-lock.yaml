@@ -123,6 +123,9 @@ importers:
 
   packages/app:
     dependencies:
+      '@physiocore/assessment-agent':
+        specifier: workspace:*
+        version: link:../agents/assessment
       '@physiocore/supabase':
         specifier: workspace:*
         version: link:../supabase

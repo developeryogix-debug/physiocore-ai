@@ -255,6 +255,15 @@ All pages need `padding-top: 100px` to clear nav.
 - **health-check v2 ✅ BUILT** — upgraded monitoring with CostWatchAgent, 4h dedup, Resend email alerts
 - **PainMap.tsx ✅ BUILT** — interactive body map UI, NPRS input, quality/behaviour selectors, Supabase sync
 
+### Phase 2 Agent Status
+| Agent | Status | Notes |
+|---|---|---|
+| GaitAgent | ✅ BUILT | `packages/agents/assessment/src/gait/GaitAgent.ts` — step symmetry, cadence, trunk sway, arm swing, Trendelenburg; Evidence B, Krebs 1985 |
+| ROMAgent | 🔧 IN PROGRESS | `packages/agents/assessment/src/rom/ROMAgent.ts` — score-as-proxy model built; needs validation + calibration |
+| PainMapAgent | ✅ BUILT | `packages/agents/assessment/src/pain/painMapAgent.ts` — red flag detection (Greenhalgh 2010), risk levels, ICD-10, Haiku differentials |
+| FunctionalAgent | ✅ BUILT | PSFS/TUG/Chair Stand scoring; `packages/agents/assessment/src/functional/FunctionalAgent.ts` |
+| SpecialTestsAgent | 🔧 IN PROGRESS | Voice-guided; clinician mode only |
+
 ### Phase 2 Design Decisions
 | Question | Decision |
 |---|---|
@@ -312,8 +321,8 @@ All pages need `padding-top: 100px` to clear nav.
 
 ## Next Build Priorities
 
-1. FunctionalAgent — complete functional movement screen
-2. Phase 2 Session B: GaitAgent (walking analysis, client-side MediaPipe)
-3. Phase 2 Session C: ROMAgent (range of motion from session data)
-4. Stripe: change statement descriptor to "PhysioCore AI"
-5. Supabase: run posture_assessments table migration
+1. SpecialTestsAgent — voice-guided special tests (clinician mode only)
+2. ROMAgent — fix calibration / validation layer
+3. Stripe: change statement descriptor to "PhysioCore AI"
+4. Supabase: run posture_assessments table migration
+5. Dashboard 8-panel upgrade
