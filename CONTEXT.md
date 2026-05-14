@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 14 May 2026
+Last updated: 14 May 2026 (evening)
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -168,10 +168,10 @@ ProtectedRoute: isLoading → !user → /login
 
 ## Monitoring System
 
-- `api/health-check.ts` — checks: Anthropic API, Supabase, MediaPipe CDN, app homepage
+- `api/health-check.ts` v2 — 8 parallel check groups: Anthropic API, Supabase core, 8 tables, MediaPipe CDN, app homepage, 5 SPA routes, /assessment page, cost budget
 - DiagnoseAgent: Claude Haiku on failure → root cause + severity + fix steps
-- AlertAgent: Resend email to devkapilicloud@gmail.com, 4h deduplication
-- CostWatchAgent: estimates daily spend, alerts at $1.50 (warning) / $3.00 (critical)
+- AlertAgent: Resend email to devkapilicloud@gmail.com, 4h global deduplication
+- CostWatchAgent: estimates daily spend, alerts at $2.00 (warning) / $5.00 (critical) — raised for Opus AdversarialAgent
 - Cron: `0 0 * * *` (daily 8am SGT)
 - Test endpoint: https://app-dteam1-mmcv.vercel.app/api/ping
 - Health check: https://app-dteam1-mmcv.vercel.app/api/health-check
@@ -233,6 +233,9 @@ All pages need `padding-top: 100px` to clear nav.
 - Profile lost after sign-out → Supabase always authoritative on login
 - Google OAuth redirect to wrong port → Supabase Site URL = localhost:5173
 - Vercel deploy blocked (email mismatch) → migrated to developeryogix-debug account
+- orgApi.ts mixed static/dynamic import warning → converted `useAuth.tsx` dynamic `import()` to static top-level import
+- ClinicianPatientDetail SOAP note broken → fixed env var `VITE_ANTHROPIC_API_KEY` → `VITE_ANTHROPIC_KEY`
+- Clinician page showing mock-only data → wired to real Supabase sessions via `getProfilesByUserIds` + `getSessionsBatchForPatients`
 
 ### Remaining
 - Onboard page still uses old light theme (needs Clinical Noir redesign)
@@ -255,7 +258,7 @@ All pages need `padding-top: 100px` to clear nav.
 - **health-check v2 ✅ BUILT** — upgraded monitoring with CostWatchAgent, 4h dedup, Resend email alerts
 - **PainMap.tsx ✅ BUILT** — interactive body map UI, NPRS input, quality/behaviour selectors, Supabase sync
 
-### Phase 2 Agent Status
+### Phase 2 Agent Status — ALL COMPLETE ✅
 | Agent | Status | Notes |
 |---|---|---|
 | GaitAgent | ✅ BUILT | `src/gait/GaitAgent.ts` — step symmetry, cadence, trunk sway, arm swing, Trendelenburg; Evidence B, Krebs 1985 |
@@ -264,8 +267,11 @@ All pages need `padding-top: 100px` to clear nav.
 | FunctionalAgent | ✅ BUILT | `src/functional/FunctionalAgent.ts` — PSFS/TUG/30s Chair Stand; Evidence A; Stratford 1995, Podsiadlo 1991, Jones 1999 |
 | SpecialTestsAgent | ✅ BUILT | `src/specialTests/SpecialTestsAgent.ts` — voice-guided; Phase A (test selection) + Phase B (LR interpretation); clinician mode only |
 | AdversarialAgent | ✅ BUILT | `src/adversarial/AdversarialAgent.ts` — Claude Opus; red-teams all Phase 1+2 findings; `approvedForConsensus` gate |
-| ConsensusAgent | ⏳ IN PROGRESS | `src/consensus/ConsensusAgent.ts` — built; pending orchestrator wiring |
-| AssessmentOrchestrator | ⏳ IN PROGRESS | `src/orchestrator/AssessmentOrchestrator.ts` — built; pre-existing tsc errors to resolve |
+| ConsensusAgent | ✅ BUILT | `src/consensus/ConsensusAgent.ts` — Sonnet 4.6; evidence-weighted synthesis; FHIR R4 CarePlan; SOAP note; partial report on rejection |
+| AssessmentOrchestrator | ✅ BUILT | `src/orchestrator/AssessmentOrchestrator.ts` — 4-phase parallel execution; SafetyRuleEngine gate; timeout policy |
+
+### In Progress
+- **Assessment UI** — `/assessment` page wiring Orchestrator to React UI
 
 ### Phase 2 Design Decisions
 | Question | Decision |
@@ -324,8 +330,11 @@ All pages need `padding-top: 100px` to clear nav.
 
 ## Next Build Priorities
 
-1. SpecialTestsAgent — voice-guided special tests (clinician mode only)
-2. ROMAgent — fix calibration / validation layer
-3. Stripe: change statement descriptor to "PhysioCore AI"
-4. Supabase: run posture_assessments table migration
-5. Dashboard 8-panel upgrade
+1. Assessment UI — `/assessment` page wired to real AssessmentOrchestrator
+2. End-to-end assessment test — full patient flow through all 8 agents
+3. Phase 3: Treatment planning swarm
+4. Voice physiotherapist agent (Cartesia / ElevenLabs)
+5. First Doctor On Click patient invite
+6. Stripe: change statement descriptor to "PhysioCore AI"
+7. Supabase: run posture_assessments + assessment_sessions table migrations
+8. Dashboard 8-panel upgrade
