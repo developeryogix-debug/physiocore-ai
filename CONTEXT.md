@@ -258,11 +258,14 @@ All pages need `padding-top: 100px` to clear nav.
 ### Phase 2 Agent Status
 | Agent | Status | Notes |
 |---|---|---|
-| GaitAgent | ✅ BUILT | `packages/agents/assessment/src/gait/GaitAgent.ts` — step symmetry, cadence, trunk sway, arm swing, Trendelenburg; Evidence B, Krebs 1985 |
-| ROMAgent | 🔧 IN PROGRESS | `packages/agents/assessment/src/rom/ROMAgent.ts` — score-as-proxy model built; needs validation + calibration |
-| PainMapAgent | ✅ BUILT | `packages/agents/assessment/src/pain/painMapAgent.ts` — red flag detection (Greenhalgh 2010), risk levels, ICD-10, Haiku differentials |
-| FunctionalAgent | ✅ BUILT | PSFS/TUG/Chair Stand scoring; `packages/agents/assessment/src/functional/FunctionalAgent.ts` |
-| SpecialTestsAgent | 🔧 IN PROGRESS | Voice-guided; clinician mode only |
+| GaitAgent | ✅ BUILT | `src/gait/GaitAgent.ts` — step symmetry, cadence, trunk sway, arm swing, Trendelenburg; Evidence B, Krebs 1985 |
+| ROMAgent | ✅ BUILT | `src/rom/ROMAgent.ts` — score-as-proxy model; type errors fixed |
+| PainMapAgent | ✅ BUILT | `src/pain/painMapAgent.ts` — red flag detection (Greenhalgh 2010), risk levels, ICD-10, Haiku differentials |
+| FunctionalAgent | ✅ BUILT | `src/functional/FunctionalAgent.ts` — PSFS/TUG/30s Chair Stand; Evidence A; Stratford 1995, Podsiadlo 1991, Jones 1999 |
+| SpecialTestsAgent | ✅ BUILT | `src/specialTests/SpecialTestsAgent.ts` — voice-guided; Phase A (test selection) + Phase B (LR interpretation); clinician mode only |
+| AdversarialAgent | ✅ BUILT | `src/adversarial/AdversarialAgent.ts` — Claude Opus; red-teams all Phase 1+2 findings; `approvedForConsensus` gate |
+| ConsensusAgent | ⏳ IN PROGRESS | `src/consensus/ConsensusAgent.ts` — built; pending orchestrator wiring |
+| AssessmentOrchestrator | ⏳ IN PROGRESS | `src/orchestrator/AssessmentOrchestrator.ts` — built; pre-existing tsc errors to resolve |
 
 ### Phase 2 Design Decisions
 | Question | Decision |
