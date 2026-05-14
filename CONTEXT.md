@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 14 May 2026 (evening)
+Last updated: 15 May 2026
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -257,6 +257,8 @@ All pages need `padding-top: 100px` to clear nav.
 - **PainMapAgent ✅ BUILT** — two-stage: algorithmic red-flag detection + Claude Sonnet clinical analysis; ICD-10 mapping, neuropathic indicators, pain trend, `safeToExercise`
 - **health-check v2 ✅ BUILT** — upgraded monitoring with CostWatchAgent, 4h dedup, Resend email alerts
 - **PainMap.tsx ✅ BUILT** — interactive body map UI, NPRS input, quality/behaviour selectors, Supabase sync
+- **Posture PDF export ✅ BUILT** — patient variant (grid images, score, recommendations) + clinician variant (measurements, deviation table, FHIR reference)
+- **Phase 3 plan ✅ DOCUMENTED** — treatment planning swarm; see `docs/PHASE3_TREATMENT_SWARM.md`
 
 ### Phase 2 Agent Status — ALL COMPLETE ✅
 | Agent | Status | Notes |
@@ -271,7 +273,7 @@ All pages need `padding-top: 100px` to clear nav.
 | AssessmentOrchestrator | ✅ BUILT | `src/orchestrator/AssessmentOrchestrator.ts` — 4-phase parallel execution; SafetyRuleEngine gate; timeout policy |
 
 ### In Progress
-- **Assessment UI** — `/assessment` page wiring Orchestrator to React UI
+- **Assessment UI ⏳** — `/assessment` page wiring AssessmentOrchestrator to React UI; all 8 agents complete, UI integration pending
 
 ### Phase 2 Design Decisions
 | Question | Decision |
