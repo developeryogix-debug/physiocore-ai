@@ -353,3 +353,103 @@ export interface FunctionalReport {
   citations: string[];
   processingMs: number;
 }
+
+// ── ConsensusAgent I/O ────────────────────────────────────────────────────────
+// AdversarialReport defined above (line ~42) — ConsensusInput references it.
+
+export interface ConsensusInput {
+  assessmentId: string;
+  patientId: string;
+  patientAge?: number;
+  patientSex?: 'male' | 'female';
+  existingConditions: string[];
+  currentMedications: string[];
+  allFindings: {
+    posture:      Record<string, unknown> | null;
+    gait:         GaitReport | null;
+    rom:          ROMReport | null;
+    specialTests: SpecialTestsReport | null;
+    pain:         PainMapOutput | null;
+    functional:   FunctionalReport | null;
+  };
+  adversarialReport: AdversarialReport | null;
+}
+
+export interface DiagnosticHypothesis {
+  name: string;
+  icd10: string;
+  probability: 'high' | 'moderate' | 'low';
+  confidence: number;
+  keyDistinguishingFeature: string;
+  toExcludeWith: string;
+  adversarialChallenged: boolean;
+}
+
+export interface TreatmentPriority {
+  priority: number;
+  intervention: string;
+  rationale: string;
+  evidenceGrade: EvidenceGrade;
+  citation: string;
+  cptCodes: string[];
+  timeframeWeeks: number;
+}
+
+export interface PrescribedExercise {
+  name: string;
+  sets: number;
+  reps: number | null;
+  holdSeconds: number | null;
+  frequencyPerWeek: number;
+  rationale: string;
+}
+
+export interface EvidenceCitation {
+  claim: string;
+  citation: string;
+  evidenceGrade: EvidenceGrade;
+  agentSource: string;
+}
+
+export interface ClinicalAssessmentReport {
+  agentId: 'consensus-agent';
+  version: '1.0.0';
+  assessmentId: string;
+  patientId: string;
+  generatedAt: string;
+
+  approvedForConsensus: boolean;
+  adversarialVerdict: string;
+  adversarialOverrideApplied: boolean;
+
+  overallHealthScore: number;
+  dataQuality: 'high' | 'medium' | 'low' | 'insufficient';
+  dataCompleteness: number;
+
+  primaryFindings: string[];
+  primaryDiagnosis: {
+    name: string;
+    icd10: string;
+    confidence: number;
+    evidenceGrade: EvidenceGrade;
+    supportingFindings: string[];
+    adversarialChallenged: boolean;
+  } | null;
+  differentialDiagnoses: DiagnosticHypothesis[];
+  treatmentPriorities: TreatmentPriority[];
+  prescribedProgram: PrescribedExercise[];
+  referralFlags: RedFlagAlert[];
+  referralRecommended: boolean;
+  referralUrgency: 'routine' | 'urgent' | 'emergency' | null;
+  referralReason: string | null;
+  progressionTimeline: string;
+  nextAssessmentDate: string;
+  recommendedCPTCodes: string[];
+
+  fhirCarePlan: Record<string, unknown>;
+  evidenceSummary: EvidenceCitation[];
+  clinicianSummary: string;
+  patientSummary: string;
+
+  processingMs: number;
+}
