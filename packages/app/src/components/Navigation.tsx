@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 
@@ -36,19 +36,90 @@ const DESKTOP_LINKS = [
   {to:'/nutrition', label:'Nutrition'},
   {to:'/outcomes',  label:'Outcomes'},
   {to:'/gym',       label:'Gym'},
-  {to:'/posture',     label:'Posture'},
-  {to:'/assessment',  label:'Assessment'},
-  {to:'/pain-map',    label:'Pain Map'},
-  {to:'/rom-assessment',    label:'ROM'},
-  {to:'/gait-assessment',  label:'Gait'},
-  {to:'/functional',       label:'Functional'},
-  {to:'/settings',         label:'Settings'},
+  {to:'/settings',  label:'Settings'},
 ];
+
+const ASSESSMENT_ITEMS = [
+  {to:'/posture',          label:'Posture Assessment'},
+  {to:'/rom-assessment',   label:'ROM Assessment'},
+  {to:'/pain-map',         label:'Pain Map'},
+  {to:'/assessment',       label:'Full Assessment'},
+  {to:'/gait-assessment',  label:'Gait Assessment'},
+  {to:'/functional',       label:'Functional Assessment'},
+];
+
+// ─── Desktop Assessments dropdown (hover) ────────────────────────────────────
+function AssessmentsDropdown({ currentPath }: { currentPath: string }) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isActive = ASSESSMENT_ITEMS.some(i => currentPath.startsWith(i.to));
+
+  function openMenu()  { if (timerRef.current) clearTimeout(timerRef.current); setOpen(true); }
+  function closeMenu() { timerRef.current = setTimeout(() => setOpen(false), 120); }
+
+  return (
+    <div
+      onMouseEnter={openMenu}
+      onMouseLeave={closeMenu}
+      style={{ position: 'relative' }}
+    >
+      <button style={{
+        padding: '5px 12px', borderRadius: '50px', border: 'none', cursor: 'pointer',
+        fontSize: '0.8rem', fontWeight: isActive ? 600 : 400,
+        background: isActive ? 'var(--teal-dim)' : 'transparent',
+        color: isActive ? 'var(--teal-500)' : 'var(--text-secondary)',
+        outline: isActive ? '1px solid var(--border-teal)' : '1px solid transparent',
+        fontFamily: 'inherit', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 4,
+      }}>
+        Assessments
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          onMouseEnter={openMenu}
+          onMouseLeave={closeMenu}
+          style={{
+            position: 'absolute', top: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)',
+            background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
+            borderRadius: '12px', boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+            minWidth: '210px', overflow: 'hidden', zIndex: 300,
+            padding: '6px',
+          }}
+        >
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontFamily: "'Space Mono', monospace",
+            textTransform: 'uppercase', letterSpacing: '0.08em', padding: '6px 10px 4px' }}>
+            Clinical Assessments
+          </div>
+          {ASSESSMENT_ITEMS.map(({ to, label }) => (
+            <NavLink key={to} to={to}
+              style={({ isActive: a }) => ({
+                display: 'block', padding: '9px 12px', borderRadius: '8px', textDecoration: 'none',
+                fontSize: '0.82rem', fontWeight: a ? 600 : 400,
+                background: a ? 'var(--teal-dim)' : 'transparent',
+                color: a ? 'var(--teal-500)' : 'var(--text-secondary)',
+                transition: 'background 0.1s',
+              })}
+              onMouseEnter={e => { if (!(e.currentTarget as HTMLElement).style.background.includes('teal')) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}
+              onMouseLeave={e => { if (!(e.currentTarget as HTMLElement).style.background.includes('teal')) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            >
+              {label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Navigation() {
   const {user, userRole, signOut} = useAuth();
   const {userProfile, clearProfile} = useUserProfile();
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -163,7 +234,7 @@ export default function Navigation() {
         PhysioCore
       </NavLink>
 
-      {/* Nav links */}
+      {/* Core nav links */}
       {DESKTOP_LINKS.map(({to,label,end})=>(
         <NavLink key={to} to={to} end={end}
           style={({isActive})=>({
@@ -177,6 +248,9 @@ export default function Navigation() {
           {label}
         </NavLink>
       ))}
+
+      {/* Assessments dropdown */}
+      <AssessmentsDropdown currentPath={location.pathname} />
 
       {/* Clinician — only visible to clinician / admin roles */}
       {(userRole === 'clinician' || userRole === 'admin') && (
@@ -288,14 +362,17 @@ export default function Navigation() {
   );
 }
 
-// ─── Mobile dropdown ───────────────────────────────────────────────────────────
+// ─── Mobile dropdown ──────────────────────────────────────────────────────────
 function MobileDropdown({displayName,email,userRole,onSignOut,onClose,navigate}:{displayName:string;email:string;userRole:string|null;onSignOut:()=>void;onClose:()=>void;navigate:(to:string)=>void}) {
+  const [assessmentsOpen, setAssessmentsOpen] = useState(false);
+
   return (
     <div style={{
       position:'absolute',top:'calc(100% + 10px)',right:0,
       background:'var(--bg-surface)',border:'1px solid var(--border-subtle)',
       borderRadius:'12px',boxShadow:'0 16px 48px rgba(0,0,0,0.7)',
-      minWidth:'190px',overflow:'hidden',zIndex:200,
+      minWidth:'220px',overflow:'hidden',zIndex:200,
+      maxHeight:'80vh',overflowY:'auto',
     }}>
       <div style={{padding:'12px 14px',borderBottom:'1px solid var(--border-subtle)'}}>
         <div style={{fontSize:'0.83rem',fontWeight:600,color:'var(--text-primary)',marginBottom:2}}>{displayName||'User'}</div>
@@ -304,14 +381,44 @@ function MobileDropdown({displayName,email,userRole,onSignOut,onClose,navigate}:
       <div style={{padding:'6px'}}>
         {menuItem('History',()=>{onClose();navigate('/history');})}
         {menuItem('Outcomes',()=>{onClose();navigate('/outcomes');})}
-        {menuItem('Assessment',()=>{onClose();navigate('/assessment');})}
-        {menuItem('Posture',()=>{onClose();navigate('/posture');})}
-        {menuItem('Pain Map',()=>{onClose();navigate('/pain-map');})}
-        {menuItem('ROM',()=>{onClose();navigate('/rom-assessment');})}
-        {menuItem('Gait',()=>{onClose();navigate('/gait-assessment');})}
-        {menuItem('Functional',()=>{onClose();navigate('/functional');})}
         {menuItem('Gym',()=>{onClose();navigate('/gym');})}
         {menuItem('Behavior',()=>{onClose();navigate('/behavior');})}
+
+        {/* Assessments section */}
+        <button
+          onClick={() => setAssessmentsOpen(o => !o)}
+          style={{
+            width:'100%',padding:'9px 12px',borderRadius:'8px',
+            background: assessmentsOpen ? 'var(--bg-elevated)' : 'transparent',
+            border:'none',cursor:'pointer',
+            textAlign:'left' as const,fontSize:'0.82rem',
+            color:'var(--text-secondary)',fontFamily:'inherit',
+            display:'flex',alignItems:'center',justifyContent:'space-between',
+            transition:'background 0.1s',
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.background='var(--bg-elevated)';}}
+          onMouseLeave={e=>{ if (!assessmentsOpen) e.currentTarget.style.background='transparent'; }}
+        >
+          <span style={{display:'flex',alignItems:'center',gap:6}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            Assessments
+          </span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: assessmentsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+
+        {assessmentsOpen && (
+          <div style={{ paddingLeft: 8 }}>
+            {ASSESSMENT_ITEMS.map(({ to, label }) =>
+              menuItem(label, () => { onClose(); navigate(to); })
+            )}
+          </div>
+        )}
+
         {(userRole==='clinician'||userRole==='admin')&&menuItem('Clinician',()=>{onClose();navigate('/clinician');})}
         {(userRole==='org_admin'||userRole==='admin')&&menuItem('Org Dashboard',()=>{onClose();navigate('/org-dashboard');})}
         {userRole==='admin'&&menuItem('Admin Panel',()=>{onClose();navigate('/admin');})}
