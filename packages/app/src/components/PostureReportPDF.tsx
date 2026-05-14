@@ -546,65 +546,63 @@ export function PostureReportPDF({
         <Footer />
       </Page>
 
-      {/* ══ PAGE 7: CLINICIAN SECTION (clinician variant only) ════════════════ */}
-      {variant === 'clinician' && (
-        <Page size="A4" style={s.page}>
-          <View style={s.accentBar}>
-            <View style={s.accentTeal}/><View style={s.accentBlue}/><View style={s.accentGreen}/><View style={s.accentWarn}/>
-          </View>
-          <PageHeader userName={userName} date={date} />
+      {/* ══ PAGE 7: CLINICIAN SOAP (always rendered) ═════════════════════════ */}
+      <Page size="A4" style={s.page}>
+        <View style={s.accentBar}>
+          <View style={s.accentTeal}/><View style={s.accentBlue}/><View style={s.accentGreen}/><View style={s.accentWarn}/>
+        </View>
+        <PageHeader userName={userName} date={date} />
 
-          <Text style={s.sectionTitle}>Clinician Report — SOAP Summary</Text>
+        <Text style={s.sectionTitle}>Clinician Report — SOAP Summary</Text>
 
-          {/* Red flags first */}
-          {report.referralFlags.length > 0 && (
-            <View style={s.redFlagBox}>
-              <Text style={s.redFlagTitle}>Referral Flags — Review Required</Text>
-              {report.referralFlags.map((f, i) => (
-                <Text key={i} style={s.redFlagItem}>• {f}</Text>
-              ))}
-            </View>
-          )}
-
-          {/* SOAP */}
-          {(['subjective', 'objective', 'assessment', 'plan'] as const).map(key => (
-            <View key={key} style={s.clinBox}>
-              <Text style={s.clinLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
-              <Text style={s.clinText}>{soap[key]}</Text>
-            </View>
-          ))}
-
-          {/* ICD-10 */}
-          <Text style={[s.sectionTitle, { marginTop: 8 }]}>ICD-10 Classification</Text>
-          <View style={s.icd10Row}>
-            {icd10.map(code => (
-              <Text key={code} style={s.icd10Chip}>{code}</Text>
+        {/* Red flags first */}
+        {report.referralFlags.length > 0 && (
+          <View style={s.redFlagBox}>
+            <Text style={s.redFlagTitle}>Referral Flags — Review Required</Text>
+            {report.referralFlags.map((f, i) => (
+              <Text key={i} style={s.redFlagItem}>• {f}</Text>
             ))}
           </View>
+        )}
 
-          {/* Follow-up */}
-          <View style={s.clinBox}>
-            <Text style={s.clinLabel}>Recommended Follow-Up</Text>
-            <Text style={s.clinText}>
-              {report.referralFlags.length > 0
-                ? 'Urgent: within 1–2 weeks. Consider specialist referral for flagged findings.'
-                : report.findings.some(f => f.severity === 'severe' || f.severity === 'moderate')
-                  ? 'Reassess in 4 weeks to monitor correction programme progress.'
-                  : 'Reassess in 8 weeks or on symptom change.'}
-            </Text>
+        {/* SOAP */}
+        {(['subjective', 'objective', 'assessment', 'plan'] as const).map(key => (
+          <View key={key} style={s.clinBox}>
+            <Text style={s.clinLabel}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
+            <Text style={s.clinText}>{soap[key]}</Text>
           </View>
+        ))}
 
-          {/* Clinical use warning */}
-          <View style={s.clinWarning}>
-            <Text style={s.clinWarnText}>
-              FOR CLINICAL USE ONLY — Not for patient self-diagnosis.
-              This AI-generated report requires clinical validation by a licensed physiotherapist before treatment decisions.
-            </Text>
-          </View>
+        {/* ICD-10 */}
+        <Text style={[s.sectionTitle, { marginTop: 8 }]}>ICD-10 Classification</Text>
+        <View style={s.icd10Row}>
+          {icd10.map(code => (
+            <Text key={code} style={s.icd10Chip}>{code}</Text>
+          ))}
+        </View>
 
-          <Footer />
-        </Page>
-      )}
+        {/* Follow-up */}
+        <View style={s.clinBox}>
+          <Text style={s.clinLabel}>Recommended Follow-Up</Text>
+          <Text style={s.clinText}>
+            {report.referralFlags.length > 0
+              ? 'Urgent: within 1–2 weeks. Consider specialist referral for flagged findings.'
+              : report.findings.some(f => f.severity === 'severe' || f.severity === 'moderate')
+                ? 'Reassess in 4 weeks to monitor correction programme progress.'
+                : 'Reassess in 8 weeks or on symptom change.'}
+          </Text>
+        </View>
+
+        {/* Clinical use warning */}
+        <View style={s.clinWarning}>
+          <Text style={s.clinWarnText}>
+            FOR CLINICAL USE ONLY — Not for patient self-diagnosis.
+            This AI-generated report requires clinical validation by a licensed physiotherapist before treatment decisions.
+          </Text>
+        </View>
+
+        <Footer />
+      </Page>
 
     </Document>
   );
