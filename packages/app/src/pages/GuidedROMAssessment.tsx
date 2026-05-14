@@ -302,9 +302,9 @@ export default function GuidedROMAssessment() {
           for (const lm of lms) { if (!lm || (lm.visibility ?? 1) < 0.3) continue; ctx.beginPath(); ctx.arc(lm.x * w, lm.y * h, 4, 0, Math.PI * 2); ctx.fill(); }
           const tst = TESTS[ti];
           if (tst) {
-            const res = computeAngleResult(lms, tst);
-            setAngle(res.bad ? null : res.angle);
-            setLmWarn(res.bad ? 'Landmark lost — move closer' : res.warn ? 'Using heel landmark' : null);
+            const ang = liveAngle(lms, tst);
+            setAngle(ang > 0 ? ang : null);
+            setLmWarn(ang > 0 ? null : 'Landmark lost — move closer');
           }
         }
       } catch { /**/ }
