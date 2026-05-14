@@ -300,9 +300,9 @@ export default function GuidedROMAssessment() {
           }
           ctx.fillStyle = '#00D4AA';
           for (const lm of lms) { if (!lm || (lm.visibility ?? 1) < 0.3) continue; ctx.beginPath(); ctx.arc(lm.x * w, lm.y * h, 4, 0, Math.PI * 2); ctx.fill(); }
-          const tst = TESTS[ti];
-          if (tst) {
-            const ang = liveAngle(lms, tst);
+          const curTest = TESTS[ti];
+          if (curTest) {
+            const ang = liveAngle(lms, curTest);
             setAngle(ang > 0 ? ang : null);
             setLmWarn(ang > 0 ? null : 'Landmark lost — move closer');
           }
