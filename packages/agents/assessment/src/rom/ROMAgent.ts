@@ -1,3 +1,6 @@
+// NOTE: This is ExerciseQualityAgent — estimates functional movement quality from session scores.
+// NOT a goniometric ROM assessment.
+// For clinical ROM use GuidedROMAssessment.tsx (camera-based goniometry, 8 tests).
 import Anthropic from '@anthropic-ai/sdk';
 import type {
   SessionSummary,
@@ -133,7 +136,6 @@ function computeJointROMs(buckets: Map<string, JointBucket>): Record<string, Joi
     const scores  = bucket.sessions.map(s => s.avg_score);
     const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
     const estimatedROMPercent = scoreToROMPercent(avgScore);
-    const estimatedDegrees    = (bucket.normalMax * estimatedROMPercent) / 100;
     const deficitPercent      = 100 - estimatedROMPercent;
     const lastSession         = bucket.sessions.sort((a, b) => a.date.localeCompare(b.date)).at(-1)!;
 
@@ -141,15 +143,15 @@ function computeJointROMs(buckets: Map<string, JointBucket>): Record<string, Joi
       joint:     bucket.jointKey,
       movement:  bucket.movement,
       normalMax: bucket.normalMax,
-      estimatedROMPercent: Math.round(estimatedROMPercent * 10) / 10,
-      estimatedDegrees:    Math.round(estimatedDegrees   * 10) / 10,
-      deficitPercent:      Math.round(deficitPercent     * 10) / 10,
-      clinicallySignificant: deficitPercent > 20,
+      movementQualityPercent: Math.round(estimatedROMPercent * 10) / 10,
+      deficitPercent:         Math.round(deficitPercent      * 10) / 10,
+      clinicallySignificant:  deficitPercent > 20,
       sessionCount:    bucket.sessions.length,
       lastMeasuredAt:  lastSession.date,
       citation:        CITATION,
       confidence:      confidenceFromCount(bucket.sessions.length),
       dataSource:      'session_score_proxy',
+      assessmentType:  'exercise_quality_proxy',
     };
   }
 
@@ -316,7 +318,7 @@ export class ROMAgent {
       const totalWeight = jointList.reduce((a, j) => a + j.sessionCount, 0);
       return totalWeight === 0
         ? 0
-        : jointList.reduce((acc, j) => acc + j.estimatedROMPercent * j.sessionCount, 0) / totalWeight;
+        : jointList.reduce((acc, j) => acc + j.movementQualityPercent * j.sessionCount, 0) / totalWeight;
     })();
 
     // Data completeness: joints with data / 6 major joints expected

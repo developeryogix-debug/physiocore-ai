@@ -159,16 +159,16 @@ export interface SessionSummary {
 export interface JointROM {
   joint: string;
   movement: string;
-  normalMax: number;            // degrees, from jointDatabase
-  estimatedROMPercent: number;  // 0–100% of normalMax
-  estimatedDegrees: number;     // normalMax × estimatedROMPercent/100
-  deficitPercent: number;       // 100 - estimatedROMPercent
-  clinicallySignificant: boolean; // deficit >20%
+  normalMax: number;                // degrees, from jointDatabase
+  movementQualityPercent: number;   // 0–100% form-quality proxy (was estimatedROMPercent)
+  deficitPercent: number;           // 100 - movementQualityPercent
+  clinicallySignificant: boolean;   // deficit >20%
   sessionCount: number;
   lastMeasuredAt: string;
   citation: string;
   confidence: 'high' | 'medium' | 'low';
   dataSource: 'session_score_proxy';
+  assessmentType: 'exercise_quality_proxy';
 }
 
 export interface Asymmetry {

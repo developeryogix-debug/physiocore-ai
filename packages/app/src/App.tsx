@@ -18,7 +18,7 @@ import Settings from './pages/Settings.js';
 import Trainer from './pages/Trainer.js';
 import PostureAssessment from './pages/PostureAssessment.js';
 import PainMap from './pages/PainMap.js';
-import ROMAssessment from './pages/ROMAssessment.js';
+import GuidedROMAssessment from './pages/GuidedROMAssessment.js';
 import OnboardingWizard from './components/OnboardingWizard.js';
 import Admin from './pages/Admin.js';
 import OrgDashboard from './pages/OrgDashboard.js';
@@ -131,7 +131,7 @@ function AppContent() {
           <Route path="/trainer"   element={<ProtectedRoute><Trainer /></ProtectedRoute>} />
           <Route path="/posture"    element={<ProtectedRoute><PostureAssessment /></ProtectedRoute>} />
           <Route path="/pain-map"  element={<ProtectedRoute><PainMap /></ProtectedRoute>} />
-          <Route path="/rom-assessment" element={<ProtectedRoute><ROMAssessment /></ProtectedRoute>} />
+          <Route path="/rom-assessment" element={<ProtectedRoute><GuidedROMAssessment /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
         </Routes>
