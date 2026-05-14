@@ -1,5 +1,6 @@
-export { GaitAgent }      from './gait/GaitAgent.js';
-export { ROMAgent }       from './rom/ROMAgent.js';
+export { GaitAgent }       from './gait/GaitAgent.js';
+export { ROMAgent }        from './rom/ROMAgent.js';
+export { FunctionalAgent } from './functional/FunctionalAgent.js';
 export { runPainMapAgent } from './pain/painMapAgent.js';
 export type { PainMapInput, PainMapReport, PainRegion, PainQuality, PainBehaviour } from './pain/painMapAgent.js';
 export type {
@@ -15,4 +16,6 @@ export type {
   Asymmetry,
   Trend,
   ROMReport,
+  FunctionalAgentInput,
+  FunctionalReport,
 } from './types/findings.js';

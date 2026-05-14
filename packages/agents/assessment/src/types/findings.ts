@@ -167,3 +167,46 @@ export interface GaitMetrics {
   meanLandmarkVisibility: number;
   usableFrameCount:       number;
 }
+
+// ── FunctionalAgent I/O ──────────────────────────────────────────────────────
+
+export interface FunctionalAgentInput {
+  patientId: string;
+  psfsActivities: Array<{ activity: string; baseline: number; current: number }>;
+  tugSeconds: number | null;
+  thirtySecChairStandCount: number | null;
+  grocScore: number | null;       // -7 to +7
+  sessionCount: number;
+  adherencePercent: number;
+  ageYears?: number;              // for 30s chair stand normative comparison
+  sex?: 'male' | 'female';       // for 30s chair stand normative comparison
+}
+
+export interface FunctionalReport {
+  agentId: 'functional-agent';
+  version: '1.0.0';
+  patientId: string;
+  generatedAt: string;
+
+  psfsAverage: number;               // 0–10 mean of current scores
+  psfsChangeFromBaseline: number;    // current mean - baseline mean
+  psfsInterpretation: string;
+  psfsMcidMet: boolean;              // change >= 2.0 (Stratford PW et al. 1995)
+
+  tugSeconds: number | null;
+  tugRiskCategory: 'low' | 'moderate' | 'high' | 'not_tested';
+
+  thirtySecChairStand: number | null;
+  thirtySecNormative: string;
+
+  overallFunctionLevel: 'normal' | 'mildly_impaired' | 'moderately_impaired' | 'severely_impaired';
+  goalProgressPercent: number;       // 0–100, PSFS 50% + TUG 30% + chair 20%
+  grocInterpretation: string | null;
+
+  referralFlags: RedFlagAlert[];
+  clinicalSummary: string;           // Claude Haiku, 400 tokens max
+
+  evidenceGrade: EvidenceGrade;
+  citations: string[];
+  processingMs: number;
+}
