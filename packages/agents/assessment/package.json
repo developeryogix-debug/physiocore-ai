@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": { "import": "./src/index.ts" } },
+  "exports": {
+    ".":               { "import": "./src/index.ts" },
+    "./painMapAgent":  { "import": "./src/pain/painMapAgent.ts" }
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
     "@physiocore/types": "workspace:*"
