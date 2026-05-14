@@ -251,6 +251,9 @@ All pages need `padding-top: 100px` to clear nav.
 - B2B pricing page: Clinic $99, Studio $49, Enterprise custom
 - Equipment filtering: exercises match user's available equipment
 - Phase 2 plan documented: `docs/PHASE2_ASSESSMENT_SWARM.md` (892 lines)
+- **PainMapAgent ✅ BUILT** — two-stage: algorithmic red-flag detection + Claude Sonnet clinical analysis; ICD-10 mapping, neuropathic indicators, pain trend, `safeToExercise`
+- **health-check v2 ✅ BUILT** — upgraded monitoring with CostWatchAgent, 4h dedup, Resend email alerts
+- **PainMap.tsx ✅ BUILT** — interactive body map UI, NPRS input, quality/behaviour selectors, Supabase sync
 
 ### Phase 2 Design Decisions
 | Question | Decision |
@@ -302,17 +305,15 @@ All pages need `padding-top: 100px` to clear nav.
 - Design fixes: font floor 0.75rem, btn border-radius, font-weight ceiling 600
 
 ### In Progress
+- **FunctionalAgent** — Phase 2 functional movement screen (squat, lunge, push, pull scoring)
 - 9 remaining joints: elbow, wrist, hip, ankle, cervical, thoracic, SI, TMJ, foot
-- Posture grid overlay rendering (PostureAssessment)
-- Bundle splitting (2.1MB → target <600KB chunks)
 
 ---
 
 ## Next Build Priorities
 
-1. Phase 2 Session A: PostureAgent grid overlay completion
+1. FunctionalAgent — complete functional movement screen
 2. Phase 2 Session B: GaitAgent (walking analysis, client-side MediaPipe)
 3. Phase 2 Session C: ROMAgent (range of motion from session data)
 4. Stripe: change statement descriptor to "PhysioCore AI"
 5. Supabase: run posture_assessments table migration
-6. PWA manifest (add to home screen)
