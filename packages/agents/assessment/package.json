@@ -10,7 +10,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
     "@physiocore/clinical": "workspace:*",
-    "@physiocore/types": "workspace:*"
+    "@physiocore/clinical-agent": "workspace:*",
+    "@physiocore/types": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

@@ -51,9 +51,15 @@ importers:
       '@physiocore/clinical':
         specifier: workspace:*
         version: link:../../clinical
+      '@physiocore/clinical-agent':
+        specifier: workspace:*
+        version: link:../clinical
       '@physiocore/types':
         specifier: workspace:*
         version: link:../../types
+      '@supabase/supabase-js':
+        specifier: ^2.47.10
+        version: 2.105.3
     devDependencies:
       typescript:
         specifier: ^5.7.3

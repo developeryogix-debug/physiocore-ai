@@ -3,7 +3,6 @@ export type {
   AssessmentInput,
   FullAssessmentResult,
   AgentReports,
-  ClinicalAssessmentReport,
   PostureCapture,
   FunctionalAnswers,
   AvailableData,
@@ -48,4 +47,5 @@ export type {
   TreatmentPriority,
   PrescribedExercise,
   EvidenceCitation,
+  ClinicalAssessmentReport,
 } from './types/findings.js';

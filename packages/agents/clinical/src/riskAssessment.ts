@@ -200,8 +200,8 @@ export function mapProfileToFHIRPatient(
     resourceType: 'Patient',
     identifier: identifiers,
     name: [humanName],
-    birthDate: profile.dateOfBirth.split('T')[0], // FHIR uses YYYY-MM-DD
-    gender: genderMap[profile.gender],
+    birthDate: profile.dateOfBirth.split('T')[0] ?? profile.dateOfBirth,
+    gender: genderMap[profile.gender] ?? 'unknown',
   };
 }
 
