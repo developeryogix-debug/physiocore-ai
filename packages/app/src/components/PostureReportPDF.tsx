@@ -241,9 +241,10 @@ export interface PostureReportPDFProps {
   confidences:     Partial<Record<ViewKey, number>>;  // 0-100
 }
 
-// ── ICD-10 inference from referral flags ──────────────────────────────────────
-function inferICD10(flags: string[], findings: PostureReport['findings']): string[] {
+// ── ICD-10 inference from report ─────────────────────────────────────────────
+function inferICD10(report: PostureReport): string[] {
   const codes: string[] = [];
+  const { referralFlags: flags, findings, muscleImbalancePattern } = report;
   if (flags.some(f => /forward head/i.test(f)) || findings.some(f => /head forward/i.test(f.name) && f.severity !== 'normal'))
     codes.push('M43.6');
   if (findings.some(f => /thoracic/i.test(f.name) && f.severity !== 'normal'))
@@ -254,6 +255,11 @@ function inferICD10(flags: string[], findings: PostureReport['findings']): strin
     codes.push('M62.9');
   if (flags.some(f => /scoliosis/i.test(f)))
     codes.push('M41.9');
+  // Lateral chain imbalance (Janda) → compensatory loading dorsalgia
+  if (muscleImbalancePattern?.name.toLowerCase().includes('lateral')) {
+    codes.push('M62.9');
+    codes.push('M54.89'); // Other specified dorsalgia — compensatory loading
+  }
   if (codes.length === 0) codes.push('M62.9');
   return [...new Set(codes)];
 }
@@ -279,7 +285,7 @@ export function PostureReportPDF({
   report, userName, capturedFrames, variant, confidences,
 }: PostureReportPDFProps) {
   const date = new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'long', year: 'numeric' });
-  const icd10 = inferICD10(report.referralFlags, report.findings);
+  const icd10 = inferICD10(report);
   const soap  = buildSOAP(report, userName, date);
   const allCitations = [...new Set(report.findings.map(f => f.citation))];
 
