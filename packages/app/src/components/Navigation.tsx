@@ -39,8 +39,10 @@ const DESKTOP_LINKS = [
   {to:'/posture',     label:'Posture'},
   {to:'/assessment',  label:'Assessment'},
   {to:'/pain-map',    label:'Pain Map'},
-  {to:'/rom-assessment', label:'ROM'},
-  {to:'/settings',  label:'Settings'},
+  {to:'/rom-assessment',    label:'ROM'},
+  {to:'/gait-assessment',  label:'Gait'},
+  {to:'/functional',       label:'Functional'},
+  {to:'/settings',         label:'Settings'},
 ];
 
 export default function Navigation() {
@@ -306,6 +308,8 @@ function MobileDropdown({displayName,email,userRole,onSignOut,onClose,navigate}:
         {menuItem('Posture',()=>{onClose();navigate('/posture');})}
         {menuItem('Pain Map',()=>{onClose();navigate('/pain-map');})}
         {menuItem('ROM',()=>{onClose();navigate('/rom-assessment');})}
+        {menuItem('Gait',()=>{onClose();navigate('/gait-assessment');})}
+        {menuItem('Functional',()=>{onClose();navigate('/functional');})}
         {menuItem('Gym',()=>{onClose();navigate('/gym');})}
         {menuItem('Behavior',()=>{onClose();navigate('/behavior');})}
         {(userRole==='clinician'||userRole==='admin')&&menuItem('Clinician',()=>{onClose();navigate('/clinician');})}
