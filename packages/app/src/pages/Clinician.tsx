@@ -5,13 +5,11 @@ import { AiChatPanel } from '../components/AiChatPanel.js';
 import { useAuth } from '../hooks/useAuth.js';
 import {
   getClinicianPatients,
-  createInvite,
   getProfilesByUserIds,
   getSessionsBatchForPatients,
   type ClinicianPatient,
   type PatientSessionSummary,
 } from '../lib/orgApi.js';
-import { sendPatientInvite, getInviteLink } from '../lib/emailApi.js';
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
 
@@ -189,14 +187,28 @@ export default function Clinician() {
     if (!user) return;
     setInviteSending(true);
     setInviteMsg('');
-    const invite = await createInvite({ org_id: orgId ?? '', invited_by: user.id, email: inviteEmail, role: 'patient', token: crypto.randomUUID(), expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() });
-    if (!invite) { setInviteSending(false); setInviteMsg('Failed to create invite. Try again.'); return; }
-    const link = getInviteLink(invite.token);
-    await navigator.clipboard.writeText(link).catch(() => undefined);
-    void sendPatientInvite({ toEmail: inviteEmail, toName: inviteName || 'there', clinicianName: user.email ?? 'Your clinician', orgName: '', inviteToken: invite.token });
-    setInviteMsg(`Invite link copied! ${import.meta.env.VITE_RESEND_API_KEY ? 'Email sent.' : '(Add VITE_RESEND_API_KEY to send emails.)'}`);
-    setInviteEmail('');
-    setInviteName('');
+    try {
+      const res = await fetch('/api/invite-patient', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          orgId: orgId ?? '',
+          clinicianId: user.id,
+          patientName: inviteName || undefined,
+        }),
+      });
+      const json = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || !json.success) {
+        setInviteMsg(json.error ?? 'Failed to send invite. Try again.');
+      } else {
+        setInviteMsg('Invite sent! Patient will receive an email with their login link.');
+        setInviteEmail('');
+        setInviteName('');
+      }
+    } catch {
+      setInviteMsg('Network error. Check your connection and try again.');
+    }
     setInviteSending(false);
   }
 
