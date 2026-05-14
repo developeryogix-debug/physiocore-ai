@@ -172,6 +172,7 @@ export default function PostureAssessment() {
   const [postureReport, setPostureReport] = useState<PostureReport | null>(null);
   const [savedToDb, setSavedToDb]     = useState(false);
   const [calibrated, setCalibrated]   = useState(false);
+  const [exportingPdf, setExportingPdf] = useState<'patient' | 'clinician' | null>(null);
 
   const countdownColor = isHold ? '#00E676'
     : countdown !== null && countdown <= 3 ? '#FF4444'
@@ -403,6 +404,50 @@ export default function PostureAssessment() {
       setAnalysing(false);
     }
   }, [frames, userProfile]);
+
+  // ── PDF export ───────────────────────────────────────────────────────────────
+
+  const exportPosturePdf = useCallback(async (variant: 'patient' | 'clinician') => {
+    if (!postureReport) return;
+    setExportingPdf(variant);
+    try {
+      const firstName = ((userProfile?.name ?? 'Patient').split(' ')[0] ?? 'Patient').replace(/[^a-zA-Z0-9]/g, '') || 'Patient';
+      const dateStr   = new Date().toISOString().slice(0, 10);
+      const filename  = variant === 'clinician'
+        ? `${firstName}_PostureReport_Clinical_${dateStr}.pdf`
+        : `${firstName}_PostureReport_${dateStr}.pdf`;
+
+      // Build confidence map from captured frames
+      const confidences: Partial<Record<ViewKey, number>> = {};
+      for (const v of VIEWS) {
+        if (frames[v.key]) confidences[v.key] = calcLandmarkConfidence(frames[v.key]!.landmarks);
+      }
+
+      const [{ pdf }, { PostureReportPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/PostureReportPDF.js'),
+      ]);
+
+      const blob = await pdf(
+        <PostureReportPDF
+          report={postureReport}
+          userName={firstName}
+          capturedFrames={frames}
+          variant={variant}
+          confidences={confidences}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setExportingPdf(null);
+    }
+  }, [postureReport, frames, userProfile]);
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
 
@@ -721,6 +766,25 @@ export default function PostureAssessment() {
         )}
 
         {postureReport && <PostureReportCard report={postureReport} savedToDb={savedToDb} />}
+
+        {postureReport && (
+          <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => { void exportPosturePdf('patient'); }}
+              disabled={exportingPdf !== null}
+              style={{ padding: '0.6rem 1.2rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', background: 'var(--teal-500)', color: '#000', opacity: exportingPdf === 'patient' ? 0.7 : 1 }}
+            >
+              {exportingPdf === 'patient' ? 'Generating…' : '↓ Export PDF — For Patient'}
+            </button>
+            <button
+              onClick={() => { void exportPosturePdf('clinician'); }}
+              disabled={exportingPdf !== null}
+              style={{ padding: '0.6rem 1.2rem', borderRadius: 8, border: '1px solid var(--border-subtle)', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', background: 'var(--bg-surface)', color: 'var(--text-primary)', opacity: exportingPdf === 'clinician' ? 0.7 : 1 }}
+            >
+              {exportingPdf === 'clinician' ? 'Generating…' : '↓ Export PDF — For Clinician'}
+            </button>
+          </div>
+        )}
 
         {/* Improvement 5 — Ideal vs actual comparison grid */}
         {postureReport && (
