@@ -37,6 +37,7 @@ const DESKTOP_LINKS = [
   {to:'/outcomes',  label:'Outcomes'},
   {to:'/gym',       label:'Gym'},
   {to:'/posture',   label:'Posture'},
+  {to:'/pain-map',  label:'Pain Map'},
   {to:'/settings',  label:'Settings'},
 ];
 
@@ -301,6 +302,7 @@ function MobileDropdown({displayName,email,userRole,onSignOut,onClose,navigate}:
         {menuItem('Outcomes',()=>{onClose();navigate('/outcomes');})}
         {menuItem('Assessment',()=>{onClose();navigate('/assessment');})}
         {menuItem('Posture',()=>{onClose();navigate('/posture');})}
+        {menuItem('Pain Map',()=>{onClose();navigate('/pain-map');})}
         {menuItem('Gym',()=>{onClose();navigate('/gym');})}
         {menuItem('Behavior',()=>{onClose();navigate('/behavior');})}
         {(userRole==='clinician'||userRole==='admin')&&menuItem('Clinician',()=>{onClose();navigate('/clinician');})}
