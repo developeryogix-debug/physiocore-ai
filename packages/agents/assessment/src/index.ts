@@ -19,8 +19,9 @@ export type { PainMapInput, PainMapReport, PainRegion, PainQuality, PainBehaviou
 export { SpecialTestsAgent, createSpecialTestsAgent } from './specialTests/SpecialTestsAgent.js';
 
 // Phase 3 — Treatment Planning
-export { ConservativeAgent } from './treatment/ConservativeAgent.js';
-export { EarlyMobAgent }     from './treatment/EarlyMobAgent.js';
+export { ConservativeAgent }      from './treatment/ConservativeAgent.js';
+export { EarlyMobAgent }          from './treatment/EarlyMobAgent.js';
+export { TreatmentArbiterAgent }  from './treatment/TreatmentArbiterAgent.js';
 export type {
   LoadingStrategy,
   TreatmentPlan,
