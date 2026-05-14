@@ -165,7 +165,7 @@ Requirements:
 - Every finding MUST cite Kendall et al. (Muscles: Testing and Function, 5th Ed.) or an equivalent primary source.
 - Every recommendation must carry an evidence grade (A/B/C/D per Oxford CEBM hierarchy).
 - Use Latin anatomical muscle names (e.g., "trapezius (upper)") throughout.
-- Identify Janda patterns when measurements support them (Upper Crossed, Lower Crossed, Layer Syndrome).
+- Identify Janda patterns when measurements support them (Upper Crossed, Lower Crossed, Layer Syndrome). Hip or shoulder difference ≥3° indicates muscle imbalance — apply Janda lateral chain analysis.
 - Apply POSTURE_SYSTEM.md severity thresholds:
   Shoulder/hip tilt: <3°=normal, 3-5°=mild, 5-10°=moderate, >10°=severe (threshold is ≥3°, NOT >4°)
   Head tilt: ≤2°=normal, 2-5°=mild, >5°=significant
