@@ -226,7 +226,7 @@ function computeTrends(sessions: SessionSummary[]): Trend[] {
     const ys  = recent.map(s => s.avg_score);
     const xBar = (n - 1) / 2;
     const yBar = ys.reduce((a, b) => a + b, 0) / n;
-    const ssXY = xs.reduce((acc, x, i) => acc + (x - xBar) * (ys[i] - yBar), 0);
+    const ssXY = xs.reduce((acc, x, i) => acc + (x - xBar) * ((ys[i] ?? yBar) - yBar), 0);
     const ssXX = xs.reduce((acc, x) => acc + (x - xBar) ** 2, 0);
     const slope = ssXX === 0 ? 0 : ssXY / ssXX;
 
@@ -282,7 +282,7 @@ Write a concise clinical summary. Note that ROM values are inferred from form sc
   });
 
   const block = msg.content[0];
-  return block.type === 'text' ? block.text.trim() : 'Clinical summary unavailable.';
+  return block?.type === 'text' ? (block as { type: 'text'; text: string }).text.trim() : 'Clinical summary unavailable.';
 }
 
 // ─── ROMAgent ─────────────────────────────────────────────────────────────────
