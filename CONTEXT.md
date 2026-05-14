@@ -121,6 +121,12 @@ SUPABASE_SERVICE_ROLE_KEY
 | `/outcomes` | ✅ | PSFS, NPRS, GROC, PHQ-4 + SOS referral, CSV export |
 | `/settings` | ✅ | Profile edit, biometrics tracker, notifications, PDPA data export/delete |
 | `/trainer` | ✅ | Full streaming chat, sidebar sessions, voice in/out, PDF export |
+| `/posture` | ✅ | 4-view capture, PDF export 7-page (patient + clinician), SOAP always rendered |
+| `/rom-assessment` | ✅ | 8-test camera goniometry, voice-guided, PDF export |
+| `/pain-map` | ✅ | Interactive body map, NPRS, quality/behaviour chips, Supabase sync |
+| `/assessment` | ✅ | AssessmentOrchestrator — 8-agent swarm, consensus score, SOAP, treatment priorities |
+| `/functional` | ✅ | PSFS + TUG + 30s Chair Stand, Haiku summary, age-adjusted norms, Supabase save |
+| `/gait-assessment` | ✅ | Live MediaPipe gait analysis — cadence, symmetry, trunk sway, Trendelenburg |
 
 ---
 
@@ -300,6 +306,18 @@ All pages need `padding-top: 100px` to clear nav.
 | AdversarialAgent | Separate Claude Opus call |
 | Assessment frequency | Monthly posture; each session ROM + pain |
 | Special tests availability | Clinician mode only |
+
+---
+
+## Session — 15 May 2026 (continued)
+
+### Completed
+- PostureReportPDF SOAP page 7 now always renders (removed clinician-variant conditional)
+- Posture prompt: hip/shoulder ≥3° → triggers Janda lateral chain analysis
+- Nav audit: added /gait-assessment + /functional; assessment routes grouped in hover dropdown
+- FunctionalAssessment page ✅ — PSFS + TUG + 30s Chair Stand, Haiku summary, Supabase save
+- GaitAssessment page ✅ — full MediaPipe live gait analysis (hook-upgraded from stub)
+- CONTEXT.md routes table updated
 
 ---
 
