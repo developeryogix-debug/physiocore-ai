@@ -36,8 +36,9 @@ const DESKTOP_LINKS = [
   {to:'/nutrition', label:'Nutrition'},
   {to:'/outcomes',  label:'Outcomes'},
   {to:'/gym',       label:'Gym'},
-  {to:'/posture',   label:'Posture'},
-  {to:'/pain-map',  label:'Pain Map'},
+  {to:'/posture',     label:'Posture'},
+  {to:'/assessment',  label:'Assessment'},
+  {to:'/pain-map',    label:'Pain Map'},
   {to:'/settings',  label:'Settings'},
 ];
 
