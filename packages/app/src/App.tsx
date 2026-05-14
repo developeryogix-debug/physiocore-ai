@@ -133,7 +133,8 @@ function AppContent() {
           <Route path="/trainer"   element={<ProtectedRoute><Trainer /></ProtectedRoute>} />
           <Route path="/posture"    element={<ProtectedRoute><PostureAssessment /></ProtectedRoute>} />
           <Route path="/pain-map"  element={<ProtectedRoute><PainMap /></ProtectedRoute>} />
-          <Route path="/rom-assessment"   element={<ProtectedRoute><GuidedROMAssessment /></ProtectedRoute>} />
+          <Route path="/rom-assessment"    element={<ProtectedRoute><GuidedROMAssessment /></ProtectedRoute>} />
+          <Route path="/gait-assessment"  element={<ProtectedRoute><GaitAssessment /></ProtectedRoute>} />
           <Route path="/functional"       element={<ProtectedRoute><FunctionalAssessment /></ProtectedRoute>} />
           <Route path="/gait-assessment"  element={<ProtectedRoute><GaitAssessment /></ProtectedRoute>} />
 

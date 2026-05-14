@@ -266,7 +266,7 @@ All pages need `padding-top: 100px` to clear nav.
 | Agent | Status | Notes |
 |---|---|---|
 | GaitAgent | ✅ BUILT | `src/gait/GaitAgent.ts` — step symmetry, cadence, trunk sway, arm swing, Trendelenburg; Evidence B, Krebs 1985 |
-| ROMAgent | ✅ BUILT | `src/rom/ROMAgent.ts` — score-as-proxy model |
+| ROMAgent | ✅ BUILT | `src/rom/ROMAgent.ts` — ExerciseQualityProxy: score-as-proxy model (joint ROM inferred from session form score, not direct goniometry) |
 | PainMapAgent | ✅ BUILT | `src/pain/painMapAgent.ts` — red flag detection (Greenhalgh 2010), risk levels, ICD-10, Haiku differentials |
 | FunctionalAgent | ✅ BUILT | `src/functional/FunctionalAgent.ts` — PSFS/TUG/30s Chair Stand; Stratford 1995, Podsiadlo 1991, Jones 1999 |
 | SpecialTestsAgent | ✅ BUILT | `src/specialTests/SpecialTestsAgent.ts` — voice-guided; Phase A + Phase B; clinician mode only |
@@ -278,11 +278,11 @@ All pages need `padding-top: 100px` to clear nav.
 | Page | Route | Status |
 |---|---|---|
 | PostureAssessment | `/posture` | ✅ 4-view capture + PDF export (7 pages, patient + clinician) |
-| GuidedROMAssessment | `/rom-assessment` | ✅ 12 measures, 6 joints, MediaPipe live angle, Claude Sonnet interp |
+| GuidedROMAssessment | `/rom-assessment` | ✅ BUILT + DEPLOYED — 8-test camera goniometry, voice-guided, patient + clinician PDF export |
 | GaitAssessment | `/gait-assessment` | ✅ |
 | FunctionalAssessment | `/functional` | ✅ |
 | PainMap | `/pain-map` | ✅ interactive body map, NPRS, Supabase sync |
-| Assessment (full swarm) | `/assessment` | ✅ AssessmentOrchestrator wired |
+| Assessment (full swarm) | `/assessment` | ✅ WIRED to AssessmentOrchestrator — 9-step swarm progress, data source grid, consensus score, risk level, SOAP note, treatment priorities |
 
 #### Infrastructure
 - `full_assessments` Supabase table ✅
@@ -305,7 +305,7 @@ All pages need `padding-top: 100px` to clear nav.
 
 ## Session — 15 May 2026
 
-### Phase 3 — Treatment Planning Swarm
+### Phase 3 — Treatment Planning Swarm (READY TO IMPLEMENT)
 
 Spec: `docs/PHASE3_TREATMENT_PLANNING.md`  
 Package: `packages/agents/assessment/src/treatment/`  
@@ -388,13 +388,8 @@ ConsensusAgent report
 
 ## Next Build Priorities
 
-1. Phase 3: TreatmentArbiterAgent (Opus) — compare plans on 6 axes, produce ArbiterVerdict
-2. Phase 3: ProgressionAgent (Haiku) — linear regression on form scores, advance/hold/regress
-3. Phase 3: PrescriptionAgent (Haiku) — FHIR R4 CarePlan + week-by-week schedule
-4. Phase 3: TreatmentOrchestrator — wire all 5 agents, expose to Assessment UI
-5. Voice physiotherapist agent (Cartesia / ElevenLabs)
-6. First Doctor On Click patient invite
-7. Stripe: change statement descriptor to "PhysioCore AI"
-8. Supabase: run rom_assessments + full_assessments table migrations
-9. Dashboard 8-panel upgrade
-10. Onboard page Clinical Noir redesign
+1. **Phase 3: ConservativeAgent + EarlyMobAgent** — complete treatment planning swarm (TreatmentArbiterAgent → ProgressionAgent → PrescriptionAgent → TreatmentOrchestrator)
+2. **Voice physiotherapist** — Cartesia or ElevenLabs TTS; real-time coaching during sessions
+3. **Doctor On Click: first real patient invite** — end-to-end patient onboard flow via `/clinician` invite
+4. **Stripe: statement descriptor → "PhysioCore AI"** — update in Stripe dashboard settings
+5. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
