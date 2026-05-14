@@ -1,20 +1,27 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import type { MockPatient } from '../lib/clinicianTypes.js';
+import type { MockPatient, MockSession } from '../lib/clinicianTypes.js';
 import ClinicianPatientDetail from '../components/ClinicianPatientDetail.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 import { useAuth } from '../hooks/useAuth.js';
-import { getClinicianPatients, createInvite, type ClinicianPatient } from '../lib/orgApi.js';
+import {
+  getClinicianPatients,
+  createInvite,
+  getProfilesByUserIds,
+  getSessionsBatchForPatients,
+  type ClinicianPatient,
+  type PatientSessionSummary,
+} from '../lib/orgApi.js';
 import { sendPatientInvite, getInviteLink } from '../lib/emailApi.js';
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Demo data ────────────────────────────────────────────────────────────────
 
 function makeDate(daysAgo: number) {
   return new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0] as string;
 }
 
-const PATIENTS: MockPatient[] = [
+const DEMO_PATIENTS: MockPatient[] = [
   {
-    id: 'p1', name: 'Sarah Chen', age: 52, gender: 'female', dob: '1972-03-14',
+    id: 'demo-p1', name: 'Sarah Chen', age: 52, gender: 'female', dob: '1972-03-14',
     conditions: ['Knee Osteoarthritis', 'Hypertension'], medications: ['Lisinopril 10mg', 'Ibuprofen PRN'],
     goal: 'Rehabilitation', fitnessLevel: 'beginner', heightCm: 162, weightKg: 71,
     churnRisk: 'low', adherencePct: 82,
@@ -27,7 +34,7 @@ const PATIENTS: MockPatient[] = [
     ],
   },
   {
-    id: 'p2', name: 'Marcus Williams', age: 38, gender: 'male', dob: '1986-07-22',
+    id: 'demo-p2', name: 'Marcus Williams', age: 38, gender: 'male', dob: '1986-07-22',
     conditions: ['Post-ACL Reconstruction (6 months)'], medications: ['Naproxen 500mg'],
     goal: 'Strengthening', fitnessLevel: 'advanced', heightCm: 183, weightKg: 88,
     churnRisk: 'medium', adherencePct: 64,
@@ -39,7 +46,7 @@ const PATIENTS: MockPatient[] = [
     ],
   },
   {
-    id: 'p3', name: 'Elena Rodriguez', age: 67, gender: 'female', dob: '1957-11-05',
+    id: 'demo-p3', name: 'Elena Rodriguez', age: 67, gender: 'female', dob: '1957-11-05',
     conditions: ['Osteoporosis', 'Fibromyalgia', 'Type 2 Diabetes'], medications: ['Alendronate 70mg weekly', 'Metformin 500mg', 'Pregabalin 75mg'],
     goal: 'Pain management', fitnessLevel: 'beginner', heightCm: 155, weightKg: 62,
     churnRisk: 'high', adherencePct: 43,
@@ -50,7 +57,7 @@ const PATIENTS: MockPatient[] = [
     ],
   },
   {
-    id: 'p4', name: 'James Kim', age: 45, gender: 'male', dob: '1979-05-30',
+    id: 'demo-p4', name: 'James Kim', age: 45, gender: 'male', dob: '1979-05-30',
     conditions: ['Herniated Disc L4-L5'], medications: ['Diclofenac gel topical'],
     goal: 'Strengthening', fitnessLevel: 'intermediate', heightCm: 175, weightKg: 82,
     churnRisk: 'low', adherencePct: 91,
@@ -64,7 +71,7 @@ const PATIENTS: MockPatient[] = [
     ],
   },
   {
-    id: 'p5', name: 'Amara Osei', age: 29, gender: 'female', dob: '1995-09-18',
+    id: 'demo-p5', name: 'Amara Osei', age: 29, gender: 'female', dob: '1995-09-18',
     conditions: ['Post-Rotator Cuff Repair (8 weeks)'], medications: ['Paracetamol 500mg PRN'],
     goal: 'Rehabilitation', fitnessLevel: 'intermediate', heightCm: 168, weightKg: 64,
     churnRisk: 'medium', adherencePct: 58,
@@ -76,11 +83,71 @@ const PATIENTS: MockPatient[] = [
   },
 ];
 
+const DEMO_IDS = new Set(DEMO_PATIENTS.map(p => p.id));
+
 const CHURN_COLORS: Record<string, { bg: string; color: string }> = {
   low:    { bg: '#dcfce7', color: '#15803d' },
   medium: { bg: '#fef9c3', color: '#92400e' },
   high:   { bg: '#fee2e2', color: '#b91c1c' },
 };
+
+// ─── Real patient builder ─────────────────────────────────────────────────────
+
+function buildRealPatient(
+  cp: ClinicianPatient,
+  profile: { user_id: string; full_name: string } | undefined,
+  allSessions: PatientSessionSummary[],
+): MockPatient {
+  const patientSessions = allSessions
+    .filter(s => s.user_id === cp.patient_id)
+    .slice(0, 5);
+
+  const mockSessions: MockSession[] = patientSessions.map(s => {
+    const durationMin = s.ended_at
+      ? Math.round(
+          (new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 60000,
+        )
+      : 0;
+    return {
+      date: s.started_at.split('T')[0] ?? s.started_at,
+      exercise: s.exercise_name ?? 'Session',
+      reps: s.rep_count ?? 0,
+      formScore: s.form_score ?? 0,
+      durationMin,
+      viewMode: 'front',
+    };
+  });
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const thisMonthCount = patientSessions.filter(
+    s => new Date(s.started_at).getTime() >= monthStart,
+  ).length;
+  const adherencePct = Math.min(100, Math.round((thisMonthCount / 4) * 100));
+  const churnRisk: 'low' | 'medium' | 'high' =
+    adherencePct >= 75 ? 'low' : adherencePct >= 40 ? 'medium' : 'high';
+
+  const conditions = cp.profile?.conditions
+    ? cp.profile.conditions.split(',').map(c => c.trim()).filter(Boolean)
+    : [];
+
+  return {
+    id: cp.patient_id,
+    name: profile?.full_name ?? cp.profile?.full_name ?? `Patient ${cp.patient_id.slice(0, 8)}`,
+    age: 0,
+    gender: 'male',
+    dob: '',
+    conditions,
+    medications: [],
+    goal: cp.profile?.goals ?? 'Rehabilitation',
+    fitnessLevel: 'intermediate',
+    heightCm: 170,
+    weightKg: 70,
+    churnRisk,
+    adherencePct,
+    sessions: mockSessions,
+  };
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -90,11 +157,10 @@ export default function Clinician() {
   const { user, orgId } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
 
-  // ─── Real patients from DB ─────────────────────────────────────────────────
   const [dbPatients, setDbPatients] = useState<ClinicianPatient[]>([]);
+  const [realPatients, setRealPatients] = useState<MockPatient[]>([]);
   const [loadingDb, setLoadingDb] = useState(true);
 
-  // ─── Invite patient modal ──────────────────────────────────────────────────
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
@@ -103,7 +169,19 @@ export default function Clinician() {
 
   useEffect(() => {
     if (!user) return;
-    void getClinicianPatients(user.id).then(data => { setDbPatients(data); setLoadingDb(false); });
+    void getClinicianPatients(user.id).then(async cp => {
+      setDbPatients(cp);
+      if (cp.length === 0) { setLoadingDb(false); return; }
+      const ids = cp.map(p => p.patient_id);
+      const [profiles, sessions] = await Promise.all([
+        getProfilesByUserIds(ids),
+        getSessionsBatchForPatients(ids),
+      ]);
+      setRealPatients(cp.map(p =>
+        buildRealPatient(p, profiles.find(pr => pr.user_id === p.patient_id), sessions),
+      ));
+      setLoadingDb(false);
+    });
   }, [user]);
 
   async function handleInvitePatient(e: FormEvent) {
@@ -135,13 +213,17 @@ export default function Clinician() {
     return last > first ? '↑' : last < first ? '↓' : '→';
   }
 
-  // Summary stats for the page header
-  const totalSessions  = PATIENTS.reduce((s, p) => s + p.sessions.length, 0);
-  const avgAdherence   = Math.round(PATIENTS.reduce((s, p) => s + p.adherencePct, 0) / PATIENTS.length);
-  const highRiskCount  = PATIENTS.filter(p => p.churnRisk === 'high').length;
-  const avgFormScore   = Math.round(PATIENTS.reduce((s, p) => s + avgScore(p), 0) / PATIENTS.length);
+  // Combined list: real patients first, then demo
+  const allPatients = [...realPatients, ...DEMO_PATIENTS];
 
-  const selPatient = selected ? (PATIENTS.find(p => p.id === selected) ?? null) : null;
+  const totalSessions  = allPatients.reduce((s, p) => s + p.sessions.length, 0);
+  const avgAdherence   = allPatients.length
+    ? Math.round(allPatients.reduce((s, p) => s + p.adherencePct, 0) / allPatients.length) : 0;
+  const highRiskCount  = allPatients.filter(p => p.churnRisk === 'high').length;
+  const avgFormScore   = allPatients.length
+    ? Math.round(allPatients.reduce((s, p) => s + avgScore(p), 0) / allPatients.length) : 0;
+
+  const selPatient = selected ? (allPatients.find(p => p.id === selected) ?? null) : null;
 
   return (
     <div style={{ maxWidth: 1020, margin: '0 auto', padding: '100px 24px 48px' }}>
@@ -164,7 +246,7 @@ export default function Clinician() {
       {/* Summary stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
         {[
-          { label: 'Patients',         value: PATIENTS.length.toString(),   sub: 'total' },
+          { label: 'Patients',         value: loadingDb ? '…' : allPatients.length.toString(), sub: 'total' },
           { label: 'Sessions',         value: totalSessions.toString(),      sub: 'logged' },
           { label: 'Avg Adherence',    value: `${avgAdherence}%`,           sub: 'this cohort' },
           { label: 'High-Risk',        value: highRiskCount.toString(),      sub: 'need attention', warn: highRiskCount > 0 },
@@ -178,56 +260,28 @@ export default function Clinician() {
         ))}
       </div>
 
-      {/* ── Real patients from DB ── */}
-      {!loadingDb && dbPatients.length > 0 && (
-        <div style={{ marginBottom: 28 }}>
-          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
-            Your Patients ({dbPatients.length})
-          </p>
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
-              <thead><tr style={{ background: '#f8fafc' }}>
-                {['Patient', 'Status', 'Assigned'].map(h => (
-                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left' as const, fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{h}</th>
-                ))}
-              </tr></thead>
-              <tbody>
-                {dbPatients.map(p => (
-                  <tr key={p.id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>
-                      {p.profile?.full_name ?? `Patient ${p.patient_id.slice(0, 8)}…`}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{ padding: '2px 10px', borderRadius: 99, background: p.status === 'active' ? '#dcfce7' : '#fee2e2', color: p.status === 'active' ? '#15803d' : '#b91c1c', fontSize: '0.7rem', fontWeight: 600 }}>
-                        {p.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '0.78rem' }}>
-                      {new Date(p.assigned_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {/* Loading indicator */}
+      {loadingDb && (
+        <div style={{ ...muted, fontSize: '0.8rem', marginBottom: 16 }}>Loading patients…</div>
       )}
 
-      {/* ── Demo patient list ── */}
+      {/* Real patients count */}
+      {!loadingDb && realPatients.length > 0 && (
+        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0369a1', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 8 }}>
+          {realPatients.length} real patient{realPatients.length !== 1 ? 's' : ''} · {DEMO_PATIENTS.length} demo
+        </p>
+      )}
+
+      {/* Patient list — real first, then demo */}
       <div>
-        {dbPatients.length === 0 && !loadingDb && (
-          <p style={{ ...muted, fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
-            Demo Patients — invite real patients above to replace this
-          </p>
-        )}
-        {PATIENTS.map(p => {
-          const isOpen = selected === p.id;
-          const cr     = CHURN_COLORS[p.churnRisk] ?? CHURN_COLORS['low']!;
-          const avg    = avgScore(p);
-          const trend  = scoreTrend(p);
+        {allPatients.map(p => {
+          const isOpen  = selected === p.id;
+          const isDemo  = DEMO_IDS.has(p.id);
+          const cr      = CHURN_COLORS[p.churnRisk] ?? CHURN_COLORS['low']!;
+          const avg     = avgScore(p);
+          const trend   = scoreTrend(p);
           return (
             <div key={p.id} style={{ marginBottom: 4 }}>
-              {/* Patient row */}
               <div
                 onClick={() => setSelected(isOpen ? null : p.id)}
                 style={{
@@ -245,8 +299,15 @@ export default function Clinician() {
                       {p.name[0]}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.name}</div>
-                      <div style={{ ...muted, fontSize: '0.78rem' }}>{p.age}y {p.gender} · {p.conditions.join(', ')}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.name}</span>
+                        {isDemo && (
+                          <span style={{ fontSize: '0.62rem', fontWeight: 600, color: '#9333ea', background: '#f3e8ff', border: '1px solid #e9d5ff', borderRadius: 4, padding: '1px 6px', letterSpacing: '0.04em' }}>DEMO</span>
+                        )}
+                      </div>
+                      <div style={{ ...muted, fontSize: '0.78rem' }}>
+                        {p.age > 0 ? `${p.age}y ${p.gender} · ` : ''}{p.conditions.length > 0 ? p.conditions.join(', ') : '—'}
+                      </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -272,20 +333,19 @@ export default function Clinician() {
                 </div>
               </div>
 
-              {/* Deep dive panel */}
               {isOpen && <ClinicianPatientDetail patient={p} />}
             </div>
           );
         })}
       </div>
 
-      {dbPatients.length === 0 && !loadingDb && (
+      {!loadingDb && realPatients.length === 0 && (
         <p style={{ ...muted, fontSize: '0.73rem', marginTop: 12 }}>
-          Demo data shown. Use &ldquo;Invite Patient&rdquo; to add real patients — they will appear above.
+          Demo data shown. Use &ldquo;Invite Patient&rdquo; to add real patients — they will appear above the demo rows.
         </p>
       )}
 
-      {/* ── Invite patient modal ── */}
+      {/* Invite patient modal */}
       {showInvite && (
         <div onClick={() => { setShowInvite(false); setInviteMsg(''); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '28px 24px', width: '100%', maxWidth: 420, boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}>
@@ -323,7 +383,7 @@ export default function Clinician() {
       )}
 
       <AiChatPanel
-        pageContext={`Clinician Mode. ${selPatient ? `Selected: ${selPatient.name}, ${selPatient.age}yo. Conditions: ${selPatient.conditions.join(', ')}. Medications: ${selPatient.medications.join(', ')}. Sessions: ${selPatient.sessions.length}. Adherence: ${selPatient.adherencePct}%.` : 'No patient selected.'}`}
+        pageContext={`Clinician Mode. ${selPatient ? `Selected: ${selPatient.name}${selPatient.age > 0 ? `, ${selPatient.age}yo` : ''}. Conditions: ${selPatient.conditions.join(', ')}. Medications: ${selPatient.medications.join(', ')}. Sessions: ${selPatient.sessions.length}. Adherence: ${selPatient.adherencePct}%.` : 'No patient selected.'}`}
         quickPrompts={[
           'Write a brief progress summary for this patient',
           'What red flags should I watch for with these conditions?',

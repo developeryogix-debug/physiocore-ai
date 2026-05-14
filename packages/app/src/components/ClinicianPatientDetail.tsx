@@ -175,7 +175,7 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
   const riskLvl = riskOverride ?? p.churnRisk;
   const avg     = p.sessions.length ? Math.round(p.sessions.reduce((s, x) => s + x.formScore, 0) / p.sessions.length) : 0;
 
-  const apiKey = useCallback(() => (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_API_KEY'], []);
+  const apiKey = useCallback(() => (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'], []);
 
   const generateSoap = useCallback(async () => {
     setLoadSoap(true); setSoapErr(''); setSoap(null);

@@ -201,6 +201,43 @@ export async function updateUserRole(userId: string, role: string): Promise<void
   await db.from('profiles').update({ role }).eq('user_id', userId);
 }
 
+// ── Clinician patient data helpers ───────────────────────────────────────────
+
+export interface PatientSessionSummary {
+  user_id: string;
+  started_at: string;
+  ended_at: string | null;
+  exercise_name: string | null;
+  form_score: number | null;
+  rep_count: number | null;
+}
+
+export async function getProfilesByUserIds(
+  userIds: string[],
+): Promise<Array<{ user_id: string; full_name: string }>> {
+  if (userIds.length === 0) return [];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+  const { data } = await db
+    .from('profiles')
+    .select('user_id, full_name')
+    .in('user_id', userIds);
+  return (data ?? []) as Array<{ user_id: string; full_name: string }>;
+}
+
+export async function getSessionsBatchForPatients(
+  patientIds: string[],
+): Promise<PatientSessionSummary[]> {
+  if (patientIds.length === 0) return [];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+  const { data } = await db
+    .from('sessions')
+    .select('user_id, started_at, ended_at, exercise_name, form_score, rep_count')
+    .in('user_id', patientIds)
+    .order('started_at', { ascending: false })
+    .limit(500);
+  return (data ?? []) as PatientSessionSummary[];
+}
+
 export async function getPlatformStats(): Promise<PlatformStats> {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [orgsRes, usersRes] = await Promise.all([
