@@ -167,12 +167,12 @@ Requirements:
 - Use Latin anatomical muscle names (e.g., "trapezius (upper)") throughout.
 - Identify Janda patterns when measurements support them (Upper Crossed, Lower Crossed, Layer Syndrome).
 - Apply POSTURE_SYSTEM.md severity thresholds:
-  Shoulder/hip tilt: ≤2°=normal, 2-5°=mild, 5-10°=moderate, >10°=severe
+  Shoulder/hip tilt: <3°=normal, 3-5°=mild, 5-10°=moderate, >10°=severe (threshold is ≥3°, NOT >4°)
   Head tilt: ≤2°=normal, 2-5°=mild, >5°=significant
   Head forward posture (% of S-H dist): ≤15%=normal, 15-30%=mild, 30-50%=moderate, >50%=severe
   Ear-shoulder-hip angle: 155-180°=normal, 140-155°=mild, 120-140°=moderate, <120°=severe
 - referralFlags must include: any scoliosis suspicion (plumbDeviation >7°), neurological signs, or structural red flags.
-- Be conservative: if measurements are borderline, classify as mild, not moderate.
+- IMPORTANT: Any shoulder or hip tilt ≥3° MUST appear as a finding with severity at least "mild". Do not omit or normalise values in the 3–4° range.
 
 Output ONLY valid JSON matching exactly:
 {
@@ -214,11 +214,17 @@ export async function analysePosture(
     ? `Patient conditions: ${userConditions.join(', ')}.`
     : 'No known conditions reported.';
 
+  // Imbalance gate: ≥3° triggers explicit clinical note so Claude cannot miss it.
+  // Changed from >4 to >=3 — catches borderline cases e.g. 3.9° hip obliquity.
+  const hipDiff      = measurements.hipLevelDiff;
+  const shoulderDiff = measurements.shoulderLevelDiff;
+  const hasImbalance = hipDiff >= 3 || shoulderDiff >= 3;
+
   const measureStr = [
     `FRONTAL PLANE (anterior view):`,
-    `  shoulderLevelDiff: ${measurements.shoulderLevelDiff}° off horizontal`,
+    `  shoulderLevelDiff: ${shoulderDiff}° off horizontal`,
     `  headTiltAngle: ${measurements.headTiltAngle}° from vertical`,
-    `  hipLevelDiff: ${measurements.hipLevelDiff}° off horizontal`,
+    `  hipLevelDiff: ${hipDiff}° off horizontal`,
     `  plumbDeviation: ${measurements.plumbDeviation}° body-centre offset`,
     measurements.lateralAvailable
       ? [
@@ -229,10 +235,14 @@ export async function analysePosture(
       : `SAGITTAL PLANE: lateral view not available — skip sagittal findings.`,
   ].join('\n');
 
+  const imbalanceNote = hasImbalance
+    ? `\nCLINICAL FLAG: Frontal-plane imbalance threshold exceeded (≥3°) — shoulder ${shoulderDiff}°, hip ${hipDiff}°. Classify as minimum severity "mild". Do not omit this finding.`
+    : '';
+
   const userMsg = `${condStr}
 
 Postural measurements:
-${measureStr}
+${measureStr}${imbalanceNote}
 
 Provide the JSON posture report.`;
 
