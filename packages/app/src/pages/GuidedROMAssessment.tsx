@@ -117,6 +117,96 @@ async function loadLandmarker(): Promise<Landmarker> {
   });
 }
 
+// ─── Movement SVG guides ──────────────────────────────────────────────────────
+
+function MovementGuide({ testKey }: { testKey: string }) {
+  const type = testKey.startsWith('sflex') ? 'sflex' : testKey.startsWith('sabd') ? 'sabd' : testKey.startsWith('hflex') ? 'hflex' : 'kflex';
+  const S  = { stroke:'#4DB8FF', strokeWidth:3, fill:'none', strokeLinecap:'round' as const };
+  const Sg = { stroke:'rgba(136,146,164,0.6)', strokeWidth:2.5, fill:'none', strokeLinecap:'round' as const };
+  const base = <>
+    <circle cx="50" cy="16" r="9" {...Sg}/>
+    <line x1="50" y1="25" x2="50" y2="70" {...Sg}/>
+    <line x1="35" y1="58" x2="65" y2="58" {...Sg}/>
+    <line x1="35" y1="58" x2="30" y2="108" {...Sg}/>
+    <line x1="65" y1="58" x2="70" y2="108" {...Sg}/>
+  </>;
+  if (type === 'sflex') return (
+    <svg viewBox="0 0 100 128" width={88} height={112}>
+      <style>{`@keyframes sflex{0%,100%{transform:rotate(25deg)}50%{transform:rotate(-145deg)}}`}</style>
+      {base}
+      <line x1="50" y1="38" x2="34" y2="54" {...Sg}/>
+      <g style={{transformOrigin:'50px 38px',animation:'sflex 2s ease-in-out infinite'}}>
+        <line x1="50" y1="38" x2="70" y2="54" {...S}/>
+        <line x1="70" y1="54" x2="80" y2="63" {...S}/>
+      </g>
+    </svg>
+  );
+  if (type === 'sabd') return (
+    <svg viewBox="0 0 100 128" width={88} height={112}>
+      <style>{`@keyframes sabd{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-150deg)}}`}</style>
+      {base}
+      <line x1="50" y1="38" x2="34" y2="54" {...Sg}/>
+      <g style={{transformOrigin:'50px 38px',animation:'sabd 2s ease-in-out infinite'}}>
+        <line x1="50" y1="38" x2="70" y2="54" {...S}/>
+        <line x1="70" y1="54" x2="80" y2="60" {...S}/>
+      </g>
+    </svg>
+  );
+  if (type === 'hflex') return (
+    <svg viewBox="0 0 100 128" width={88} height={112}>
+      <style>{`@keyframes hflex{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-115deg)}}`}</style>
+      {base}
+      <line x1="50" y1="38" x2="34" y2="54" {...Sg}/><line x1="50" y1="38" x2="66" y2="54" {...Sg}/>
+      <line x1="65" y1="58" x2="70" y2="108" {...Sg}/>
+      <g style={{transformOrigin:'35px 58px',animation:'hflex 2s ease-in-out infinite'}}>
+        <line x1="35" y1="58" x2="32" y2="93" {...S}/>
+        <line x1="32" y1="93" x2="29" y2="108" {...S}/>
+      </g>
+    </svg>
+  );
+  return (
+    <svg viewBox="0 0 100 128" width={88} height={112}>
+      <style>{`@keyframes kflex{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-130deg)}}`}</style>
+      {base}
+      <line x1="50" y1="38" x2="34" y2="54" {...Sg}/><line x1="50" y1="38" x2="66" y2="54" {...Sg}/>
+      <line x1="65" y1="58" x2="70" y2="108" {...Sg}/>
+      <line x1="35" y1="58" x2="30" y2="90" {...Sg}/>
+      <g style={{transformOrigin:'30px 90px',animation:'kflex 2s ease-in-out infinite'}}>
+        <line x1="30" y1="90" x2="27" y2="110" {...S}/>
+      </g>
+    </svg>
+  );
+}
+
+// ─── Angle color (continuous red → amber → green) ─────────────────────────────
+
+function angleColor(angle: number, t: ROMTest): string {
+  const pct = t.higherIsBetter
+    ? (angle / t.normalMin) * 100
+    : (t.normalMax / Math.max(angle, 1)) * 100;
+  if (pct >= 100) return '#00D4AA';
+  if (pct >= 88)  return '#4DB8FF';
+  if (pct >= 72)  return '#FFB830';
+  return '#FF4444';
+}
+
+// ─── Asymmetry clinical interpretation ───────────────────────────────────────
+
+function asymmetryInterpretation(a: Asymmetry): string {
+  const test = TESTS.find(t => t.joint === a.joint && t.movement === a.movement);
+  const weakRight = test?.higherIsBetter ? a.rightDeg < a.leftDeg : a.rightDeg > a.leftDeg;
+  const w = weakRight ? 'Right' : 'Left';
+  if (a.joint === 'Shoulder' && a.movement === 'Flexion')
+    return `${w} shoulder flexion is ${a.diff}° less than the opposite side. May indicate anterior capsular restriction, rotator cuff tightness, or glenohumeral hypomobility on the ${w.toLowerCase()} side.`;
+  if (a.joint === 'Shoulder' && a.movement === 'Abduction')
+    return `${w} shoulder abduction is ${a.diff}° restricted. Suggests possible subacromial impingement, supraspinatus weakness, or acromioclavicular restriction on the ${w.toLowerCase()} side.`;
+  if (a.joint === 'Hip' && a.movement === 'Flexion')
+    return `${w} hip flexion is ${a.diff}° less than the opposite side. May indicate iliopsoas restriction, hip flexor tightness, anterior labral pathology, or early hip osteoarthritis on the ${w.toLowerCase()} side.`;
+  if (a.joint === 'Knee' && a.movement === 'Flexion')
+    return `${w} knee flexion is ${a.diff}° restricted. Suggests possible joint effusion, quadriceps tightness, posterior capsule restriction, or meniscal pathology on the ${w.toLowerCase()} side.`;
+  return `${w} ${a.joint.toLowerCase()} ${a.movement.toLowerCase()} is ${a.diff}° less than the opposite side. Further clinical assessment recommended.`;
+}
+
 function computeAsymmetries(results: ROMResult[]): Asymmetry[] {
   const joints = [...new Set(results.map(r => `${r.joint}|${r.movement}`))];
   return joints.flatMap(jk => {
