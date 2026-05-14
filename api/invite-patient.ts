@@ -123,14 +123,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   await sendBrandedEmail(email, patientName ?? '', inviteUrl).catch(() => undefined);
 
   // Track invite in table (non-fatal — used for audit log)
-  await adminSb.from('invites').insert({
-    org_id:      orgId,
-    invited_by:  clinicianId,
-    email,
-    role:        'patient',
-    token:       userId,
-    expires_at:  new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  }).catch(() => undefined);
+  try {
+    await adminSb.from('invites').insert({
+      org_id:      orgId,
+      invited_by:  clinicianId,
+      email,
+      role:        'patient',
+      token:       userId,
+      expires_at:  new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+  } catch { /* non-fatal */ }
 
   return res.status(200).json({ success: true, userId });
 }
