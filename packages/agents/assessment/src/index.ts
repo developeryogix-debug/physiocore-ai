@@ -23,6 +23,8 @@ export { ConservativeAgent }      from './treatment/ConservativeAgent.js';
 export { EarlyMobAgent }          from './treatment/EarlyMobAgent.js';
 export { TreatmentArbiterAgent }  from './treatment/TreatmentArbiterAgent.js';
 export { ProgressionAgent }       from './treatment/ProgressionAgent.js';
+export { PrescriptionAgent }      from './treatment/PrescriptionAgent.js';
+export type { PrescriptionAgentInput, FilterableExercise } from './treatment/PrescriptionAgent.js';
 export type {
   LoadingStrategy,
   TreatmentPlan,
