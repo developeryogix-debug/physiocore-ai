@@ -23,34 +23,34 @@ async function sendBrandedEmail(
   if (!RESEND_KEY) return;
   const html = `
 <!DOCTYPE html>
-<html><body style="margin:0;padding:0;background:#050810;font-family:Arial,sans-serif;">
-<div style="max-width:560px;margin:40px auto;background:#0d1117;border:1px solid #1e2533;border-radius:16px;overflow:hidden;">
+<html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
+<div style="max-width:560px;margin:40px auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
   <div style="background:linear-gradient(135deg,#00D4AA,#4DB8FF);padding:28px 32px;">
-    <div style="font-size:1.3rem;font-weight:800;color:#000;letter-spacing:-0.02em;">PhysioCore AI</div>
-    <div style="color:rgba(0,0,0,0.65);font-size:0.82rem;margin-top:2px;">Clinical intelligence for movement health</div>
+    <div style="font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:-0.02em;">PhysioCore AI</div>
+    <div style="color:rgba(255,255,255,0.8);font-size:0.82rem;margin-top:2px;">Clinical intelligence for movement health</div>
   </div>
   <div style="padding:32px;">
-    <h2 style="color:#f1f5f9;font-size:1.15rem;font-weight:700;margin:0 0 16px;">Hi ${toName || 'there'},</h2>
-    <p style="color:#94a3b8;line-height:1.7;margin:0 0 20px;">
-      Your clinician at <strong style="color:#e2e8f0;">Doctor On Click</strong> has created
+    <h2 style="color:#0f172a;font-size:1.15rem;font-weight:700;margin:0 0 16px;">Hi ${toName || 'there'},</h2>
+    <p style="color:#475569;line-height:1.7;margin:0 0 20px;">
+      Your clinician at <strong style="color:#0f172a;">Doctor On Click</strong> has created
       a personalised rehabilitation program for you on PhysioCore AI.
     </p>
-    <p style="color:#94a3b8;line-height:1.7;margin:0 0 28px;">
+    <p style="color:#475569;line-height:1.7;margin:0 0 28px;">
       PhysioCore AI uses your phone camera to track your exercises and provide
       clinical-grade feedback — no wearables needed.
     </p>
     <a href="${inviteUrl}"
        style="display:inline-block;background:linear-gradient(135deg,#00D4AA,#4DB8FF);
-              color:#000;font-weight:700;font-size:0.95rem;padding:14px 28px;
+              color:#fff;font-weight:700;font-size:0.95rem;padding:14px 28px;
               border-radius:10px;text-decoration:none;letter-spacing:-0.01em;">
       Start My Program →
     </a>
-    <p style="color:#475569;font-size:0.75rem;margin:24px 0 0;">
+    <p style="color:#94a3b8;font-size:0.75rem;margin:24px 0 0;">
       This link expires in 24 hours. If you did not expect this email, you can safely ignore it.
     </p>
   </div>
-  <div style="padding:16px 32px;border-top:1px solid #1e2533;background:#050810;">
-    <p style="color:#334155;font-size:0.7rem;margin:0;">
+  <div style="padding:16px 32px;border-top:1px solid #e2e8f0;background:#f8fafc;">
+    <p style="color:#94a3b8;font-size:0.7rem;margin:0;">
       PhysioCore AI · Powered by MediaPipe + Claude AI · PDPA Compliant · Singapore Region
     </p>
   </div>
