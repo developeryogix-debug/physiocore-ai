@@ -140,8 +140,19 @@ export function useVoiceAgent(userId: string | undefined): UseVoiceAgentReturn {
     speakAbortRef.current = abort;
 
     const apiKey = import.meta.env['VITE_CARTESIA_API_KEY'] as string | undefined;
+
+    // ── Browser speechSynthesis fallback (no API key required) ─────────────
     if (!apiKey) {
-      setError('VITE_CARTESIA_API_KEY not set — TTS unavailable');
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.onend   = () => { if (!abort.signal.aborted) setIsSpeaking(false); };
+        utterance.onerror  = () => setIsSpeaking(false);
+        setIsSpeaking(true);
+        setError(null);
+        window.speechSynthesis.speak(utterance);
+      }
       return;
     }
 

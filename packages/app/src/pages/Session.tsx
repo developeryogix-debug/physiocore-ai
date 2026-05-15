@@ -624,7 +624,7 @@ export default function Session() {
                 const score = computeFormScore(repPeakAngleRef.current, pilateCfg.targetRange);
                 const flag: RepRecord['flag'] = (cycleMs < minMs || !smooth) ? 'too_fast' : repPeakAngleRef.current > pilateCfg.targetRange[1] ? 'shallow' : 'good';
                 if (flag === 'too_fast') { updateStatus('warn_velocity', 'Too fast — slow to 2 seconds per rep'); const r = statusRef; setTimeout(() => { if (r.current === 'warn_velocity') updateStatus('ready', 'Ready — counting reps'); }, 2000);
-                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(`Good rep! ${repCountRef.current} done.`); } } }
+                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(score > 70 ? `Rep ${repCountRef.current}, good form.` : `Rep ${repCountRef.current}, check your ${flag === 'shallow' ? 'depth' : 'form'}.`); } } }
               }
             } else { updateStatus('ready', 'Ready — counting reps'); }
           } else {
@@ -640,7 +640,7 @@ export default function Session() {
                 const score = computeFormScore(repPeakAngleRef.current, pilateCfg.targetRange);
                 const flag: RepRecord['flag'] = (cycleMs < minMs || !smooth) ? 'too_fast' : repPeakAngleRef.current < pilateCfg.targetRange[0] ? 'shallow' : 'good';
                 if (flag === 'too_fast') { updateStatus('warn_velocity', 'Too fast — slow to 2 seconds per rep'); const r = statusRef; setTimeout(() => { if (r.current === 'warn_velocity') updateStatus('ready', 'Ready — counting reps'); }, 2000);
-                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(`Good rep! ${repCountRef.current} done.`); } } }
+                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(score > 70 ? `Rep ${repCountRef.current}, good form.` : `Rep ${repCountRef.current}, check your ${flag === 'shallow' ? 'depth' : 'form'}.`); } } }
               }
             } else { updateStatus('ready', 'Ready — counting reps'); }
           }
@@ -743,7 +743,7 @@ export default function Session() {
                   setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
                   setRepFlash(true); setTimeout(() => setRepFlash(false), 500);
                   updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
-                  if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(`Good rep! ${repCountRef.current} done.`); } }
+                  if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(score > 70 ? `Rep ${repCountRef.current}, good form.` : `Rep ${repCountRef.current}, check your ${flag === 'shallow' ? 'depth' : 'form'}.`); } }
                   console.log('[Session] Rep counted, state reset to READY, total reps:', repCountRef.current);
                 }
               }
@@ -797,7 +797,7 @@ export default function Session() {
       activeRef.current = true; setMode('running');
       if (voiceEnabledRef.current) {
         const exName = exerciseRef.current.replace(/_/g, ' ');
-        void vcSpeakFnRef.current(`Starting your ${exName} session. I'll guide you through it.`);
+        void vcSpeakFnRef.current(`Starting ${exName}. I'll count your reps.`);
       }
       rafRef.current = requestAnimationFrame(processFrame);
     } catch (e) {
@@ -816,7 +816,7 @@ export default function Session() {
       const feedbackData = await generateFeedback(analysis, exercise as ExerciseKey, profile);
       setFeedbackResult({ success: true, data: feedbackData, metadata: { agentId: 'feedback-client', agentVersion: '1.0.0', processingMs: 0 } });
       if (voiceEnabledRef.current) {
-        void vcSpeakFnRef.current(`Session complete. ${repCountRef.current} reps at ${analysis.formScore} percent form quality. Well done.`);
+        void vcSpeakFnRef.current(`${repCountRef.current} reps complete. Average score ${analysis.formScore}%.`);
       }
       // Persist to localStorage so Dashboard can show real metrics
       try {
@@ -984,7 +984,7 @@ export default function Session() {
               type="button"
               onClick={() => {
                 if (!voiceEnabled) {
-                  const consentKey = `physiocore_vc_consent_${user?.id ?? 'anon'}`;
+                  const consentKey = `physiocore_voice_consent_${user?.id ?? 'anon'}`;
                   if (localStorage.getItem(consentKey) === 'true') {
                     setVoiceEnabled(true);
                   } else {
@@ -1330,7 +1330,7 @@ export default function Session() {
               <button
                 type="button"
                 onClick={() => {
-                  const consentKey = `physiocore_vc_consent_${user?.id ?? 'anon'}`;
+                  const consentKey = `physiocore_voice_consent_${user?.id ?? 'anon'}`;
                   localStorage.setItem(consentKey, 'true');
                   setShowVoiceConsent(false);
                   setVoiceEnabled(true);
