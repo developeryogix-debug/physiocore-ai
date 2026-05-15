@@ -279,14 +279,6 @@ const statBlock: React.CSSProperties = { background: 'var(--bg-elevated)', borde
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Nutrition() {
-  // TEMPORARY KEY DIAGNOSTIC — remove after confirming which var name Vercel has
-  if (typeof window !== 'undefined') {
-    console.log('[PhysioCore] ANTHROPIC key diagnostic:', {
-      VITE_ANTHROPIC_KEY:     !!(import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'],
-      VITE_ANTHROPIC_API_KEY: !!(import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_API_KEY'],
-      ANTHROPIC_API_KEY:      !!(import.meta.env as Record<string, string | undefined>)['ANTHROPIC_API_KEY'],
-    });
-  }
   const { userProfile } = useUserProfile();
 
   // ── Section 2 state ──
