@@ -3,10 +3,12 @@ import {
   useContext,
   useState,
   useEffect,
+  useRef,
   type ReactNode,
 } from 'react';
 import type { UserProfile } from '@physiocore/types';
 import { supabase } from '@physiocore/supabase';
+import { scopedKey, adoptUnscopedKeys, adoptAnonymousKeys, clearUserKeys, ALL_SCOPED_KEYS } from '../lib/storage.js';
 
 const STORAGE_KEY = 'physiocore_profile';
 const MIGRATED_KEY = 'physiocore_migrated_v2';
@@ -51,9 +53,9 @@ async function syncProfileToSupabase(profile: UserProfile, userId: string): Prom
 }
 
 async function migrateLocalStorageToSupabase(userId: string): Promise<void> {
-  if (localStorage.getItem(MIGRATED_KEY)) return;
+  if (localStorage.getItem(scopedKey(MIGRATED_KEY, userId))) return;
   try {
-    const rawSessions = localStorage.getItem('physiocore_sessions');
+    const rawSessions = localStorage.getItem(scopedKey('physiocore_sessions', userId));
     if (rawSessions) {
       const sessions = JSON.parse(rawSessions) as Array<Record<string, unknown>>;
       for (const s of sessions) {
@@ -69,7 +71,7 @@ async function migrateLocalStorageToSupabase(userId: string): Promise<void> {
         });
       }
     }
-    const rawOutcomes = localStorage.getItem('physiocore_outcomes');
+    const rawOutcomes = localStorage.getItem(scopedKey('physiocore_outcomes', userId));
     if (rawOutcomes) {
       const outcomes = JSON.parse(rawOutcomes) as Array<Record<string, unknown>>;
       for (const o of outcomes) {
@@ -82,7 +84,7 @@ async function migrateLocalStorageToSupabase(userId: string): Promise<void> {
         });
       }
     }
-    localStorage.setItem(MIGRATED_KEY, '1');
+    localStorage.setItem(scopedKey(MIGRATED_KEY, userId), '1');
   } catch {
     // Migration failure is non-fatal
   }
@@ -121,36 +123,52 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  // Track current userId so clearProfile() can remove scoped keys without async
+  const userIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     async function init() {
       try {
-        // Load from localStorage first (instant)
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as UserProfile;
-          setUserProfileState(parsed);
-          setOnboardingDone(true);
-        }
-
-        // Try to sync from Supabase if user is authenticated
+        // Resolve auth first — userId required for scoped key reads
         const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData.session?.user?.id;
+        const userId = sessionData.session?.user?.id ?? null;
+        userIdRef.current = userId;
+
         if (userId) {
+          // One-time migrations: unscoped legacy → scoped, anonymous → userId
+          adoptUnscopedKeys(userId, ALL_SCOPED_KEYS);
+          adoptAnonymousKeys(userId, ALL_SCOPED_KEYS);
+
+          // Try Supabase (authoritative)
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
           const remoteResult = await db.from('user_profiles').select('*').eq('id', userId).maybeSingle();
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const remoteProfile = remoteResult.data as Record<string, unknown> | null;
 
           if (remoteProfile) {
-            // Supabase is authoritative — always hydrate so profile survives sign-out + sign-in
             const mapped = rowToProfile(remoteProfile, userId);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
+            localStorage.setItem(scopedKey(STORAGE_KEY, userId), JSON.stringify(mapped));
             setUserProfileState(mapped);
             setOnboardingDone(true);
+          } else {
+            // Fall back to scoped localStorage
+            const raw = localStorage.getItem(scopedKey(STORAGE_KEY, userId));
+            if (raw) {
+              const parsed = JSON.parse(raw) as UserProfile;
+              setUserProfileState(parsed);
+              setOnboardingDone(true);
+            }
           }
 
           void migrateLocalStorageToSupabase(userId);
+        } else {
+          // Unauthenticated — read from anonymous-scoped key
+          const raw = localStorage.getItem(scopedKey(STORAGE_KEY, null));
+          if (raw) {
+            const parsed = JSON.parse(raw) as UserProfile;
+            setUserProfileState(parsed);
+            setOnboardingDone(true);
+          }
         }
       } catch {
         // Corrupt storage or network error — start fresh
@@ -161,19 +179,17 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   function setUserProfile(profile: UserProfile) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    const userId = userIdRef.current;
+    localStorage.setItem(scopedKey(STORAGE_KEY, userId), JSON.stringify(profile));
     setUserProfileState(profile);
     setOnboardingDone(true);
 
-    void supabase.auth.getSession().then(({ data }) => {
-      const userId = data.session?.user?.id;
-      if (userId) void syncProfileToSupabase(profile, userId);
-    });
+    if (userId) void syncProfileToSupabase(profile, userId);
   }
 
   function clearProfile() {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem('physiocore_biometrics');
+    const userId = userIdRef.current;
+    clearUserKeys(userId, ALL_SCOPED_KEYS);
     setUserProfileState(null);
     setOnboardingDone(false);
   }

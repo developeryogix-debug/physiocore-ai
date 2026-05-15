@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserProfile } from '../hooks/useUserProfile.js';
+import { supabase } from '@physiocore/supabase';
+import { scopedKey } from '../lib/storage.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 
 type ProgramId = 'beginner' | 'ppl' | 'physio';
@@ -80,11 +82,11 @@ function makePrograms(injuryBodies: string[]): Program[] {
 // ── Storage ───────────────────────────────────────────────────────────────────
 
 const STORE = 'physiocore_gym';
-function loadSt(): GymSt {
-  try { return JSON.parse(localStorage.getItem(STORE) ?? 'null') as GymSt ?? dfSt(); } catch { return dfSt(); }
+function loadSt(userId: string | null): GymSt {
+  try { return JSON.parse(localStorage.getItem(scopedKey(STORE, userId)) ?? 'null') as GymSt ?? dfSt(); } catch { return dfSt(); }
 }
 function dfSt(): GymSt { return { programId: null, dayIdx: 0, lastDate: '', history: [] }; }
-function saveSt(s: GymSt) { localStorage.setItem(STORE, JSON.stringify(s)); }
+function saveSt(s: GymSt, userId: string | null) { localStorage.setItem(scopedKey(STORE, userId), JSON.stringify(s)); }
 
 function progressHint(key: string, target: number, history: SessionRec[]): string | null {
   for (const rec of history.slice(0, 5)) {
@@ -103,7 +105,8 @@ function progressHint(key: string, target: number, history: SessionRec[]): strin
 export default function Gym() {
   const { userProfile } = useUserProfile();
   const navigate = useNavigate();
-  const [gymSt, setGymSt]         = useState<GymSt>(loadSt);
+  const [gymUserId, setGymUserId]  = useState<string | null>(null);
+  const [gymSt, setGymSt]         = useState<GymSt>(dfSt);
   const [logs, setLogs]            = useState<Record<string, SetLog[]>>({});
   const [activeKey, setActiveKey]  = useState<string | null>(null);
   const [repInput, setRepInput]    = useState<Record<string, string>>({});
@@ -111,6 +114,15 @@ export default function Gym() {
   const [restLeft, setRestLeft]    = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
   const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Resolve userId and load scoped gym state on mount
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => {
+      const uid = data.session?.user?.id ?? null;
+      setGymUserId(uid);
+      setGymSt(loadSt(uid));
+    });
+  }, []);
 
   const injuries    = userProfile?.injuries.filter(i => i.isActive).map(i => i.bodyPart) ?? [];
   const programs    = makePrograms(injuries);
@@ -148,7 +160,7 @@ export default function Gym() {
 
   function selectProgram(id: ProgramId) {
     const next: GymSt = { ...gymSt, programId: id, dayIdx: 0 };
-    setGymSt(next); saveSt(next);
+    setGymSt(next); saveSt(next, gymUserId);
     setLogs({}); setSessionDone(false);
   }
 
@@ -165,7 +177,7 @@ export default function Gym() {
       lastDate: rec.date,
       history:  [rec, ...gymSt.history].slice(0, 30),
     };
-    setGymSt(next); saveSt(next);
+    setGymSt(next); saveSt(next, gymUserId);
   }
 
   // ── Session complete ────────────────────────────────────────────────────────
@@ -256,7 +268,7 @@ export default function Gym() {
           <h1 style={{ margin: '0 0 2px', fontSize: '1.4rem', color: '#0f172a' }}>Today: {today.label}</h1>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.82rem' }}>Next up: {nextDayLabel} · Session {gymSt.dayIdx + 1}</p>
         </div>
-        <button onClick={() => { setGymSt(s => { const n = { ...s, programId: null }; saveSt(n); return n; }); }}
+        <button onClick={() => { setGymSt(s => { const n = { ...s, programId: null }; saveSt(n, gymUserId); return n; }); }}
           style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', fontSize: '0.78rem' }}>
           Change program
         </button>

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { UserProfile, BodyPart, Equipment } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
+import { scopedKey } from '../lib/storage.js';
 
 const CONDITIONS = ['Osteoarthritis','Rheumatoid Arthritis','Fibromyalgia','Type 2 Diabetes','Hypertension','Osteoporosis','Scoliosis','Herniated Disc','Rotator Cuff Injury','ACL Injury','Plantar Fasciitis','Carpal Tunnel Syndrome','COPD','Heart Disease','Anxiety / Depression'];
 
@@ -193,7 +194,7 @@ export default function OnboardingWizard() {
   const finish = () => {
     const profile = buildProfile(d);
     if(d.restingHR||d.bloodPressure||d.notes){
-      localStorage.setItem('physiocore_biometrics',JSON.stringify({restingHR:d.restingHR,bloodPressure:d.bloodPressure,notes:d.notes}));
+      localStorage.setItem(scopedKey('physiocore_biometrics', 'anonymous'),JSON.stringify({restingHR:d.restingHR,bloodPressure:d.bloodPressure,notes:d.notes}));
     }
     setUserProfile(profile);
   };

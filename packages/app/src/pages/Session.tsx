@@ -2,8 +2,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { PoseFrame, PoseLandmark, AgentResult, FeedbackResponse } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
+import { useAuth } from '../hooks/useAuth.js';
+import { useVoiceAgent } from '../hooks/useVoiceAgent.js';
 import { analyzeFrames, generateFeedback } from '../hooks/useOrchestrator.js';
 import { saveSessionSummary } from '../lib/sessionMemory.js';
+import { scopedKey } from '../lib/storage.js';
 import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
@@ -190,6 +193,28 @@ function speak(text: string, force = false) {
   speechSynthesis.speak(utt);
 }
 
+// ── Voice coaching form cues (Cartesia TTS) ──────────────────────────────────
+const FORM_CUES: Partial<Record<SessionKey, string>> = {
+  squat:          'Keep your chest up and knees tracking over your toes.',
+  deadlift:       'Hinge at your hips, keep your spine neutral.',
+  pushup:         'Keep your elbows close to your body and core tight.',
+  lunge:          'Front knee over ankle, torso upright.',
+  shoulder_press: 'Press straight up, avoid arching your lower back.',
+  hip_thrust:     'Squeeze your glutes at the top, tuck your chin.',
+  glute_bridge:   'Push through your heels and squeeze at the top.',
+  bent_over_row:  'Retract your shoulder blades and control the descent.',
+  warrior_1:      'Bend your front knee to ninety degrees and reach tall.',
+  downward_dog:   'Push your hips up and back, lengthen your spine.',
+  tree_pose:      'Find a fixed point to balance, engage your standing leg.',
+  cat_cow:        'Breathe into each movement, keep the flow smooth.',
+  the_hundred:    'Keep your chin tucked and pump your arms with control.',
+  single_leg_stretch: 'Draw your navel in and switch legs with control.',
+  roll_up:        'Peel your spine up slowly, one vertebra at a time.',
+  swan_prep:      'Press through your hands and open your chest.',
+  side_leg_lift:  'Keep your hips stacked and lift from your hip, not your waist.',
+  plank_hold:     'Engage your core, keep your hips level.',
+};
+
 function drawSkeleton(ctx: CanvasRenderingContext2D, lms: MPLandmark[], joint: [number,number,number], inRange: boolean, angle: number) {
   const w = ctx.canvas.width; const h = ctx.canvas.height;
   const [, vertex] = joint; const jc = inRange ? '#22c55e' : '#ef4444';
@@ -251,6 +276,20 @@ function playBeep(freq = 440, dur = 0.12, isDouble = false) {
 export default function Session() {
   const { userProfile } = useUserProfile();
   const profile = userProfile ?? MOCK_PROFILE;
+  const { user } = useAuth();
+
+  // ── Voice coaching ─────────────────────────────────────────────────────────
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [showVoiceConsent, setShowVoiceConsent] = useState(false);
+  const { speak: vcSpeak } = useVoiceAgent(user?.id);
+  // Ref so processFrame useCallback always has the latest speak fn + enabled state
+  // without needing to be recreated on every toggle
+  const vcSpeakFnRef = useRef<typeof vcSpeak>(vcSpeak);
+  vcSpeakFnRef.current = vcSpeak;
+  const voiceEnabledRef = useRef(false);
+  voiceEnabledRef.current = voiceEnabled;
+  const lastVcRepRef  = useRef(0);  // Date.now() of last rep cue (6s throttle)
+  const lastVcFormRef = useRef(0);  // Date.now() of last form cue (10s throttle)
 
   // ── Equipment-based exercise filtering ───────────────────────────────────
   const equipment = profile.preferences.equipmentAvailable;
@@ -518,6 +557,13 @@ export default function Session() {
             wasHoldingRef.current = false;
             lastFrameTimeRef.current = null;
             speak(yogaCfg.voiceCue);
+            if (voiceEnabledRef.current) {
+              const _now = Date.now();
+              if (_now - lastVcFormRef.current > 10000) {
+                lastVcFormRef.current = _now;
+                void vcSpeakFnRef.current(FORM_CUES[exerciseKey as SessionKey] ?? yogaCfg.voiceCue);
+              }
+            }
           }
           if (statusRef.current !== 'warn_body') {
             statusRef.current = 'warn_body';
@@ -578,7 +624,7 @@ export default function Session() {
                 const score = computeFormScore(repPeakAngleRef.current, pilateCfg.targetRange);
                 const flag: RepRecord['flag'] = (cycleMs < minMs || !smooth) ? 'too_fast' : repPeakAngleRef.current > pilateCfg.targetRange[1] ? 'shallow' : 'good';
                 if (flag === 'too_fast') { updateStatus('warn_velocity', 'Too fast — slow to 2 seconds per rep'); const r = statusRef; setTimeout(() => { if (r.current === 'warn_velocity') updateStatus('ready', 'Ready — counting reps'); }, 2000);
-                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); }
+                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(`Good rep! ${repCountRef.current} done.`); } } }
               }
             } else { updateStatus('ready', 'Ready — counting reps'); }
           } else {
@@ -594,7 +640,7 @@ export default function Session() {
                 const score = computeFormScore(repPeakAngleRef.current, pilateCfg.targetRange);
                 const flag: RepRecord['flag'] = (cycleMs < minMs || !smooth) ? 'too_fast' : repPeakAngleRef.current < pilateCfg.targetRange[0] ? 'shallow' : 'good';
                 if (flag === 'too_fast') { updateStatus('warn_velocity', 'Too fast — slow to 2 seconds per rep'); const r = statusRef; setTimeout(() => { if (r.current === 'warn_velocity') updateStatus('ready', 'Ready — counting reps'); }, 2000);
-                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); }
+                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(`Good rep! ${repCountRef.current} done.`); } } }
               }
             } else { updateStatus('ready', 'Ready — counting reps'); }
           }
@@ -697,6 +743,7 @@ export default function Session() {
                   setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
                   setRepFlash(true); setTimeout(() => setRepFlash(false), 500);
                   updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
+                  if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(`Good rep! ${repCountRef.current} done.`); } }
                   console.log('[Session] Rep counted, state reset to READY, total reps:', repCountRef.current);
                 }
               }
@@ -748,6 +795,10 @@ export default function Session() {
       if (video) { video.srcObject = stream; await video.play(); }
       if (!landmarkerRef.current) landmarkerRef.current = await loadLandmarker();
       activeRef.current = true; setMode('running');
+      if (voiceEnabledRef.current) {
+        const exName = exerciseRef.current.replace(/_/g, ' ');
+        void vcSpeakFnRef.current(`Starting your ${exName} session. I'll guide you through it.`);
+      }
       rafRef.current = requestAnimationFrame(processFrame);
     } catch (e) {
       setError(`Failed to start: ${String(e)}`); setMode('idle'); stopLoop();
@@ -764,6 +815,9 @@ export default function Session() {
       const analysis = analyzeFrames(frames, exercise as ExerciseKey);
       const feedbackData = await generateFeedback(analysis, exercise as ExerciseKey, profile);
       setFeedbackResult({ success: true, data: feedbackData, metadata: { agentId: 'feedback-client', agentVersion: '1.0.0', processingMs: 0 } });
+      if (voiceEnabledRef.current) {
+        void vcSpeakFnRef.current(`Session complete. ${repCountRef.current} reps at ${analysis.formScore} percent form quality. Well done.`);
+      }
       // Persist to localStorage so Dashboard can show real metrics
       try {
         const durSec = (Date.now() - sessionStartRef.current) / 1000;
@@ -775,8 +829,9 @@ export default function Session() {
           formScore: analysis.formScore,
           durationMin: Math.round(durSec / 60),
         };
-        const existing = JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[];
-        localStorage.setItem('physiocore_sessions', JSON.stringify([newSession, ...existing]));
+        const sessKey = scopedKey('physiocore_sessions', user?.id);
+        const existing = JSON.parse(localStorage.getItem(sessKey) ?? '[]') as unknown[];
+        localStorage.setItem(sessKey, JSON.stringify([newSession, ...existing]));
       } catch { /* storage unavailable */ }
       // Save session summary to Supabase for AI memory
       void saveSessionSummary({
@@ -815,7 +870,7 @@ export default function Session() {
     setExportLoading(true);
     try {
       const firstName = ((userProfile?.name || profile?.name || 'User').split(' ')[0] || 'User').replace(/[^a-zA-Z0-9]/g, '') || 'User';
-      const sessionNum = (JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]') as unknown[]).length;
+      const sessionNum = (JSON.parse(localStorage.getItem(scopedKey('physiocore_sessions', user?.id)) ?? '[]') as unknown[]).length;
       const dateStr = new Date().toISOString().split('T')[0] as string;
       const exerciseLabel = (exercise as string).replace(/_/g, '-');
       const filename = `${firstName}_${exerciseLabel}_${dateStr}_S${sessionNum}`;
@@ -924,6 +979,25 @@ export default function Session() {
             </select>
             <button onClick={() => { void startSession(); }} className="btn-primary">
               Start Session
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!voiceEnabled) {
+                  const consentKey = `physiocore_vc_consent_${user?.id ?? 'anon'}`;
+                  if (localStorage.getItem(consentKey) === 'true') {
+                    setVoiceEnabled(true);
+                  } else {
+                    setShowVoiceConsent(true);
+                  }
+                } else {
+                  setVoiceEnabled(false);
+                }
+              }}
+              title="Voice coaching"
+              style={{ padding: '0 14px', height: 34, borderRadius: '8px', border: `1px solid ${voiceEnabled ? 'var(--teal-500)' : 'var(--border-default)'}`, background: voiceEnabled ? 'rgba(0,212,170,0.12)' : 'var(--bg-elevated)', color: voiceEnabled ? 'var(--teal-500)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap' as const }}
+            >
+              🎙 {voiceEnabled ? 'Voice ON' : 'Voice OFF'}
             </button>
             <button
               type="button"
@@ -1236,6 +1310,45 @@ export default function Session() {
               </div>
             ))}
             <button type="button" onClick={() => setShowFaq(false)} className="btn-ghost" style={{ marginTop: 8, fontSize: '0.85rem', width: '100%' }}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Voice coaching consent modal ──────────────────────────────────── */}
+      {showVoiceConsent && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '16px', maxWidth: 420, width: '100%', padding: '28px 24px' }}>
+            <div style={{ fontSize: '1.3rem', marginBottom: 12 }}>🎙</div>
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 12px', color: 'var(--text-primary)' }}>Enable Voice Coaching?</h2>
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 8px' }}>
+              Voice coaching uses AI to give real-time guidance during your session — rep counts, form cues, and session summaries via Cartesia TTS.
+            </p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', lineHeight: 1.6, margin: '0 0 24px' }}>
+              This is not a substitute for clinical assessment. Audio is generated locally and not stored.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const consentKey = `physiocore_vc_consent_${user?.id ?? 'anon'}`;
+                  localStorage.setItem(consentKey, 'true');
+                  setShowVoiceConsent(false);
+                  setVoiceEnabled(true);
+                }}
+                className="btn-primary"
+                style={{ flex: 1 }}
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowVoiceConsent(false)}
+                className="btn-ghost"
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import { supabase } from '@physiocore/supabase';
+import { scopedKey } from '../lib/storage.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,9 +102,10 @@ export default function History() {
   useEffect(() => {
     void (async () => {
       setLoading(true);
+      let userId: string | undefined;
       try {
         const { data: { session: authSession } } = await supabase.auth.getSession();
-        const userId = authSession?.user?.id;
+        userId = authSession?.user?.id;
         if (userId) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           const { data } = await db.from('session_summaries').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(200);
@@ -117,7 +119,7 @@ export default function History() {
       // localStorage fallback
       try {
         interface LSSession { id?: string; exercise: string; date: string; reps: number; formScore?: number; avg_score?: number }
-        const raw = localStorage.getItem('physiocore_sessions');
+        const raw = localStorage.getItem(scopedKey('physiocore_sessions', userId ?? undefined));
         const ls: LSSession[] = raw ? (JSON.parse(raw) as LSSession[]) : [];
         setSessions(ls.map(s => ({ ...s, avg_score: s.avg_score ?? s.formScore ?? 0 })));
       } catch { /* empty */ }

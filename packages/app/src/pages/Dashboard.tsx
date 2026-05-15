@@ -12,8 +12,10 @@ interface BioRow { metric_type: string; value: number; unit: string; recorded_at
 interface DailyInsight { readiness: string; focus: string; action: string; }
 interface QuoteInsight { quote: string; citation: string; }
 
-function loadSessions(): StoredSession[] {
-  try { return JSON.parse(localStorage.getItem('physiocore_sessions') ?? '[]'); }
+import { scopedKey } from '../lib/storage.js';
+
+function loadSessions(userId?: string): StoredSession[] {
+  try { return JSON.parse(localStorage.getItem(scopedKey('physiocore_sessions', userId)) ?? '[]'); }
   catch { return []; }
 }
 function linReg(ys: number[]) {
@@ -130,7 +132,7 @@ export default function Dashboard() {
   const { userProfile } = useUserProfile();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const sessions = useMemo(() => loadSessions(), []);
+  const sessions = useMemo(() => loadSessions(user?.id), [user?.id]);
   const [biometrics, setBiometrics] = useState<BioRow[]>([]);
   const [insight, setInsight] = useState<DailyInsight | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
@@ -147,7 +149,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
-    const key = `physiocore_insight_${today}`;
+    const key = scopedKey(`physiocore_insight_${today}`, user?.id);
     const cached = localStorage.getItem(key);
     if (cached) { try { setInsight(JSON.parse(cached)); } catch {} return; }
     if (!userProfile || !import.meta.env.VITE_ANTHROPIC_KEY) return;
@@ -182,7 +184,7 @@ export default function Dashboard() {
   // ── Daily evidence-based quote (once per day, cached) ───────────────────────
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
-    const key = `physiocore_quote_${today}`;
+    const key = scopedKey(`physiocore_quote_${today}`, user?.id);
     const cached = localStorage.getItem(key);
     if (cached) { try { setQuoteInsight(JSON.parse(cached)); } catch {} return; }
     if (!userProfile || !import.meta.env['VITE_ANTHROPIC_KEY']) return;

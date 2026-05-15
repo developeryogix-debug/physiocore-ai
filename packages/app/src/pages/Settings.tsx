@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import { supabase } from '@physiocore/supabase';
+import { scopedKey, clearUserKeys, ALL_SCOPED_KEYS } from '../lib/storage.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,7 +74,7 @@ export default function Settings() {
       setName(userProfile.name ?? '');
       setFitnessLevel(userProfile.fitnessLevel ?? '');
     }
-    const notifRaw = localStorage.getItem('physiocore_notifications');
+    const notifRaw = localStorage.getItem(scopedKey('physiocore_notifications', user?.id));
     if (notifRaw) try {
       const n = JSON.parse(notifRaw) as { weeklyEmail?: boolean; sessionReminder?: boolean; reminderTime?: string };
       setWeeklyEmail(n.weeklyEmail ?? false);
@@ -128,7 +129,7 @@ export default function Settings() {
   }
 
   function saveNotifications() {
-    localStorage.setItem('physiocore_notifications', JSON.stringify({ weeklyEmail, sessionReminder, reminderTime }));
+    localStorage.setItem(scopedKey('physiocore_notifications', user?.id), JSON.stringify({ weeklyEmail, sessionReminder, reminderTime }));
     setProfileMsg('Notifications saved ✓'); setTimeout(() => setProfileMsg(''), 2000);
   }
 
@@ -162,7 +163,7 @@ export default function Settings() {
         await db.from(table).delete().eq('user_id', uid);
       } catch { /* non-fatal */ }
     }
-    localStorage.clear();
+    clearUserKeys(user?.id, ALL_SCOPED_KEYS);
     setDeleteConfirm(false);
     setProfileMsg('All data deleted');
   }

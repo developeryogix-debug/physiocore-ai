@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import { supabase } from '@physiocore/supabase';
+import { scopedKey } from '../lib/storage.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,18 +70,18 @@ export default function Outcomes() {
 
   const [saving, setSaving] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    void loadHistory();
-    // Load saved PSFS activity names
-    const saved = localStorage.getItem('physiocore_psfs_activities');
-    if (saved) try { setActivities(JSON.parse(saved) as string[]); } catch { /* ignore */ }
-  }, []);
+  useEffect(() => { void loadHistory(); }, []);
 
   async function loadHistory() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id) return;
     const uid = session.user.id;
+    setUserId(uid);
+    // Load saved PSFS activity names (scoped by userId)
+    const saved = localStorage.getItem(scopedKey('physiocore_psfs_activities', uid));
+    if (saved) try { setActivities(JSON.parse(saved) as string[]); } catch { /* ignore */ }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     const { data } = await db.from('outcomes').select('*').eq('user_id', uid).order('recorded_at', { ascending: true });
     if (!data) return;
@@ -139,7 +140,7 @@ export default function Outcomes() {
         {activities.map((act, i) => (
           <div key={i} style={{ marginBottom: 16 }}>
             <input value={act} placeholder={`Activity ${i + 1} (e.g. Walking upstairs)`}
-              onChange={e => { const n = [...activities]; n[i] = e.target.value; setActivities(n); localStorage.setItem('physiocore_psfs_activities', JSON.stringify(n)); }}
+              onChange={e => { const n = [...activities]; n[i] = e.target.value; setActivities(n); localStorage.setItem(scopedKey('physiocore_psfs_activities', userId), JSON.stringify(n)); }}
               style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: 8, boxSizing: 'border-box' }} />
             <Slider value={psfsScores[i]!} min={0} max={10} onChange={v => { const n = [...psfsScores]; n[i] = v; setPsfsScores(n); }} />
           </div>
