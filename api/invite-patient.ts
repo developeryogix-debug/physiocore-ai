@@ -41,11 +41,17 @@ async function sendBrandedEmail(
     </p>
     <a href="${inviteUrl}"
        style="display:inline-block;background:linear-gradient(135deg,#00D4AA,#4DB8FF);
-              color:#fff;font-weight:700;font-size:0.95rem;padding:14px 28px;
+              color:#000;font-weight:700;font-size:0.95rem;padding:14px 28px;
               border-radius:10px;text-decoration:none;letter-spacing:-0.01em;">
       Start My Program →
     </a>
-    <p style="color:#94a3b8;font-size:0.75rem;margin:24px 0 0;">
+    <p style="color:#64748b;font-size:0.78rem;margin:16px 0 0;">
+      If the button above doesn't work, copy and paste this link into your browser:
+    </p>
+    <p style="margin:6px 0 0;">
+      <a href="${inviteUrl}" style="color:#0369a1;font-size:0.75rem;word-break:break-all;">${inviteUrl}</a>
+    </p>
+    <p style="color:#94a3b8;font-size:0.75rem;margin:16px 0 0;">
       This link expires in 24 hours. If you did not expect this email, you can safely ignore it.
     </p>
   </div>
@@ -65,6 +71,7 @@ async function sendBrandedEmail(
       to: toEmail,
       subject: 'Your clinician has set up your PhysioCore AI program',
       html,
+      text: `Hi ${toName || 'there'},\n\nYour clinician at Doctor On Click has created a personalised rehabilitation program for you on PhysioCore AI.\n\nStart your program here:\n${inviteUrl}\n\nThis link expires in 24 hours.\n\nPhysioCore AI · PDPA Compliant · Singapore Region`,
     }),
   });
 }
