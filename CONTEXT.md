@@ -404,11 +404,28 @@ ConsensusAgent report
 
 ---
 
+## Clinical Milestones
+
+| Milestone | Status | Date |
+|---|---|---|
+| First Doctor On Click patient invited | ⏳ PENDING | — |
+| First patient onboarded (posture + ROM + pain map) | ⏳ PENDING | — |
+| Clinical validation: in progress | ⏳ PENDING | — |
+
+### First Real Patient — Invite Flow (manual steps)
+1. Go to https://app-dteam1-mmcv.vercel.app/clinician (role=clinician required)
+2. Click **+ Invite Patient** → enter patient name + email
+3. Patient receives branded Resend email → clicks link → onboards on phone
+4. Patient completes: `/posture` → `/rom-assessment` → `/pain-map`
+5. Data appears in `/clinician` patient list (real patients row above demo)
+6. Update table above + commit: `"docs: first real patient milestone"`
+
+---
+
 ## Next Build Priorities
 
 1. **Voice physiotherapist** — Cartesia or ElevenLabs TTS; real-time coaching during sessions
 2. **TreatmentOrchestrator** — wire all 5 Phase 3 agents into single orchestrator pipeline
-3. **Doctor On Click: first real patient** — invite sent, patient onboarding end-to-end
-4. **Stripe: statement descriptor → "PhysioCore AI"** — update in Stripe dashboard settings
-5. **PWA improvements** — offline mode, install prompt, push notifications
-6. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
+3. **Stripe: statement descriptor → "PhysioCore AI"** — update in Stripe dashboard settings
+4. **PWA improvements** — offline mode, install prompt, push notifications
+5. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
