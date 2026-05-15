@@ -215,6 +215,21 @@ const FORM_CUES: Partial<Record<SessionKey, string>> = {
   plank_hold:     'Engage your core, keep your hips level.',
 };
 
+/** Score-tiered rep voice cue. Returns the text to speak (or empty string = skip). */
+function vcRepCue(repN: number, score: number, exerciseKey: string): string {
+  if (score >= 80) return `Rep ${repN}.`;            // minimal — not annoying
+  if (score >= 60) return `Rep ${repN}, good effort.`;
+  // score < 60 — specific body-part correction
+  const bodyPart =
+    ['squat', 'lunge'].includes(exerciseKey)                       ? 'knee alignment'  :
+    ['deadlift', 'hip_thrust', 'glute_bridge'].includes(exerciseKey)? 'hip position'   :
+    ['bent_over_row'].includes(exerciseKey)                         ? 'back position'  :
+    ['shoulder_press'].includes(exerciseKey)                        ? 'shoulder position' :
+    ['pushup'].includes(exerciseKey)                                ? 'elbow position' :
+    'your form';
+  return `Rep ${repN}, watch your ${bodyPart}.`;
+}
+
 function drawSkeleton(ctx: CanvasRenderingContext2D, lms: MPLandmark[], joint: [number,number,number], inRange: boolean, angle: number) {
   const w = ctx.canvas.width; const h = ctx.canvas.height;
   const [, vertex] = joint; const jc = inRange ? '#22c55e' : '#ef4444';
@@ -382,6 +397,11 @@ export default function Session() {
   // Lunge bilateral auto-detect
   const [lungeForwardSide, setLungeForwardSide] = useState<'left' | 'right' | null>(null);
   const lungeForwardSideRef = useRef<'left' | 'right' | null>(null);
+  // Bug 3: landmark tracking quality
+  const consecutiveLowConfRef = useRef(0);   // frames with bestConf < 0.45
+  const trackingPauseUntilRef = useRef(0);   // Date.now() — rep counting paused until this
+  const lowConfWarningRef = useRef(false);   // ref mirror so processFrame avoids stale closure
+  const [lowConfWarning, setLowConfWarning] = useState(false); // drives amber border in JSX
 
   const stopLoop = useCallback(() => {
     activeRef.current = false;
@@ -423,6 +443,14 @@ export default function Session() {
         rafRef.current = requestAnimationFrame(processFrame); return;
       }
 
+      // ── Complete tracking loss: all landmarks at origin (MediaPipe zeroes out) ─
+      const allZero = lms.slice(0, 10).every(lm => lm.x === 0 && lm.y === 0);
+      if (allZero) {
+        trackingPauseUntilRef.current = Date.now() + 2000; // pause rep counting 2s
+        updateStatus('warn_body', 'Tracking lost — hold position');
+        rafRef.current = requestAnimationFrame(processFrame); return;
+      }
+
       // ── Fix 4: low-light / confidence check across key joints ────────────
       // Use the BETTER side's confidence, not the average of both.
       // Critical for lunge: back-leg ankle is frequently off-screen on phone
@@ -431,10 +459,21 @@ export default function Session() {
       const confL = cfg.jointLeft.reduce((s, i) => s + (lms[i]?.visibility ?? 0), 0) / cfg.jointLeft.length;
       const bestConf = Math.max(confR, confL);
       if (bestConf < 0.45) {
-        updateStatus('warn_lighting', '⚠ Adjust position — move to brighter area or step back');
+        consecutiveLowConfRef.current++;
+        if (consecutiveLowConfRef.current >= 3) {
+          if (!lowConfWarningRef.current) { lowConfWarningRef.current = true; setLowConfWarning(true); }
+          updateStatus('warn_lighting', '⚠ Step back — move away from camera');
+        } else {
+          updateStatus('warn_lighting', '⚠ Adjust position — move to brighter area or step back');
+        }
         drawSkeleton(ctx, lms, cfg.joint, false, prevAngleRef.current ?? 0);
         prevAngleRef.current = null;
         rafRef.current = requestAnimationFrame(processFrame); return;
+      }
+      // Confidence recovered — reset counter + amber border
+      if (consecutiveLowConfRef.current > 0) {
+        consecutiveLowConfRef.current = 0;
+        if (lowConfWarningRef.current) { lowConfWarningRef.current = false; setLowConfWarning(false); }
       }
 
       // ── View mode: pick active side by joint visibility ──────────────────
@@ -624,7 +663,7 @@ export default function Session() {
                 const score = computeFormScore(repPeakAngleRef.current, pilateCfg.targetRange);
                 const flag: RepRecord['flag'] = (cycleMs < minMs || !smooth) ? 'too_fast' : repPeakAngleRef.current > pilateCfg.targetRange[1] ? 'shallow' : 'good';
                 if (flag === 'too_fast') { updateStatus('warn_velocity', 'Too fast — slow to 2 seconds per rep'); const r = statusRef; setTimeout(() => { if (r.current === 'warn_velocity') updateStatus('ready', 'Ready — counting reps'); }, 2000);
-                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(score > 70 ? `Rep ${repCountRef.current}, good form.` : `Rep ${repCountRef.current}, check your ${flag === 'shallow' ? 'depth' : 'form'}.`); } } }
+                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(vcRepCue(repCountRef.current, score, String(exerciseKey))); } } }
               }
             } else { updateStatus('ready', 'Ready — counting reps'); }
           } else {
@@ -640,7 +679,7 @@ export default function Session() {
                 const score = computeFormScore(repPeakAngleRef.current, pilateCfg.targetRange);
                 const flag: RepRecord['flag'] = (cycleMs < minMs || !smooth) ? 'too_fast' : repPeakAngleRef.current < pilateCfg.targetRange[0] ? 'shallow' : 'good';
                 if (flag === 'too_fast') { updateStatus('warn_velocity', 'Too fast — slow to 2 seconds per rep'); const r = statusRef; setTimeout(() => { if (r.current === 'warn_velocity') updateStatus('ready', 'Ready — counting reps'); }, 2000);
-                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(score > 70 ? `Rep ${repCountRef.current}, good form.` : `Rep ${repCountRef.current}, check your ${flag === 'shallow' ? 'depth' : 'form'}.`); } } }
+                } else { repCountRef.current++; const rec: RepRecord = { num: repCountRef.current, angle: Math.round(repPeakAngleRef.current), score, duration: parseFloat((cycleMs/1000).toFixed(1)), flag }; repRecordsRef.current = [...repRecordsRef.current, rec]; setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]); updateStatus('ready', 'Ready — counting reps'); if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(vcRepCue(repCountRef.current, score, String(exerciseKey))); } } }
               }
             } else { updateStatus('ready', 'Ready — counting reps'); }
           }
@@ -658,6 +697,11 @@ export default function Session() {
           drawSkeleton(ctx, lms, activeJoint, isInRange, angle);
           framesRef.current.push({ timestamp: performance.now(), landmarks: lms.map((lm, idx) => ({ name: LANDMARK_NAMES[idx] ?? `point_${idx}`, x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility ?? 1 })) as PoseLandmark[] });
           if (framesRef.current.length > 300) framesRef.current.shift();
+          rafRef.current = requestAnimationFrame(processFrame); return;
+        }
+        // ── Tracking pause (2s after complete tracking loss) ─────────────────
+        if (Date.now() < trackingPauseUntilRef.current) {
+          drawSkeleton(ctx, lms, activeJoint, isInRange, angle);
           rafRef.current = requestAnimationFrame(processFrame); return;
         }
         // ── Fix 1: startup dead zone — no reps for first 8 seconds ──────────
@@ -743,7 +787,7 @@ export default function Session() {
                   setRepCount(repCountRef.current); setRepRecords([...repRecordsRef.current]);
                   setRepFlash(true); setTimeout(() => setRepFlash(false), 500);
                   updateStatus('ready', `Rep ${repCountRef.current} ✓ — go down for next`);
-                  if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(score > 70 ? `Rep ${repCountRef.current}, good form.` : `Rep ${repCountRef.current}, check your ${flag === 'shallow' ? 'depth' : 'form'}.`); } }
+                  if (voiceEnabledRef.current) { const _n = Date.now(); if (_n - lastVcRepRef.current > 6000) { lastVcRepRef.current = _n; void vcSpeakFnRef.current(vcRepCue(repCountRef.current, score, String(exerciseKey))); } }
                   console.log('[Session] Rep counted, state reset to READY, total reps:', repCountRef.current);
                 }
               }
@@ -782,6 +826,8 @@ export default function Session() {
     distanceGuideDismissedRef.current = false; showDistanceGuideRef.current = true; setShowDistanceGuide(true);
     setTimeout(() => { if (!distanceGuideDismissedRef.current) { showDistanceGuideRef.current = false; setShowDistanceGuide(false); } }, dzMs + 10000);
     setPlankScore(0); setPlankSeconds(0); lastPlankSecRef.current = -1; pilatesInvertStateRef.current = 'up';
+    consecutiveLowConfRef.current = 0; trackingPauseUntilRef.current = 0;
+    lowConfWarningRef.current = false; setLowConfWarning(false);
     statusRef.current = 'ready'; viewModeRef.current = 'front';
     const isYoga = exerciseRef.current in YOGA_CONFIG;
     const isPilatesExercise = exerciseRef.current in PILATES_CONFIG;
@@ -1019,7 +1065,7 @@ export default function Session() {
 
       {(isRunning || isStarting || mode === 'stopping') && (
         <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 480px', maxWidth: '640px', borderRadius: '12px', overflow: 'hidden', transform: 'scaleX(-1)', background: '#0f172a' }}>
+          <div style={{ position: 'relative', flex: '1 1 480px', maxWidth: '640px', borderRadius: '12px', overflow: 'hidden', transform: 'scaleX(-1)', background: '#0f172a', boxShadow: lowConfWarning ? '0 0 0 3px #f59e0b, 0 0 16px rgba(245,158,11,0.4)' : undefined, transition: 'box-shadow 0.3s' }}>
             <video ref={videoRef} autoPlay playsInline muted style={{ display: 'block', width: '100%', borderRadius: '12px' }} />
             <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
             {countdown !== null && (
