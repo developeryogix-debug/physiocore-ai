@@ -200,14 +200,23 @@ export default function GaitAssessment() {
     rafRef.current=requestAnimationFrame(walkLoop);
   },[analyseGait,stopCamera]);
 
+  // Attach stream once video element is in the DOM (phase flip renders it after getUserMedia)
+  useEffect(()=>{
+    if (phase!=='walking') return;
+    const v=videoRef.current; const s=streamRef.current;
+    if (!v||!s) return;
+    v.srcObject=s;
+    v.play().catch(()=>{});
+  },[phase]);
+
   const handleStart = useCallback(async ()=>{
     framesRef.current=[]; recRef.current=false; prevCnt.current=12;
     setCamErr(null); setSaved(false); setMetrics(null); setAnalysis(null); setIsRec(false);
     try {
-      const s=await navigator.mediaDevices.getUserMedia({ video:{width:{ideal:1280},height:{ideal:720}}, audio:false });
+      const s=await navigator.mediaDevices.getUserMedia({ video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'}, audio:false });
       streamRef.current=s;
-      if (videoRef.current){ videoRef.current.srcObject=s; await videoRef.current.play(); }
-    } catch { setCamErr('Camera access denied.'); return; }
+      // Do NOT touch videoRef here — <video> not in DOM until setPhase('walking') renders
+    } catch (err) { setCamErr(`Camera access denied: ${(err as Error).message}`); return; }
     loadLandmarker().then(l=>{ lmRef.current=l; }).catch(()=>{});
     phaseTs.current=performance.now();
     setPhase('walking'); setCount(12);
