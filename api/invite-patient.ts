@@ -25,9 +25,9 @@ async function sendBrandedEmail(
 <!DOCTYPE html>
 <html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
 <div style="max-width:560px;margin:40px auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
-  <div style="background:linear-gradient(135deg,#00D4AA,#4DB8FF);padding:28px 32px;">
-    <div style="font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:-0.02em;">PhysioCore AI</div>
-    <div style="color:rgba(255,255,255,0.8);font-size:0.82rem;margin-top:2px;">Clinical intelligence for movement health</div>
+  <div style="background:#00D4AA;padding:28px 32px;">
+    <div style="font-size:1.3rem;font-weight:800;color:#000;letter-spacing:-0.02em;">PhysioCore AI</div>
+    <div style="color:rgba(0,0,0,0.6);font-size:0.82rem;margin-top:2px;">Clinical intelligence for movement health</div>
   </div>
   <div style="padding:32px;">
     <h2 style="color:#0f172a;font-size:1.15rem;font-weight:700;margin:0 0 16px;">Hi ${toName || 'there'},</h2>
