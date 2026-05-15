@@ -61,7 +61,7 @@ async function sendBrandedEmail(
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'onboarding@resend.dev',
+      from: 'noreply@doctoronclick.io',
       to: toEmail,
       subject: 'Your clinician has set up your PhysioCore AI program',
       html,
