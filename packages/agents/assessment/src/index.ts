@@ -25,6 +25,8 @@ export { TreatmentArbiterAgent }  from './treatment/TreatmentArbiterAgent.js';
 export { ProgressionAgent }       from './treatment/ProgressionAgent.js';
 export { PrescriptionAgent }      from './treatment/PrescriptionAgent.js';
 export type { PrescriptionAgentInput, FilterableExercise } from './treatment/PrescriptionAgent.js';
+export { TreatmentOrchestrator }  from './treatment/TreatmentOrchestrator.js';
+export type { TreatmentOrchestratorInput, TreatmentOrchestratorResult } from './treatment/TreatmentOrchestrator.js';
 export type {
   LoadingStrategy,
   TreatmentPlan,
