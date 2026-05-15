@@ -18,8 +18,8 @@ async function sleep(ms: number) {
 }
 
 export async function callClaude(options: CallOptions): Promise<string> {
-  const apiKey = import.meta.env['VITE_ANTHROPIC_API_KEY'] as string | undefined;
-  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY is not set');
+  const apiKey = import.meta.env['VITE_ANTHROPIC_KEY'] as string | undefined;
+  if (!apiKey) throw new Error('VITE_ANTHROPIC_KEY is not set');
 
   const body = JSON.stringify({
     model: options.model ?? MODEL,

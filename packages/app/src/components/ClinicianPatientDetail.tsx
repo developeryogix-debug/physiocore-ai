@@ -181,7 +181,7 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
     setLoadSoap(true); setSoapErr(''); setSoap(null);
     try {
       const key = apiKey();
-      if (!key) throw new Error('VITE_ANTHROPIC_API_KEY not set');
+      if (!key) throw new Error('VITE_ANTHROPIC_KEY not set');
       const last = p.sessions[0];
       const trend = p.sessions.length >= 2
         ? (p.sessions[0]!.formScore > p.sessions[p.sessions.length - 1]!.formScore ? 'improving' : 'declining')
@@ -207,7 +207,7 @@ export default function ClinicianPatientDetail({ patient: p }: Props) {
     setLoadHep(true); setHepErr(''); setHep(null);
     try {
       const key = apiKey();
-      if (!key) throw new Error('VITE_ANTHROPIC_API_KEY not set');
+      if (!key) throw new Error('VITE_ANTHROPIC_KEY not set');
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },

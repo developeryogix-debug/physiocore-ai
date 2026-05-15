@@ -150,14 +150,14 @@ export default function Dashboard() {
     const key = `physiocore_insight_${today}`;
     const cached = localStorage.getItem(key);
     if (cached) { try { setInsight(JSON.parse(cached)); } catch {} return; }
-    if (!userProfile || !import.meta.env.VITE_ANTHROPIC_API_KEY) return;
+    if (!userProfile || !import.meta.env.VITE_ANTHROPIC_KEY) return;
     setInsightLoading(true);
     const recent = [...sessions].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
     const latestBio = Object.fromEntries(Object.keys(BIO_META).map(k=>[k,biometrics.find(b=>b.metric_type===k)?.value]));
     fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
+        'x-api-key': import.meta.env.VITE_ANTHROPIC_KEY,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
         'content-type': 'application/json',

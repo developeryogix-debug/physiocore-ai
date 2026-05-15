@@ -371,8 +371,8 @@ export default function Nutrition() {
     setLoadingMeals(true);
     setMealsError('');
     try {
-      const apiKey = (import.meta.env as Record<string, string>)['VITE_ANTHROPIC_API_KEY'];
-      if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY not set');
+      const apiKey = (import.meta.env as Record<string, string>)['VITE_ANTHROPIC_KEY'];
+      if (!apiKey) throw new Error('VITE_ANTHROPIC_KEY not set');
       const conditions = conditionNames.join(', ') || 'none';
       const flagRules: string[] = [];
       if (hasDiabetes) flagRules.push('Avoid high-glycemic foods (GI>70). Flag if a meal is high-GI.');
@@ -411,8 +411,8 @@ export default function Nutrition() {
     setLoadingSupp(true);
     setSuppError('');
     try {
-      const apiKey = (import.meta.env as Record<string, string>)['VITE_ANTHROPIC_API_KEY'];
-      if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY not set');
+      const apiKey = (import.meta.env as Record<string, string>)['VITE_ANTHROPIC_KEY'];
+      if (!apiKey) throw new Error('VITE_ANTHROPIC_KEY not set');
       const conditions = conditionNames.join(', ') || 'none';
       const meds = userProfile!.medications.map(m => m.name).join(', ') || 'none';
       const goal = userProfile!.primaryGoal;

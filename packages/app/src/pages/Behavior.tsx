@@ -191,8 +191,8 @@ export default function Behavior() {
     setLoadingRe(true);
     setReMessage('');
     try {
-      const apiKey = (import.meta.env as Record<string, string>)['VITE_ANTHROPIC_API_KEY'];
-      if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY not set');
+      const apiKey = (import.meta.env as Record<string, string>)['VITE_ANTHROPIC_KEY'];
+      if (!apiKey) throw new Error('VITE_ANTHROPIC_KEY not set');
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
