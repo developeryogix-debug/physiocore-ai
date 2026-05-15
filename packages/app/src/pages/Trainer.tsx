@@ -123,7 +123,12 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
       return;
     }
     const apiKey = (import.meta.env as Record<string, string | undefined>)['VITE_ANTHROPIC_KEY'];
-    if (!apiKey) { console.error('[Trainer] VITE_ANTHROPIC_KEY missing'); return; }
+    if (!apiKey) {
+      console.error('[Trainer] VITE_ANTHROPIC_KEY missing');
+      const errMsg: Msg = { role: 'assistant', content: '⚠ Configuration error: VITE_ANTHROPIC_KEY is not set. Contact support or check Vercel environment variables.' };
+      setMessages(prev => [...prev, errMsg]);
+      return;
+    }
 
     let sessionId = activeId;
     if (!sessionId) {
@@ -156,7 +161,12 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
         body: JSON.stringify({ model: MODEL, max_tokens: 1200, stream: true, system: buildSystem(), messages: history.map(m => ({ role: m.role, content: m.content })) }),
         signal: abortRef.current.signal,
       });
-      if (!res.ok || !res.body) throw new Error(`API ${res.status}`);
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        console.error('[Trainer] API error', res.status, errBody);
+        throw new Error(`API ${res.status}: ${errBody.slice(0, 200)}`);
+      }
+      if (!res.body) throw new Error('No response body');
       const reader = res.body.getReader(); const dec = new TextDecoder(); let full = '';
       while (true) {
         const { done, value } = await reader.read(); if (done) break;
@@ -179,7 +189,9 @@ Always cite evidence grade (A/B/C/D). Use Latin anatomy terms with plain English
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setMessages(prev => { const n = [...prev]; const l = n[n.length - 1]; if (l?.role === 'assistant') n[n.length - 1] = { ...l, content: '⚠ Error — check API key or connection.' }; return n; });
+        const msg = (err as Error).message ?? 'Unknown error';
+        console.error('[Trainer] sendMessage error:', msg);
+        setMessages(prev => { const n = [...prev]; const l = n[n.length - 1]; if (l?.role === 'assistant') n[n.length - 1] = { ...l, content: `⚠ Error: ${msg}` }; return n; });
       }
     } finally { setStreaming(false); abortRef.current = null; }
   }, [messages, streaming, activeId, voiceOut, sessionCtx]);
