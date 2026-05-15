@@ -323,7 +323,7 @@ All pages need `padding-top: 100px` to clear nav.
 
 ## Session — 15 May 2026
 
-### Phase 3 — Treatment Planning Swarm (READY TO IMPLEMENT)
+### Phase 3 — Treatment Planning Swarm ✅ COMPLETE (15 May 2026)
 
 Spec: `docs/PHASE3_TREATMENT_PLANNING.md`  
 Package: `packages/agents/assessment/src/treatment/`  
@@ -334,9 +334,9 @@ Types: `packages/agents/assessment/src/types/phase3.ts`
 |---|---|---|---|
 | ConservativeAgent | ✅ BUILT | claude-sonnet-4-6 | `treatment/ConservativeAgent.ts` |
 | EarlyMobAgent | ✅ BUILT | claude-sonnet-4-6 | `treatment/EarlyMobAgent.ts` |
-| TreatmentArbiterAgent | ⏳ NEXT | claude-opus-4-7, 600 tokens | `treatment/TreatmentArbiterAgent.ts` |
-| ProgressionAgent | ⏳ NEXT | claude-haiku-4-5-20251001, 500 tokens | `treatment/ProgressionAgent.ts` |
-| PrescriptionAgent | ⏳ NEXT | claude-haiku-4-5-20251001, 800 tokens | `treatment/PrescriptionAgent.ts` |
+| TreatmentArbiterAgent | ✅ BUILT | claude-opus-4-7, 600 tokens | `treatment/TreatmentArbiterAgent.ts` |
+| ProgressionAgent | ✅ BUILT | claude-haiku-4-5-20251001, 500 tokens | `treatment/ProgressionAgent.ts` |
+| PrescriptionAgent | ✅ BUILT | claude-haiku-4-5-20251001, 800 tokens | `treatment/PrescriptionAgent.ts` |
 | TreatmentOrchestrator | ⏳ NEXT | — | `treatment/TreatmentOrchestrator.ts` |
 
 #### Architecture
@@ -406,8 +406,9 @@ ConsensusAgent report
 
 ## Next Build Priorities
 
-1. **Phase 3: ConservativeAgent + EarlyMobAgent** — complete treatment planning swarm (TreatmentArbiterAgent → ProgressionAgent → PrescriptionAgent → TreatmentOrchestrator)
-2. **Voice physiotherapist** — Cartesia or ElevenLabs TTS; real-time coaching during sessions
-3. **Doctor On Click: first real patient invite** — end-to-end patient onboard flow via `/clinician` invite
+1. **Voice physiotherapist** — Cartesia or ElevenLabs TTS; real-time coaching during sessions
+2. **TreatmentOrchestrator** — wire all 5 Phase 3 agents into single orchestrator pipeline
+3. **Doctor On Click: first real patient** — invite sent, patient onboarding end-to-end
 4. **Stripe: statement descriptor → "PhysioCore AI"** — update in Stripe dashboard settings
-5. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
+5. **PWA improvements** — offline mode, install prompt, push notifications
+6. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
