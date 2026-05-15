@@ -242,11 +242,18 @@ All pages need `padding-top: 100px` to clear nav.
 - orgApi.ts mixed static/dynamic import warning → converted `useAuth.tsx` dynamic `import()` to static top-level import
 - ClinicianPatientDetail SOAP note broken → fixed env var `VITE_ANTHROPIC_API_KEY` → `VITE_ANTHROPIC_KEY`
 - Clinician page showing mock-only data → wired to real Supabase sessions via `getProfilesByUserIds` + `getSessionsBatchForPatients`
+- **VITE_ANTHROPIC_KEY** ✅ — standardised across all 7 frontend files (was split `VITE_ANTHROPIC_API_KEY` / `VITE_ANTHROPIC_KEY`); added to Vercel env vars
+- **localStorage PDPA scoping** ✅ — 9 files updated with `userId` prefix via `scopedKey()` helper; patient data isolated per user
+- **Voice agent scaffold** ✅ — LiveKit + Cartesia hook wired; real-time coaching groundwork in place
+- Invite flow: orgId optional, RESEND_API_KEY warning surfaced (was silent false-success)
+- ROM visual guide + live angle gradient + asymmetry cards deployed
 
 ### Remaining
 - Onboard page still uses old light theme (needs Clinical Noir redesign)
 - Run pages-migration.sql in Supabase (biometrics, trainer_sessions, trainer_messages tables)
 - Dashboard 8-panel upgrade
+- **Gait camera black screen** — fix in progress (MediaPipe VIDEO mode init on `/gait-assessment`)
+- **Trainer send button** — verify working after `VITE_ANTHROPIC_KEY` Vercel deploy
 
 ---
 
