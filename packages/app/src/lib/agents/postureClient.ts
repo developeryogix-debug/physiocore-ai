@@ -53,6 +53,74 @@ export interface PostureReport {
   };
 }
 
+// ─── Sapiens HF Space client ──────────────────────────────────────────────────
+//
+// Calls the HuggingFace Gradio Space directly from the browser.
+// Endpoint: VITE_SAPIENS_ENDPOINT (e.g. https://xxx.hf.space/run/predict)
+// Request:  POST { data: [imageBase64] }
+// Response: { data: [{ landmarks: SapiensLandmark[], sapiensAvailable: boolean }] }
+//
+// Returns MPLandmark[] indexed by MediaPipe index (0–32) on success.
+// Returns null on any failure/timeout — caller falls through to MediaPipe CDN.
+
+interface SapiensLandmark {
+  index:      number;  // MediaPipe landmark index
+  x:          number;  // 0–1 normalised
+  y:          number;  // 0–1 normalised
+  confidence: number;  // 0–1
+}
+
+interface SapiensResponse {
+  landmarks:        SapiensLandmark[];
+  confidence:       number;
+  sapiensAvailable: boolean;
+}
+
+const SAPIENS_URL = import.meta.env['VITE_SAPIENS_ENDPOINT'] as string | undefined;
+
+/**
+ * Try Sapiens pose estimation for a single JPEG/PNG frame.
+ * Returns a 33-element MPLandmark array (same format as MediaPipe)
+ * or null if Sapiens is unavailable/errors out.
+ */
+export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandmark[] | null> {
+  if (!SAPIENS_URL) return null;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8_000);
+
+    const r = await fetch(SAPIENS_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ data: [imageBase64] }),
+      signal:  controller.signal,
+    }).finally(() => clearTimeout(timer));
+
+    if (!r.ok) return null;
+
+    // Gradio wraps result in { data: [output] }
+    const json = await r.json() as { data?: [SapiensResponse] };
+    const result = json.data?.[0];
+
+    if (!result?.sapiensAvailable || !Array.isArray(result.landmarks) || result.landmarks.length === 0) {
+      return null;
+    }
+
+    // Build 33-element array indexed by MediaPipe landmark index
+    const out: MPLandmark[] = Array.from({ length: 33 }, () => ({ x: 0, y: 0, visibility: 0 }));
+    for (const lm of result.landmarks) {
+      if (lm.index >= 0 && lm.index < 33) {
+        out[lm.index] = { x: lm.x, y: lm.y, visibility: lm.confidence };
+      }
+    }
+    return out;
+  } catch {
+    // Timeout (AbortError) or network error — fall through to MediaPipe
+    return null;
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function angleDeg3(a: MPLandmark, b: MPLandmark, c: MPLandmark): number {
