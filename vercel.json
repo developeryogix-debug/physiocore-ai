@@ -12,6 +12,10 @@
     {
       "path": "/api/health-check",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/agents/daily-monitor",
+      "schedule": "0 0 * * *"
     }
   ]
 }
