@@ -60,11 +60,11 @@ function drawFrontalOverlay(
     }
   }
 
-  // Plumb line
+  // Layer 3: vertical plumb line (true neutral reference — white)
   const plumbColor = deviationColor(plumbDev);
   ctx.save();
-  ctx.strokeStyle = plumbColor; ctx.lineWidth = 1.5;
-  ctx.setLineDash([7, 5]); ctx.globalAlpha = 0.65;
+  ctx.strokeStyle = '#ffffff44'; ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]); ctx.globalAlpha = 1;
   ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
   ctx.setLineDash([]);
   ctx.font = "bold 11px 'Space Mono', monospace";
@@ -115,15 +115,15 @@ function drawFrontalOverlay(
     const color = deviationColor(angleDeg);
     const slope = Math.abs(dx) > 1 ? dy / dx : 0;
 
-    // Full-width reference line
+    // Layer 1: truly horizontal reference line at midY
     ctx.save();
-    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.6;
     ctx.beginPath();
-    ctx.moveTo(0, midY - midX * slope);
-    ctx.lineTo(w, midY + (w - midX) * slope);
+    ctx.moveTo(0, midY);
+    ctx.lineTo(w, midY);
+    ctx.strokeStyle = '#ffffff22'; ctx.lineWidth = 1; ctx.globalAlpha = 1;
     ctx.stroke();
 
-    // Connecting line between landmarks
+    // Layer 2: deviation line connecting actual landmarks (shows tilt)
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
     ctx.beginPath(); ctx.moveTo(lxS, lyS); ctx.lineTo(rxS, ryS); ctx.stroke();
 
