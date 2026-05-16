@@ -55,106 +55,70 @@ export interface PostureReport {
 
 // ─── Sapiens HF Space client ──────────────────────────────────────────────────
 //
-// Calls the HuggingFace Gradio Space directly from the browser.
+// POST https://physiocoreai-physiocore-sapiens.hf.space/run/predict
+// Body:     { data: ["<base64 image string>"] }
+// Response: { data: ["<JSON-encoded string>"] }
+//   → data[0] is a JSON string, must JSON.parse() → { sapiensAvailable, landmarks[] }
 //
-// Endpoint: VITE_SAPIENS_ENDPOINT = https://physiocoreai-physiocore-sapiens.hf.space/run/predict
-// Auth:     VITE_HF_TOKEN = hf_... (optional — needed for private/ZeroGPU spaces)
-//
-// Gradio response format:
-//   POST /run/predict → { data: ["<json string>"] }
-//   data[0] is a JSON-encoded string → must JSON.parse() before use.
-//
-// Returns MPLandmark[] indexed by MediaPipe index (0–32) on success.
-// Returns null on any failure/timeout — caller falls through to MediaPipe.
+// Returns MPLandmark[] on success, null on any failure → caller uses MediaPipe.
 
 interface SapiensLandmark {
-  index:      number;  // MediaPipe landmark index (0–32)
   x:          number;  // 0–1 normalised
   y:          number;  // 0–1 normalised
+  z?:         number;
   confidence: number;  // 0–1
 }
 
 interface SapiensResponse {
   landmarks:        SapiensLandmark[];
-  confidence:       number;
   sapiensAvailable: boolean;
 }
 
-const SAPIENS_URL = import.meta.env['VITE_SAPIENS_ENDPOINT'] as string | undefined;
-const HF_TOKEN    = import.meta.env['VITE_HF_TOKEN']         as string | undefined;
+const SAPIENS_URL = (import.meta.env['VITE_SAPIENS_ENDPOINT'] as string | undefined)
+  ?? 'https://physiocoreai-physiocore-sapiens.hf.space/run/predict';
 
-/** Build auth + content headers for HF Gradio requests. */
-function hfHeaders(): Record<string, string> {
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (HF_TOKEN) h['Authorization'] = `Bearer ${HF_TOKEN}`;
-  return h;
-}
-
-/**
- * Parse a raw Gradio response body into a SapiensResponse.
- * Gradio wraps the fn return value as a JSON string inside data[0].
- */
-function parseGradioResponse(raw: unknown): SapiensResponse | null {
-  try {
-    const outer = raw as { data?: unknown[] };
-    if (!Array.isArray(outer.data) || outer.data.length === 0) return null;
-    const inner = outer.data[0];
-    // Gradio may return a JSON-encoded string or a plain object
-    const result: SapiensResponse = typeof inner === 'string'
-      ? (JSON.parse(inner) as SapiensResponse)
-      : (inner as SapiensResponse);
-    if (!result?.sapiensAvailable || !Array.isArray(result.landmarks)) return null;
-    return result;
-  } catch {
-    return null;
-  }
-}
+const HF_TOKEN = import.meta.env['VITE_HF_TOKEN'] as string | undefined;
 
 /**
  * Try Sapiens pose estimation for a single JPEG/PNG frame (base64 data-URL).
- * Returns a 33-element MPLandmark array (same format as MediaPipe)
- * or null if Sapiens is unavailable/errors out.
- *
- * Tries /run/predict first; falls back to /call/analyse_pose if 404/405.
+ * Returns MPLandmark[] in order (same format as MediaPipe) or null on failure.
  */
 export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandmark[] | null> {
-  if (!SAPIENS_URL) return null;
+  try {
+    const r = await fetch(SAPIENS_URL, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(HF_TOKEN ? { Authorization: `Bearer ${HF_TOKEN}` } : {}),
+      },
+      body:   JSON.stringify({ data: [imageBase64] }),
+      signal: AbortSignal.timeout(15_000),
+    });
 
-  // Derive the base space URL (strip trailing path) for fallback construction
-  const baseUrl = SAPIENS_URL.replace(/\/(run\/predict|call\/[\w]+)\/?$/, '');
-  const predictUrl  = `${baseUrl}/run/predict`;
-  const namedUrl    = `${baseUrl}/call/analyse_pose`;
+    if (!r.ok) return null;
 
-  const body = JSON.stringify({ data: [imageBase64] });
+    const json = await r.json() as { data?: unknown[] };
 
-  const tryFetch = async (url: string): Promise<SapiensResponse | null> => {
-    try {
-      const r = await fetch(url, {
-        method:  'POST',
-        headers: hfHeaders(),
-        body,
-        signal:  AbortSignal.timeout(10_000),
-      });
-      if (!r.ok) return null;
-      const json: unknown = await r.json();
-      return parseGradioResponse(json);
-    } catch {
-      return null;
-    }
-  };
+    // Gradio wraps the fn return as a JSON-encoded string inside data[0]
+    const raw = json.data?.[0];
+    if (!raw) return null;
 
-  // Try primary endpoint, then named fallback
-  const result = (await tryFetch(predictUrl)) ?? (await tryFetch(namedUrl));
-  if (!result || result.landmarks.length === 0) return null;
+    const result: SapiensResponse = typeof raw === 'string'
+      ? (JSON.parse(raw) as SapiensResponse)
+      : (raw as SapiensResponse);
 
-  // Map Sapiens landmark indices → 33-element MediaPipe array
-  const out: MPLandmark[] = Array.from({ length: 33 }, () => ({ x: 0, y: 0, visibility: 0 }));
-  for (const lm of result.landmarks) {
-    if (lm.index >= 0 && lm.index < 33 && lm.confidence >= 0.3) {
-      out[lm.index] = { x: lm.x, y: lm.y, visibility: lm.confidence };
-    }
+    if (!result.sapiensAvailable || !result.landmarks?.length) return null;
+
+    return result.landmarks.map(lm => ({
+      x:          lm.x,
+      y:          lm.y,
+      z:          lm.z ?? 0,
+      visibility: lm.confidence,
+    }));
+  } catch {
+    // AbortError (timeout) or network failure — fall through to MediaPipe
+    return null;
   }
-  return out;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
