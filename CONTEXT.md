@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 16 May 2026 (Phase 6 Sapiens — ZeroGPU endpoint live, wire-up in progress)
+Last updated: 17 May 2026 (Phase 6 Sapiens dual API deployed — PostureAssessment + ROM wired)
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -475,28 +475,28 @@ ConsensusAgent report
 
 | Item | Status | Notes |
 |---|---|---|
-| HuggingFace Space | ✅ LIVE | ZeroGPU A100 — free with HF PRO ($9/month) |
-| Endpoint | ✅ LIVE | `https://physiocoreai-physiocore-sapiens.hf.space/run/predict` |
-| `callSapiensLandmarks()` | ✅ BUILT | `packages/app/src/lib/agents/postureClient.ts` |
-| `VITE_SAPIENS_ENDPOINT` | ✅ SET | `.env.local` only — `https://physiocoreai-physiocore-sapiens.hf.space/run/predict` |
-| `api/sapiens-analyse.ts` | ✅ BUILT | Vercel serverless — HF Inference API, graceful MediaPipe fallback, 3 response shapes, 503 cold-start retry |
-| Vercel `HF_TOKEN` env var | ⏳ MANUAL | Add `HF_TOKEN` (HF Pro token) in Vercel dashboard → Environment Variables |
-| PostureAssessment.tsx wire-up | ⏳ IN PROGRESS | Replace MediaPipe 33 → Sapiens 308 landmarks |
-| GuidedROMAssessment.tsx wire-up | ⏳ NEXT | Clinical-grade goniometry |
+| HuggingFace Space | ✅ LIVE | Gradio 4.x (downgraded from 6.x for /run/predict compat) |
+| Endpoint | ✅ LIVE | `https://physiocoreai-physiocore-sapiens.hf.space` |
+| `callSapiensLandmarks()` | ✅ BUILT | Dual format: Gradio 4.x sync + Gradio 5/6.x SSE fallback |
+| `VITE_SAPIENS_ENDPOINT` | ✅ SET | Vercel env var — base URL, path stripped internally |
+| `VITE_HF_TOKEN` | ✅ SET | Vercel env var — Bearer auth for ZeroGPU/private spaces |
+| PostureAssessment.tsx | ✅ WIRED | `precisionTier` in frame, `🔬 Sapiens 308pt` / `📷 MediaPipe 33pt` badge |
+| GuidedROMAssessment.tsx | ✅ WIRED | Sapiens landmarks at ROM hold-capture point |
+| End-to-end test | ⏳ PENDING | Space rebuild needed — confirm landmark output format |
 
-**Precision:** 308 keypoints (COCO WholeBody) vs MediaPipe 33 — 13-joint COCO→MediaPipe map in `api/sapiens-analyse.ts`  
+**API flow:** Strategy 1 → `POST /run/predict` (Gradio 4.x, 15s timeout) → Strategy 2 → `POST /call/analyse_pose` + SSE poll (Gradio 5/6.x, 30s timeout)  
+**Precision:** Sapiens 308 keypoints → MediaPipe-compatible output via `parseSapiensResult()`  
 **Cost:** FREE via ZeroGPU + HF PRO ($9/month flat)  
-**Fallback:** if HF unavailable, endpoint returns `mediapipeLandmarks` unchanged — all assessment pages continue working  
-**Badge:** `🔬 Clinical grade` shown when Sapiens active
+**Fallback:** any failure → MediaPipe 33pt continues — all assessment pages unaffected  
+**Badge:** `🔬 Sapiens 308pt` (teal) when active, `📷 MediaPipe 33pt` (grey) on fallback
 
 ---
 
 ## Next Build Priorities
 
-1. **PostureAssessment.tsx** — wire `callSapiensLandmarks()` + "🔬 Clinical grade" badge (Phase 6)
-2. **GuidedROMAssessment.tsx** — Sapiens 308-point goniometry wire-up (Phase 6)
-3. **LiveKit real-time streaming** — complete Phase 4 voice loop
-4. **TreatmentOrchestrator** — wire all 5 Phase 3 agents
-5. **Stripe: statement descriptor → "PhysioCore AI"**
-6. **PWA improvements** — offline mode, install prompt, push notifications
-7. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
+1. **Sapiens E2E test** — confirm landmark output after Space rebuild (Phase 6 final)
+2. **LiveKit real-time streaming** — complete Phase 4 voice loop
+3. **TreatmentOrchestrator** — wire all 5 Phase 3 agents
+4. **Stripe: statement descriptor → "PhysioCore AI"**
+5. **PWA improvements** — offline mode, install prompt, push notifications
+6. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
