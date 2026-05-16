@@ -56,15 +56,19 @@ export interface PostureReport {
 // ─── Sapiens HF Space client ──────────────────────────────────────────────────
 //
 // Calls the HuggingFace Gradio Space directly from the browser.
-// Endpoint: VITE_SAPIENS_ENDPOINT (e.g. https://xxx.hf.space/run/predict)
-// Request:  POST { data: [imageBase64] }
-// Response: { data: [{ landmarks: SapiensLandmark[], sapiensAvailable: boolean }] }
+//
+// Endpoint: VITE_SAPIENS_ENDPOINT = https://physiocoreai-physiocore-sapiens.hf.space/run/predict
+// Auth:     VITE_HF_TOKEN = hf_... (optional — needed for private/ZeroGPU spaces)
+//
+// Gradio response format:
+//   POST /run/predict → { data: ["<json string>"] }
+//   data[0] is a JSON-encoded string → must JSON.parse() before use.
 //
 // Returns MPLandmark[] indexed by MediaPipe index (0–32) on success.
-// Returns null on any failure/timeout — caller falls through to MediaPipe CDN.
+// Returns null on any failure/timeout — caller falls through to MediaPipe.
 
 interface SapiensLandmark {
-  index:      number;  // MediaPipe landmark index
+  index:      number;  // MediaPipe landmark index (0–32)
   x:          number;  // 0–1 normalised
   y:          number;  // 0–1 normalised
   confidence: number;  // 0–1
@@ -77,48 +81,80 @@ interface SapiensResponse {
 }
 
 const SAPIENS_URL = import.meta.env['VITE_SAPIENS_ENDPOINT'] as string | undefined;
+const HF_TOKEN    = import.meta.env['VITE_HF_TOKEN']         as string | undefined;
+
+/** Build auth + content headers for HF Gradio requests. */
+function hfHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (HF_TOKEN) h['Authorization'] = `Bearer ${HF_TOKEN}`;
+  return h;
+}
 
 /**
- * Try Sapiens pose estimation for a single JPEG/PNG frame.
+ * Parse a raw Gradio response body into a SapiensResponse.
+ * Gradio wraps the fn return value as a JSON string inside data[0].
+ */
+function parseGradioResponse(raw: unknown): SapiensResponse | null {
+  try {
+    const outer = raw as { data?: unknown[] };
+    if (!Array.isArray(outer.data) || outer.data.length === 0) return null;
+    const inner = outer.data[0];
+    // Gradio may return a JSON-encoded string or a plain object
+    const result: SapiensResponse = typeof inner === 'string'
+      ? (JSON.parse(inner) as SapiensResponse)
+      : (inner as SapiensResponse);
+    if (!result?.sapiensAvailable || !Array.isArray(result.landmarks)) return null;
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Try Sapiens pose estimation for a single JPEG/PNG frame (base64 data-URL).
  * Returns a 33-element MPLandmark array (same format as MediaPipe)
  * or null if Sapiens is unavailable/errors out.
+ *
+ * Tries /run/predict first; falls back to /call/analyse_pose if 404/405.
  */
 export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandmark[] | null> {
   if (!SAPIENS_URL) return null;
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8_000);
+  // Derive the base space URL (strip trailing path) for fallback construction
+  const baseUrl = SAPIENS_URL.replace(/\/(run\/predict|call\/[\w]+)\/?$/, '');
+  const predictUrl  = `${baseUrl}/run/predict`;
+  const namedUrl    = `${baseUrl}/call/analyse_pose`;
 
-    const r = await fetch(SAPIENS_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ data: [imageBase64] }),
-      signal:  controller.signal,
-    }).finally(() => clearTimeout(timer));
+  const body = JSON.stringify({ data: [imageBase64] });
 
-    if (!r.ok) return null;
-
-    // Gradio wraps result in { data: [output] }
-    const json = await r.json() as { data?: [SapiensResponse] };
-    const result = json.data?.[0];
-
-    if (!result?.sapiensAvailable || !Array.isArray(result.landmarks) || result.landmarks.length === 0) {
+  const tryFetch = async (url: string): Promise<SapiensResponse | null> => {
+    try {
+      const r = await fetch(url, {
+        method:  'POST',
+        headers: hfHeaders(),
+        body,
+        signal:  AbortSignal.timeout(10_000),
+      });
+      if (!r.ok) return null;
+      const json: unknown = await r.json();
+      return parseGradioResponse(json);
+    } catch {
       return null;
     }
+  };
 
-    // Build 33-element array indexed by MediaPipe landmark index
-    const out: MPLandmark[] = Array.from({ length: 33 }, () => ({ x: 0, y: 0, visibility: 0 }));
-    for (const lm of result.landmarks) {
-      if (lm.index >= 0 && lm.index < 33) {
-        out[lm.index] = { x: lm.x, y: lm.y, visibility: lm.confidence };
-      }
+  // Try primary endpoint, then named fallback
+  const result = (await tryFetch(predictUrl)) ?? (await tryFetch(namedUrl));
+  if (!result || result.landmarks.length === 0) return null;
+
+  // Map Sapiens landmark indices → 33-element MediaPipe array
+  const out: MPLandmark[] = Array.from({ length: 33 }, () => ({ x: 0, y: 0, visibility: 0 }));
+  for (const lm of result.landmarks) {
+    if (lm.index >= 0 && lm.index < 33 && lm.confidence >= 0.3) {
+      out[lm.index] = { x: lm.x, y: lm.y, visibility: lm.confidence };
     }
-    return out;
-  } catch {
-    // Timeout (AbortError) or network error — fall through to MediaPipe
-    return null;
   }
+  return out;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
