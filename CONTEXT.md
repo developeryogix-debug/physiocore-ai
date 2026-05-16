@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 15 May 2026 (post ROM assessment deploy)
+Last updated: 16 May 2026 (Phase 5 autonomous loops — daily + weekly agents deployed)
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -419,6 +419,11 @@ ConsensusAgent report
 | First patient onboarded (posture + ROM + pain map) | ⏳ PENDING | — |
 | Clinical validation: in progress | ⏳ PENDING | — |
 
+### Patient Database Status (16 May 2026)
+- `invites` table: **0 rows** — no formal invite sent yet
+- `profiles` with role=patient: **3 rows** — all test accounts from 15 May 2026 (`DevDoctoronclickemail`, `Doc contact`, `dev@live`)
+- **No real patients in system yet**
+
 ### First Real Patient — Invite Flow (manual steps)
 1. Go to https://app-dteam1-mmcv.vercel.app/clinician (role=clinician required)
 2. Click **+ Invite Patient** → enter patient name + email
@@ -451,13 +456,13 @@ ConsensusAgent report
 
 ---
 
-## Phase 5 — Autonomous Loops (STARTING)
+## Phase 5 — Autonomous Loops
 
-| Agent | Status |
-|---|---|
-| Daily monitoring agent | ⏳ |
-| Weekly progression cron | ⏳ |
-| Monthly assessment trigger | ⏳ |
+| Agent | Status | Notes |
+|---|---|---|
+| Daily monitoring agent | ✅ BUILT + DEPLOYED | `api/agents/daily-monitor.ts` — cron `0 0 * * *` (00:00 UTC = 08:00 SGT). Adherence drift, pain trend, form trend → Haiku email + `monitoring_alerts` |
+| Weekly progression cron | ✅ BUILT + DEPLOYED | `api/agents/weekly-progression.ts` — cron `0 1 * * 1` (Mon 01:00 UTC = 09:00 SGT). Linear regression Stage-1 + Haiku email Stage-2. Advances `treatment_plans.current_week`, flags `clinician_alerts` on regress/modify |
+| Monthly assessment trigger | ⏳ NEXT | — |
 
 ---
 
