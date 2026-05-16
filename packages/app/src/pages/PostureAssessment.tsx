@@ -723,6 +723,23 @@ export default function PostureAssessment() {
           ))}
         </div>
 
+        {/* Low-confidence warning banner */}
+        {(() => {
+          const lowViews = VIEWS.filter(v => frames[v.key] && calcLandmarkConfidence(frames[v.key]!.landmarks) < 75);
+          if (lowViews.length === 0) return null;
+          return (
+            <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: '8px', background: 'rgba(255,184,48,0.08)', border: '1px solid rgba(255,184,48,0.35)', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <span style={{ fontSize: '1rem', lineHeight: 1 }}>⚠️</span>
+              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5 }}>
+                <span style={{ color: '#FFB830', fontFamily: "'Space Mono',monospace", fontWeight: 600 }}>Low confidence — </span>
+                <span style={{ color: 'var(--text-secondary)' }}>
+                  {lowViews.map(v => v.shortLabel).join(', ')} {lowViews.length === 1 ? 'view has' : 'views have'} confidence below 75%. Deviation lines hidden on affected views. Retake for accurate analysis. Analysis can still proceed.
+                </span>
+              </p>
+            </div>
+          );
+        })()}
+
         {/* 2×2 grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           {VIEWS.map((v, i) => (
@@ -753,8 +770,8 @@ export default function PostureAssessment() {
               {/* Confidence badge */}
               {frames[v.key] && (() => {
                 const conf = calcLandmarkConfidence(frames[v.key]!.landmarks);
-                const confColor = conf >= 70 ? '#00E676' : conf >= 50 ? '#FFB830' : '#FF4444';
-                const confMsg   = conf >= 70 ? '' : conf >= 50 ? ' — retake recommended' : ' — poor capture';
+                const confColor = conf >= 75 ? '#00E676' : conf >= 50 ? '#FFB830' : '#FF4444';
+                const confMsg   = conf >= 75 ? '' : conf >= 50 ? ' — low confidence, retake for accuracy' : ' — poor capture';
                 return (
                   <div style={{ position: 'absolute', bottom: '40px', left: '10px', padding: '3px 8px', borderRadius: '6px', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', color: confColor, fontSize: '0.65rem', fontFamily: "'Space Mono',monospace" }}>
                     {conf}% confidence{confMsg}

@@ -90,6 +90,7 @@ function drawFrontalOverlay(
   ctx: CanvasRenderingContext2D,
   lms: MPLandmark[] | null,
   w: number, h: number,
+  confidence = 100,
 ) {
   let plumbDev = 0;
   let sMidX = w / 2, hMidX = w / 2, sMidY = h * 0.3, hMidY = h * 0.6;
@@ -118,8 +119,8 @@ function drawFrontalOverlay(
 
   if (!lms) return;
 
-  // Spine midline (shoulder-mid → hip-mid)
-  {
+  // Spine midline (shoulder-mid → hip-mid) — deviation indicator, skip when low confidence
+  if (confidence >= 75) {
     const spineOffPx = Math.abs(sMidX - hMidX);
     const spineColor = deviationColor(Math.round((spineOffPx / w) * 30 * 10) / 10);
     const dY = hMidY - sMidY;
@@ -159,7 +160,7 @@ function drawFrontalOverlay(
     const color = deviationColor(angleDeg);
     const slope = Math.abs(dx) > 1 ? dy / dx : 0;
 
-    // Layer 1: TRUE horizontal reference (faint dashed, perfectly level)
+    // Layer 1: TRUE horizontal reference (faint dashed, perfectly level) — always drawn
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(0, midY);
@@ -169,39 +170,43 @@ function drawFrontalOverlay(
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Layer 2: DEVIATION line (actual landmarks — shows tilt)
-    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.globalAlpha = 0.9;
-    ctx.beginPath(); ctx.moveTo(lxS, lyS); ctx.lineTo(rxS, ryS); ctx.stroke();
+    if (confidence >= 75) {
+      // Layer 2: DEVIATION line (actual landmarks — shows tilt)
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.moveTo(lxS, lyS); ctx.lineTo(rxS, ryS); ctx.stroke();
 
-    // Teal landmark dots
-    ctx.fillStyle = '#00D4AA'; ctx.globalAlpha = 0.95;
-    ctx.beginPath(); ctx.arc(lxS, lyS, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rxS, ryS, 4, 0, Math.PI * 2); ctx.fill();
+      // Teal landmark dots
+      ctx.fillStyle = '#00D4AA'; ctx.globalAlpha = 0.95;
+      ctx.beginPath(); ctx.arc(lxS, lyS, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(rxS, ryS, 4, 0, Math.PI * 2); ctx.fill();
 
-    // Label + angle
-    fillTextPill(ctx, `${hl.name}  ${angleDeg.toFixed(1)}°`, w - 8, midY - 4, 'right', color);
+      // Label + angle
+      fillTextPill(ctx, `${hl.name}  ${angleDeg.toFixed(1)}°`, w - 8, midY - 4, 'right', color);
+    }
     ctx.restore();
   }
 
-  // Head tilt — nose vs shoulder midpoint
-  const nose = lms[0], ls = lms[11], rs = lms[12];
-  if (nose && ls && rs
-    && (nose.visibility ?? 1) > 0.3
-    && (ls.visibility ?? 1) > 0.3 && (rs.visibility ?? 1) > 0.3) {
-    const noseX = (1 - nose.x) * w, noseY = nose.y * h;
-    const shCX = ((1 - ls.x) + (1 - rs.x)) / 2 * w;
-    const shCY = (ls.y + rs.y) / 2 * h;
-    const headDeg = Math.round((Math.abs(noseX - shCX) / w) * 30 * 10) / 10;
-    const headColor = deviationColor(headDeg);
-    ctx.save();
-    ctx.strokeStyle = headColor; ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]); ctx.globalAlpha = 0.7;
-    ctx.beginPath(); ctx.moveTo(noseX, noseY); ctx.lineTo(shCX, shCY); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = headColor; ctx.globalAlpha = 0.9;
-    ctx.beginPath(); ctx.arc(noseX, noseY, 4, 0, Math.PI * 2); ctx.fill();
-    fillTextPill(ctx, `HEAD  ${headDeg.toFixed(1)}°`, 8, noseY - 4, 'left', headColor);
-    ctx.restore();
+  // Head tilt — nose vs shoulder midpoint — deviation indicator, skip when low confidence
+  if (confidence >= 75) {
+    const nose = lms[0], ls = lms[11], rs = lms[12];
+    if (nose && ls && rs
+      && (nose.visibility ?? 1) > 0.3
+      && (ls.visibility ?? 1) > 0.3 && (rs.visibility ?? 1) > 0.3) {
+      const noseX = (1 - nose.x) * w, noseY = nose.y * h;
+      const shCX = ((1 - ls.x) + (1 - rs.x)) / 2 * w;
+      const shCY = (ls.y + rs.y) / 2 * h;
+      const headDeg = Math.round((Math.abs(noseX - shCX) / w) * 30 * 10) / 10;
+      const headColor = deviationColor(headDeg);
+      ctx.save();
+      ctx.strokeStyle = headColor; ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]); ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(noseX, noseY); ctx.lineTo(shCX, shCY); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = headColor; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.arc(noseX, noseY, 4, 0, Math.PI * 2); ctx.fill();
+      fillTextPill(ctx, `HEAD  ${headDeg.toFixed(1)}°`, 8, noseY - 4, 'left', headColor);
+      ctx.restore();
+    }
   }
 }
 
@@ -405,7 +410,7 @@ export function drawIdealComparison(
         ctx.setLineDash([]);
         ctx.restore();
       }
-      drawFrontalOverlay(ctx, lms, w, h);
+      drawFrontalOverlay(ctx, lms, w, h, calcLandmarkConfidence(lms));
     }
   };
   img.src = frame.dataUrl;
@@ -430,7 +435,7 @@ export function drawGridOverlay(
 
     const isLateral = viewKey === 'rightLateral' || viewKey === 'leftLateral';
     if (isLateral) drawLateralOverlay(ctx, frame.landmarks, w, h);
-    else           drawFrontalOverlay(ctx, frame.landmarks, w, h);
+    else           drawFrontalOverlay(ctx, frame.landmarks, w, h, calcLandmarkConfidence(frame.landmarks));
   };
   img.src = frame.dataUrl;
 }
