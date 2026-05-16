@@ -341,19 +341,34 @@ export default function GuidedROMAssessment() {
         if (tick > 0) { setCntdn(tick); beep(false); }
         else {
           clearInterval(iv); setCntdn(null); setIsHold(true); beep(true);
-          const res = lastLmsRef.current ? computeAngleResult(lastLmsRef.current, tst) : null;
-          if (!res || res.bad) {
-            setLmWarn('Landmark lost — please retake');
-            setIsHold(false);
-            onDone();
-          } else {
-            setCaptured(p => ({ ...p, [tst.key]: res.angle }));
-            tmRef.current = setTimeout(() => { setIsHold(false); onDone(); }, 1500);
-          }
+          void (async () => {
+            let lmsToUse = lastLmsRef.current;
+            let precision: 'sapiens' | 'mediapipe' = 'mediapipe';
+            if (import.meta.env['VITE_SAPIENS_ENDPOINT']) {
+              const dataUrl = captureFrame();
+              if (dataUrl) {
+                const sapiensLms = await callSapiensLandmarks(dataUrl);
+                if (sapiensLms && sapiensLms.length > 0) {
+                  lmsToUse = sapiensLms.map(lm => ({ x: lm.x, y: lm.y, z: lm.z ?? 0, visibility: lm.visibility }));
+                  precision = 'sapiens';
+                }
+              }
+            }
+            const res = lmsToUse ? computeAngleResult(lmsToUse, tst) : null;
+            if (!res || res.bad) {
+              setLmWarn('Landmark lost — please retake');
+              setIsHold(false);
+              onDone();
+            } else {
+              setCaptured(p => ({ ...p, [tst.key]: res.angle }));
+              setCapturedPrecision(p => ({ ...p, [tst.key]: precision }));
+              tmRef.current = setTimeout(() => { setIsHold(false); onDone(); }, 1500);
+            }
+          })();
         }
       }, 1000);
     }, 2500);
-  }, [renderLoop]);
+  }, [renderLoop, captureFrame]);
 
   const runAll = useCallback((si: number) => {
     if (si >= TESTS.length) {
@@ -505,6 +520,7 @@ Respond with JSON only — no markdown:
 
     return (
       <div style={{ minHeight: '100vh', background: '#000', paddingTop: 72, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <canvas ref={captureCanvasRef} style={{ display: 'none' }} />
         {camErr ? <div style={{ color: '#FF4444', padding: 40 }}>{camErr}</div> : <>
           <div style={{ position: 'relative', width: '100%', maxWidth: 800 }}>
             <video ref={videoRef} muted playsInline style={{ width: '100%', borderRadius: 12, display: 'block' }} />
@@ -560,7 +576,14 @@ Respond with JSON only — no markdown:
                   <td style={{ padding: '9px 14px', fontSize: '0.84rem', color: 'var(--text-primary)' }}>{t.joint}</td>
                   <td style={{ padding: '9px 14px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t.movement}</td>
                   <td style={{ padding: '9px 14px' }}><span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', background: t.side === 'right' ? 'rgba(77,184,255,0.1)' : 'rgba(167,139,250,0.1)', color: t.side === 'right' ? 'var(--blue-400)' : '#a78bfa' }}>{t.side}</span></td>
-                  <td style={{ padding: '9px 14px', fontFamily: "'Space Mono',monospace", fontWeight: 600, color: st ? statusClr(st) : 'var(--text-tertiary)' }}>{a !== undefined ? `${a}°` : '—'}</td>
+                  <td style={{ padding: '9px 14px', fontFamily: "'Space Mono',monospace", fontWeight: 600, color: st ? statusClr(st) : 'var(--text-tertiary)' }}>
+                    {a !== undefined ? `${a}°` : '—'}
+                    {a !== undefined && capturedPrecision[t.key] && (
+                      <div style={{ fontSize: '0.55rem', fontWeight: 400, marginTop: 2, color: capturedPrecision[t.key] === 'sapiens' ? '#a78bfa' : 'rgba(255,255,255,0.28)' }}>
+                        {capturedPrecision[t.key] === 'sapiens' ? '🔬 Clinical grade (Sapiens)' : '📷 Standard (MediaPipe)'}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding: '9px 14px', fontSize: '0.75rem', color: 'var(--text-tertiary)', fontFamily: "'Space Mono',monospace" }}>{t.clinicalLabel}</td>
                   <td style={{ padding: '9px 14px' }}><button onClick={() => { void handleRetake(t.key); }} style={{ fontSize: '0.7rem', padding: '3px 9px', borderRadius: 6, background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', cursor: 'pointer' }}>Retake</button></td>
                 </tr>;
@@ -631,9 +654,11 @@ Respond with JSON only — no markdown:
                     <td style={{ padding: '11px 14px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{mv}</td>
                     <td style={{ padding: '11px 14px', fontFamily: "'Space Mono',monospace", fontWeight: 600, color: R ? statusClr(R.status) : 'var(--text-tertiary)' }}>
                       {R ? `${R.angle}°` : '—'}{R && R.status !== 'normal' && <span style={{ fontSize: '0.6rem', marginLeft: 3 }}>{R.status === 'mild' ? '⚠' : '✗'}</span>}
+                      {R && capturedPrecision[R.key] && <div style={{ fontSize: '0.55rem', fontWeight: 400, marginTop: 2, color: capturedPrecision[R.key] === 'sapiens' ? '#a78bfa' : 'rgba(255,255,255,0.28)' }}>{capturedPrecision[R.key] === 'sapiens' ? '🔬 Clinical grade (Sapiens)' : '📷 Standard (MediaPipe)'}</div>}
                     </td>
                     <td style={{ padding: '11px 14px', fontFamily: "'Space Mono',monospace", fontWeight: 600, color: L ? statusClr(L.status) : 'var(--text-tertiary)' }}>
                       {L ? `${L.angle}°` : '—'}{L && L.status !== 'normal' && <span style={{ fontSize: '0.6rem', marginLeft: 3 }}>{L.status === 'mild' ? '⚠' : '✗'}</span>}
+                      {L && capturedPrecision[L.key] && <div style={{ fontSize: '0.55rem', fontWeight: 400, marginTop: 2, color: capturedPrecision[L.key] === 'sapiens' ? '#a78bfa' : 'rgba(255,255,255,0.28)' }}>{capturedPrecision[L.key] === 'sapiens' ? '🔬 Clinical grade (Sapiens)' : '📷 Standard (MediaPipe)'}</div>}
                     </td>
                     <td style={{ padding: '11px 14px', fontSize: '0.76rem', color: 'var(--text-tertiary)', fontFamily: "'Space Mono',monospace" }}>{R?.clinicalLabel ?? L?.clinicalLabel}</td>
                     <td style={{ padding: '11px 14px', fontSize: '0.76rem', fontFamily: "'Space Mono',monospace", color: asym !== null && asym > 10 ? '#FFB830' : 'var(--text-tertiary)', fontWeight: asym !== null && asym > 10 ? 600 : 400 }}>
