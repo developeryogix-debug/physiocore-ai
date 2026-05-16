@@ -28,6 +28,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
     "@vercel/node": "^5.7.16",
+    "replicate": "^1.0.1",
     "resend": "^6.12.3",
     "stripe": "^22.1.1"
   }
