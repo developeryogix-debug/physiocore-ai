@@ -334,7 +334,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 message:    `${name} has completed their ${totalWeeks}-week programme. Discharge planning recommended.`,
                 created_at: runDate,
                 resolved:   false,
-              }).catch(() => {});
+              });
             }
           }
 
@@ -353,7 +353,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               message:    `REGRESS recommended for ${name}: ${reason}`,
               created_at: runDate,
               resolved:   false,
-            }).catch(() => {});
+            });
 
             results.push({ patientId, email, action, oldWeek, newWeek, emailSent: false, flags });
             return;
@@ -372,7 +372,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               message:    `MODIFY recommended for ${name} (week ${oldWeek}): ${reason}`,
               created_at: runDate,
               resolved:   false,
-            }).catch(() => {});
+            });
           }
 
           // 6. Skip email if no address on file
@@ -411,7 +411,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             trend,
             flags_json:     flags,
             email_sent:     true,
-          }).catch(() => {});
+          });
 
           results.push({ patientId, email, action, oldWeek, newWeek, emailSent: true, flags });
 

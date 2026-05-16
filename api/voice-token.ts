@@ -5,7 +5,16 @@
 // Phase 4 — docs/PHASE4_VOICE_AGENT.md
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { AccessToken } from 'livekit-server-sdk';
+
+// livekit-server-sdk is an optional Phase 4 dependency — stub until installed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let AccessToken: any;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  ({ AccessToken } = require('livekit-server-sdk') as { AccessToken: any });
+} catch {
+  AccessToken = null;
+}
 
 const LIVEKIT_API_KEY    = process.env['LIVEKIT_API_KEY']    ?? '';
 const LIVEKIT_API_SECRET = process.env['LIVEKIT_API_SECRET'] ?? '';
@@ -24,9 +33,9 @@ export default async function handler(
     return;
   }
 
-  // Config guard
-  if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
-    res.status(503).json({ error: 'LiveKit not configured — add LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET to env vars' });
+  // Config guard (also catches missing package)
+  if (!AccessToken || !LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
+    res.status(503).json({ error: 'LiveKit not configured — add LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET to env vars and install livekit-server-sdk' });
     return;
   }
 

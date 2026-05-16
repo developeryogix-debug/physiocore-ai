@@ -506,10 +506,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // 1. Fetch all active patients
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    const { data: patients, error: pErr } = await (sb as any)
+    const { data: patients, error: pErr } = (await (sb as any)
       .from('profiles')
       .select('user_id, org_id')
-      .eq('role', 'patient') as Promise<{ data: PatientRow[] | null; error: unknown }>;
+      .eq('role', 'patient')) as { data: PatientRow[] | null; error: unknown };
 
     if (pErr || !patients?.length) {
       return res.status(200).json({ ...summary, note: 'No active patients or DB error', error: String(pErr) });
@@ -582,11 +582,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let orgNames: string[] = actedOrgIds;
     if (actedOrgIds.length > 0) {
       try {
-        const { data: orgs } = await (sb as any)
+        const { data: orgs } = (await (sb as any)
           .from('organisations')
           .select('id, name')
-          .in('id', actedOrgIds) as Promise<{ data: Array<{ id: string; name: string }> | null }>;
-        if (orgs?.length) orgNames = orgs.map(o => o.name);
+          .in('id', actedOrgIds)) as { data: Array<{ id: string; name: string }> | null };
+        if (orgs?.length) orgNames = orgs.map((o: { id: string; name: string }) => o.name);
       } catch { /* fallback: use org_ids */ }
     }
     const painAlerts = actedDecisions.filter(d => d.alertType === 'pain_worsening').length;
