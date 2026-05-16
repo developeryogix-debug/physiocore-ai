@@ -1,24 +1,34 @@
 /**
  * api/sapiens-analyse.ts
  * Vercel serverless function — Phase 6a (Sapiens Precision)
- * POST { imageBase64, userId, imageWidth?, imageHeight? }
- * → { landmarks: SapiensLandmark[], confidence: number }
+ * POST { imageBase64, userId, imageWidth?, imageHeight?, mediapipeLandmarks? }
+ * → { landmarks: SapiensLandmark[], confidence: number, sapiensAvailable: boolean, fallback?: string }
  *
- * Calls Replicate meta/sapiens-pose, maps COCO 133 → MediaPipe 33 indices.
- * REPLICATE_API_TOKEN required (replicate.com free tier: 500 predictions/month).
+ * NOTE: Meta Sapiens is NOT hosted on Replicate (HuggingFace only, no inference provider).
+ * Phase 6a uses graceful fallback: if Sapiens unavailable, return mediapipeLandmarks
+ * unchanged so posture/ROM pages continue working perfectly with MediaPipe 33-point data.
+ *
+ * To enable Sapiens: deploy facebook/sapiens-pose-1b to HuggingFace Inference Endpoints
+ * or a self-hosted GPU, then update SAPIENS_ENDPOINT env var and the callSapiens() fn below.
+ *
  * Spec: docs/PHASE6_SAPIENS_PRECISION.md
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import Replicate from 'replicate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface RequestBody {
   imageBase64: string;
   userId: string;
-  imageWidth?: number;   // px — used for x-normalisation; parsed from JPEG/PNG header if omitted
-  imageHeight?: number;  // px
+  imageWidth?: number;           // px — used for x-normalisation; parsed from JPEG/PNG header if omitted
+  imageHeight?: number;          // px
+  mediapipeLandmarks?: Array<{   // fallback: client's existing MediaPipe results
+    index: number;
+    x: number;
+    y: number;
+    confidence?: number;
+  }>;
 }
 
 /** Subset of MediaPipe NormalizedLandmark, augmented with Sapiens confidence. */
@@ -108,9 +118,42 @@ function getImageDimensions(base64: string): { width: number; height: number } |
   return null;
 }
 
-// ── Handler ───────────────────────────────────────────────────────────────────
+// ── Sapiens endpoint (future: HuggingFace Inference Endpoints / self-hosted GPU) ─
 
-const replicate = new Replicate({ auth: process.env['REPLICATE_API_TOKEN'] });
+/**
+ * SAPIENS_ENDPOINT: set this env var when a self-hosted Sapiens endpoint is ready.
+ * Expected POST body: { image: "data:image/jpeg;base64,..." }
+ * Expected response:  { keypoints: [[x, y, score], ...] }  (COCO 133 pixel coords)
+ */
+const SAPIENS_ENDPOINT = process.env['SAPIENS_ENDPOINT'] ?? '';
+const SAPIENS_API_KEY  = process.env['SAPIENS_API_KEY']  ?? '';
+
+async function callSapiens(imageBase64: string): Promise<Array<[number, number, number]> | null> {
+  if (!SAPIENS_ENDPOINT) return null;
+
+  try {
+    const r = await fetch(SAPIENS_ENDPOINT, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        ...(SAPIENS_API_KEY ? { Authorization: `Bearer ${SAPIENS_API_KEY}` } : {}),
+      },
+      body:    JSON.stringify({ image: `data:image/jpeg;base64,${imageBase64}` }),
+      signal:  AbortSignal.timeout(30_000),
+    });
+    if (!r.ok) {
+      console.warn(`[sapiens-analyse] endpoint returned ${r.status} — falling back to MediaPipe`);
+      return null;
+    }
+    const data = await r.json() as { keypoints?: unknown };
+    return parseKeypointArray(data.keypoints ?? data);
+  } catch (err) {
+    console.warn('[sapiens-analyse] endpoint error — falling back to MediaPipe:', err);
+    return null;
+  }
+}
+
+// ── Handler ───────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // POST only
@@ -118,14 +161,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Env guard
-  if (!process.env['REPLICATE_API_TOKEN']) {
-    return res.status(500).json({ error: 'REPLICATE_API_TOKEN not configured' });
-  }
-
   // Parse + validate body
   const body = req.body as Partial<RequestBody>;
-  const { imageBase64, userId, imageWidth: wOverride, imageHeight: hOverride } = body;
+  const {
+    imageBase64,
+    userId,
+    imageWidth:  wOverride,
+    imageHeight: hOverride,
+    mediapipeLandmarks,
+  } = body;
 
   if (!imageBase64 || typeof imageBase64 !== 'string') {
     return res.status(400).json({ error: 'imageBase64 is required' });
@@ -134,77 +178,71 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'userId is required' });
   }
 
-  // Generous 10 MB cap on base64 payload (~7.5 MB raw)
+  // 10 MB cap on base64 payload (~7.5 MB raw)
   if (imageBase64.length > 14_000_000) {
     return res.status(400).json({ error: 'imageBase64 too large (max ~10 MB)' });
   }
 
-  // Resolve image dimensions for normalisation
-  const dims = wOverride && hOverride
-    ? { width: wOverride, height: hOverride }
-    : getImageDimensions(imageBase64) ?? { width: 1280, height: 720 };
+  // ── Sapiens path ──────────────────────────────────────────────────────────
+  //
+  // Sapiens (Meta, 308 keypoints) is NOT available on Replicate.
+  // It lives on HuggingFace (facebook/sapiens-pose-1b) but has no hosted
+  // inference provider. To enable: deploy to HuggingFace Inference Endpoints
+  // or a self-hosted GPU and set SAPIENS_ENDPOINT in Vercel env vars.
+  //
+  // Until then, every request falls through to the MediaPipe fallback below.
 
-  // Call Replicate
-  let replicateOutput: unknown;
-  try {
-    replicateOutput = await replicate.run(
-      'meta/sapiens-pose:latest',
-      { input: { image: `data:image/jpeg;base64,${imageBase64}` } },
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return res.status(502).json({ error: 'Replicate API error', detail: msg });
-  }
+  const sapiensKps = await callSapiens(imageBase64);
 
-  // Extract keypoints from Replicate response
-  // Model may return: { keypoints: [...] } | [...] | { predictions: { keypoints: [...] } }
-  let rawKps: unknown;
-  if (Array.isArray(replicateOutput)) {
-    rawKps = replicateOutput;
-  } else if (replicateOutput && typeof replicateOutput === 'object') {
-    const obj = replicateOutput as Record<string, unknown>;
-    rawKps = obj['keypoints'] ?? obj['predictions'] ?? obj['output'] ?? replicateOutput;
-    // Handle nested: { predictions: { keypoints: [...] } }
-    if (rawKps && typeof rawKps === 'object' && !Array.isArray(rawKps)) {
-      rawKps = (rawKps as Record<string, unknown>)['keypoints'] ?? rawKps;
+  if (sapiensKps && sapiensKps.length > 0) {
+    // Sapiens available — map COCO 133 → MediaPipe 33 + normalise
+    const dims = wOverride && hOverride
+      ? { width: wOverride, height: hOverride }
+      : getImageDimensions(imageBase64) ?? { width: 1280, height: 720 };
+
+    const landmarks: SapiensLandmark[] = [];
+    let confSum = 0, confCount = 0;
+
+    for (const [cocoIdx, mpIdx] of Object.entries(COCO_TO_MEDIAPIPE)) {
+      const kp = sapiensKps[Number(cocoIdx)];
+      if (!kp) continue;
+      const [xPx, yPx, score] = kp;
+      landmarks.push({
+        index:      mpIdx,
+        x:          Math.max(0, Math.min(1, xPx / dims.width)),
+        y:          Math.max(0, Math.min(1, yPx / dims.height)),
+        confidence: Math.max(0, Math.min(1, score)),
+      });
+      confSum += score; confCount++;
     }
+
+    const confidence = confCount > 0
+      ? Math.round((confSum / confCount) * 1000) / 1000
+      : 0;
+
+    return res.status(200).json({ landmarks, confidence, sapiensAvailable: true });
   }
 
-  const kps = parseKeypointArray(rawKps);
-  if (kps.length === 0) {
-    return res.status(200).json({
-      landmarks:  [],
-      confidence: 0,
-      warning:    'No keypoints returned by Replicate — check model output format',
-      raw:        replicateOutput,
-    });
-  }
+  // ── Fallback: return MediaPipe landmarks unchanged ────────────────────────
+  //
+  // Posture/ROM pages work perfectly with MediaPipe 33-point data.
+  // The client should pass its current mediapipeLandmarks so this endpoint
+  // can relay them back; if absent, return an empty array (client keeps its own).
 
-  // Map COCO keypoints → MediaPipe landmarks, normalise to [0, 1]
-  const landmarks: SapiensLandmark[] = [];
-  let confSum = 0;
-  let confCount = 0;
+  const fallbackLandmarks: SapiensLandmark[] = (mediapipeLandmarks ?? []).map(lm => ({
+    index:      lm.index,
+    x:          lm.x,
+    y:          lm.y,
+    confidence: lm.confidence ?? 0.5,
+  }));
 
-  for (const [cocoIdx, mpIdx] of Object.entries(COCO_TO_MEDIAPIPE)) {
-    const cocoIdxNum = Number(cocoIdx);
-    const kp = kps[cocoIdxNum];
-    if (!kp) continue;
-
-    const [xPx, yPx, score] = kp;
-    landmarks.push({
-      index:      mpIdx,
-      x:          Math.max(0, Math.min(1, xPx / dims.width)),
-      y:          Math.max(0, Math.min(1, yPx / dims.height)),
-      confidence: Math.max(0, Math.min(1, score)),
-    });
-    confSum   += score;
-    confCount += 1;
-  }
-
-  // Overall confidence: mean of mapped landmark scores
-  const confidence = confCount > 0
-    ? Math.round((confSum / confCount) * 1000) / 1000
-    : 0;
-
-  return res.status(200).json({ landmarks, confidence });
+  return res.status(200).json({
+    landmarks:        fallbackLandmarks,
+    confidence:       fallbackLandmarks.length > 0
+      ? fallbackLandmarks.reduce((s, l) => s + l.confidence, 0) / fallbackLandmarks.length
+      : 0,
+    sapiensAvailable: false,
+    fallback:         'mediapipe',
+    note:             'Sapiens not yet deployed. Set SAPIENS_ENDPOINT env var to enable 308-keypoint precision.',
+  });
 }
