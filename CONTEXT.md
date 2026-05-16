@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 16 May 2026 (Phase 5 autonomous loops — daily + weekly agents deployed)
+Last updated: 16 May 2026 (Phase 6 Sapiens — ZeroGPU endpoint live, wire-up in progress)
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -466,20 +466,34 @@ ConsensusAgent report
 
 ---
 
-## Phase 6 — Sapiens Precision (DESIGNED)
+## Phase 6 — Sapiens Precision (ACTIVE)
 
 - Spec: `docs/PHASE6_SAPIENS_PRECISION.md`
 - Three-tier pose estimation architecture
 - 308-landmark clinical accuracy for B2B tier
 - Target: clinical-grade goniometry replacing manual measurement
 
+| Item | Status | Notes |
+|---|---|---|
+| HuggingFace Space | ✅ LIVE | ZeroGPU A100 — free with HF PRO ($9/month) |
+| Endpoint | ✅ LIVE | `https://physiocoreai-physiocore-sapiens.hf.space/run/predict` |
+| `callSapiensLandmarks()` | ✅ BUILT | `packages/app/src/lib/agents/postureClient.ts` |
+| `VITE_SAPIENS_ENDPOINT` | ✅ SET | Vercel env vars + `.env.local` |
+| PostureAssessment.tsx wire-up | ⏳ IN PROGRESS | Replace MediaPipe 33 → Sapiens 308 landmarks |
+| GuidedROMAssessment.tsx wire-up | ⏳ IN PROGRESS | Clinical-grade goniometry |
+
+**Precision:** 308 keypoints vs MediaPipe 33 landmarks  
+**Cost:** FREE (ZeroGPU, cold start ~8s, warm ~200ms)  
+**Badge:** `🔬 Clinical grade` shown when Sapiens active
+
 ---
 
 ## Next Build Priorities
 
-1. **LiveKit real-time streaming** — complete Phase 4 voice loop
-2. **Daily monitoring agent** — Phase 5 first autonomous cron
-3. **TreatmentOrchestrator** — wire all 5 Phase 3 agents
-4. **Stripe: statement descriptor → "PhysioCore AI"**
-4. **PWA improvements** — offline mode, install prompt, push notifications
-5. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
+1. **PostureAssessment.tsx** — wire `callSapiensLandmarks()` + "🔬 Clinical grade" badge (Phase 6)
+2. **GuidedROMAssessment.tsx** — Sapiens 308-point goniometry wire-up (Phase 6)
+3. **LiveKit real-time streaming** — complete Phase 4 voice loop
+4. **TreatmentOrchestrator** — wire all 5 Phase 3 agents
+5. **Stripe: statement descriptor → "PhysioCore AI"**
+6. **PWA improvements** — offline mode, install prompt, push notifications
+7. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
