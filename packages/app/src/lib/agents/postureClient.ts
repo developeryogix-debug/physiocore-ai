@@ -87,6 +87,9 @@ export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandm
   const BASE = 'https://physiocoreai-physiocore-sapiens.hf.space/gradio_api';
 
   // ── Step 1: Submit job ──────────────────────────────────────────────────────
+  console.log('[Sapiens] Calling:', `${BASE}/call/analyse_pose`);
+  console.log('[Sapiens] Image size:', imageBase64.length, 'chars');
+
   let event_id: string;
   try {
     const submitRes = await fetch(`${BASE}/call/analyse_pose`, {
@@ -95,40 +98,77 @@ export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandm
       body:    JSON.stringify({ data: [imageBase64] }),
       signal:  AbortSignal.timeout(10_000),
     });
-    if (!submitRes.ok) return null;
+    console.log('[Sapiens] Submit status:', submitRes.status);
+    console.log('[Sapiens] Submit ok:', submitRes.ok);
+    if (!submitRes.ok) {
+      const errText = await submitRes.text().catch(() => '(unreadable)');
+      console.error('[Sapiens] Submit error body:', errText);
+      return null;
+    }
     const json = await submitRes.json() as { event_id?: string };
-    if (!json.event_id) return null;
+    console.log('[Sapiens] Submit response JSON:', JSON.stringify(json));
+    if (!json.event_id) {
+      console.error('[Sapiens] No event_id in response');
+      return null;
+    }
     event_id = json.event_id;
+    console.log('[Sapiens] Event ID:', event_id);
   } catch (e) {
-    console.log('[Sapiens] Submit failed:', e);
+    console.error('[Sapiens] Submit failed:', e);
+    console.error('[Sapiens] Error type:', typeof e);
+    if (e instanceof Error) {
+      console.error('[Sapiens] Message:', e.message);
+      console.error('[Sapiens] Stack:', e.stack);
+    }
     return null;
   }
 
   // ── Step 2: SSE stream — read full text, find first data line ──────────────
   try {
-    const streamRes = await fetch(`${BASE}/call/analyse_pose/${event_id}`, {
+    const streamUrl = `${BASE}/call/analyse_pose/${event_id}`;
+    console.log('[Sapiens] Streaming from:', streamUrl);
+    const streamRes = await fetch(streamUrl, {
       signal: AbortSignal.timeout(120_000),
     });
-    if (!streamRes.ok) return null;
-
-    const text = await streamRes.text();
-
-    const dataLine = text.split('\n').find(l => l.startsWith('data:'));
-    if (!dataLine) return null;
-
-    const arr   = JSON.parse(dataLine.slice(5).trim()) as unknown[];
-    const inner = arr[0];
-    const result = (typeof inner === 'string' ? JSON.parse(inner) : inner) as SapiensResponse | null;
-
-    if (!result?.sapiensAvailable || !Array.isArray(result.landmarks) || result.landmarks.length === 0) {
+    console.log('[Sapiens] Stream status:', streamRes.status);
+    console.log('[Sapiens] Stream ok:', streamRes.ok);
+    if (!streamRes.ok) {
+      const errText = await streamRes.text().catch(() => '(unreadable)');
+      console.error('[Sapiens] Stream error body:', errText);
       return null;
     }
 
-    return result.landmarks
-      .filter(lm => lm.confidence >= 0.3)
-      .map(lm => ({ x: lm.x, y: lm.y, z: 0, visibility: lm.confidence }));
+    const text = await streamRes.text();
+    console.log('[Sapiens] Raw SSE text (first 500 chars):', text.slice(0, 500));
+
+    const dataLine = text.split('\n').find(l => l.startsWith('data:'));
+    if (!dataLine) {
+      console.error('[Sapiens] No data: line found in SSE. Full text:', text.slice(0, 1000));
+      return null;
+    }
+    console.log('[Sapiens] Data line:', dataLine.slice(0, 300));
+
+    const arr   = JSON.parse(dataLine.slice(5).trim()) as unknown[];
+    const inner = arr[0];
+    console.log('[Sapiens] inner type:', typeof inner, '— preview:', JSON.stringify(inner)?.slice(0, 200));
+    const result = (typeof inner === 'string' ? JSON.parse(inner) : inner) as SapiensResponse | null;
+    console.log('[Sapiens] sapiensAvailable:', result?.sapiensAvailable, '— landmark count:', result?.landmarks?.length ?? 0);
+
+    if (!result?.sapiensAvailable || !Array.isArray(result.landmarks) || result.landmarks.length === 0) {
+      console.warn('[Sapiens] Result unusable — sapiensAvailable:', result?.sapiensAvailable, 'landmarks:', result?.landmarks?.length);
+      return null;
+    }
+
+    const filtered = result.landmarks.filter(lm => lm.confidence >= 0.3);
+    console.log('[Sapiens] ✅ Returning', filtered.length, 'landmarks (confidence ≥ 0.3)');
+    return filtered.map(lm => ({ x: lm.x, y: lm.y, z: 0, visibility: lm.confidence }));
   } catch (e) {
-    console.log('[Sapiens] Stream failed, falling back to MediaPipe:', e);
+    console.error('[Sapiens] Stream failed, falling back to MediaPipe:', e);
+    console.error('[Sapiens] Error type:', typeof e);
+    if (e instanceof Error) {
+      console.error('[Sapiens] Message:', e.message);
+      console.error('[Sapiens] Stack:', e.stack);
+    }
   }
 
   return null;
