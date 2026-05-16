@@ -16,6 +16,9 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Extend Vercel function timeout to 60s for HF cold-start retry
+export const maxDuration = 60;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface RequestBody {
@@ -118,37 +121,102 @@ function getImageDimensions(base64: string): { width: number; height: number } |
   return null;
 }
 
-// ── Sapiens endpoint (future: HuggingFace Inference Endpoints / self-hosted GPU) ─
+// ── HuggingFace Inference API — Sapiens Pose ──────────────────────────────────
+//
+// Required Vercel env vars:
+//   HF_TOKEN   — HuggingFace Pro token (Settings → Access Tokens → write)
+//   SAPIENS_ENDPOINT (optional override) — custom / dedicated HF endpoint URL
+//
+// Default endpoint (serverless, HF Pro):
+//   https://api-inference.huggingface.co/models/facebook/sapiens-pose-1b
+//
+// HF Inference API for image tasks:
+//   POST raw JPEG/PNG bytes in body, Content-Type: image/jpeg
+//   Response: JSON — structure varies by pipeline type.
+//   Sapiens (pose-estimation pipeline) returns:
+//     [{ keypoints: [{ label, score, x, y }, ...] }]  — normalised 0–1 x/y
+//   OR falls back to:
+//     { keypoints: [[x, y, score], ...] }              — pixel coords
+//   Both shapes handled below.
+//
+// Cold-start on HF Inference API: 503 "Loading" for first request (~20–60s).
+// We honour the Retry-After header and retry once after the suggested delay.
 
-/**
- * SAPIENS_ENDPOINT: set this env var when a self-hosted Sapiens endpoint is ready.
- * Expected POST body: { image: "data:image/jpeg;base64,..." }
- * Expected response:  { keypoints: [[x, y, score], ...] }  (COCO 133 pixel coords)
- */
-const SAPIENS_ENDPOINT = process.env['SAPIENS_ENDPOINT'] ?? '';
-const SAPIENS_API_KEY  = process.env['SAPIENS_API_KEY']  ?? '';
+const HF_TOKEN         = process.env['HF_TOKEN'] ?? '';
+const SAPIENS_ENDPOINT = process.env['SAPIENS_ENDPOINT']
+  ?? 'https://api-inference.huggingface.co/models/facebook/sapiens-pose-1b';
 
-async function callSapiens(imageBase64: string): Promise<Array<[number, number, number]> | null> {
-  if (!SAPIENS_ENDPOINT) return null;
+/** Normalise every HF response shape to [[x, y, score], ...] in pixel coords.
+ *  HF pose-estimation pipeline returns normalised {x,y} (0–1) — we mark them
+ *  with a sentinel width/height of 1 so the caller's normalisation is a no-op. */
+function parseHFResponse(raw: unknown): { kps: Array<[number, number, number]>; normalised: boolean } {
+  // Shape A: [{ keypoints: [{ label, score, x, y }, ...] }]  (normalised 0–1)
+  if (Array.isArray(raw) && raw.length > 0) {
+    const first = raw[0] as Record<string, unknown>;
+    if (first && Array.isArray(first['keypoints'])) {
+      const kps = (first['keypoints'] as Array<Record<string, number>>).map(k => [
+        k['x'] ?? 0,
+        k['y'] ?? 0,
+        k['score'] ?? 0,
+      ] as [number, number, number]);
+      return { kps, normalised: true };
+    }
+  }
+  // Shape B: { keypoints: [[x, y, score], ...] }  (pixel coords)
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+    return { kps: parseKeypointArray(obj['keypoints'] ?? []), normalised: false };
+  }
+  // Shape C: [[x, y, score], ...]  (flat pixel coords)
+  return { kps: parseKeypointArray(raw), normalised: false };
+}
 
-  try {
-    const r = await fetch(SAPIENS_ENDPOINT, {
+async function callSapiens(imageBase64: string): Promise<{
+  kps: Array<[number, number, number]>;
+  normalised: boolean;
+} | null> {
+  if (!HF_TOKEN) {
+    console.warn('[sapiens-analyse] HF_TOKEN not set — skipping Sapiens');
+    return null;
+  }
+
+  const imageBytes = Buffer.from(imageBase64, 'base64');
+
+  const doRequest = async (): Promise<Response> =>
+    fetch(SAPIENS_ENDPOINT, {
       method:  'POST',
       headers: {
-        'Content-Type':  'application/json',
-        ...(SAPIENS_API_KEY ? { Authorization: `Bearer ${SAPIENS_API_KEY}` } : {}),
+        'Authorization': `Bearer ${HF_TOKEN}`,
+        'Content-Type':  'image/jpeg',
+        'Accept':        'application/json',
+        'X-Use-Cache':   'false',
       },
-      body:    JSON.stringify({ image: `data:image/jpeg;base64,${imageBase64}` }),
-      signal:  AbortSignal.timeout(30_000),
+      body:   imageBytes,
+      signal: AbortSignal.timeout(60_000),
     });
+
+  try {
+    let r = await doRequest();
+
+    // Handle HF cold-start (503 + Retry-After header)
+    if (r.status === 503) {
+      const retryAfter = Number(r.headers.get('Retry-After') ?? '20');
+      const waitMs     = Math.min(retryAfter * 1000, 30_000);
+      console.warn(`[sapiens-analyse] HF model loading — retrying after ${waitMs}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+      r = await doRequest();
+    }
+
     if (!r.ok) {
-      console.warn(`[sapiens-analyse] endpoint returned ${r.status} — falling back to MediaPipe`);
+      const body = await r.text().catch(() => '');
+      console.warn(`[sapiens-analyse] HF returned ${r.status}: ${body.slice(0, 200)} — falling back`);
       return null;
     }
-    const data = await r.json() as { keypoints?: unknown };
-    return parseKeypointArray(data.keypoints ?? data);
+
+    const data: unknown = await r.json();
+    return parseHFResponse(data);
   } catch (err) {
-    console.warn('[sapiens-analyse] endpoint error — falling back to MediaPipe:', err);
+    console.warn('[sapiens-analyse] HF error — falling back to MediaPipe:', err);
     return null;
   }
 }
@@ -183,34 +251,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'imageBase64 too large (max ~10 MB)' });
   }
 
-  // ── Sapiens path ──────────────────────────────────────────────────────────
+  // ── Sapiens path (HuggingFace Pro Inference API) ─────────────────────────
   //
-  // Sapiens (Meta, 308 keypoints) is NOT available on Replicate.
-  // It lives on HuggingFace (facebook/sapiens-pose-1b) but has no hosted
-  // inference provider. To enable: deploy to HuggingFace Inference Endpoints
-  // or a self-hosted GPU and set SAPIENS_ENDPOINT in Vercel env vars.
-  //
-  // Until then, every request falls through to the MediaPipe fallback below.
+  // Calls facebook/sapiens-pose-1b via HF Inference API.
+  // Requires HF_TOKEN env var (HuggingFace Pro token).
+  // Falls through to MediaPipe fallback if unavailable or on error.
 
-  const sapiensKps = await callSapiens(imageBase64);
+  const sapiensResult = await callSapiens(imageBase64);
 
-  if (sapiensKps && sapiensKps.length > 0) {
-    // Sapiens available — map COCO 133 → MediaPipe 33 + normalise
-    const dims = wOverride && hOverride
-      ? { width: wOverride, height: hOverride }
-      : getImageDimensions(imageBase64) ?? { width: 1280, height: 720 };
+  if (sapiensResult && sapiensResult.kps.length > 0) {
+    const { kps, normalised } = sapiensResult;
+
+    // For pixel-coord responses, divide by image dims to normalise.
+    // For HF pose-estimation pipeline (normalised=true), x/y are already 0–1.
+    const dims = normalised
+      ? { width: 1, height: 1 }
+      : wOverride && hOverride
+        ? { width: wOverride, height: hOverride }
+        : getImageDimensions(imageBase64) ?? { width: 1280, height: 720 };
 
     const landmarks: SapiensLandmark[] = [];
     let confSum = 0, confCount = 0;
 
     for (const [cocoIdx, mpIdx] of Object.entries(COCO_TO_MEDIAPIPE)) {
-      const kp = sapiensKps[Number(cocoIdx)];
+      const kp = kps[Number(cocoIdx)];
       if (!kp) continue;
-      const [xPx, yPx, score] = kp;
+      const [xRaw, yRaw, score] = kp;
       landmarks.push({
         index:      mpIdx,
-        x:          Math.max(0, Math.min(1, xPx / dims.width)),
-        y:          Math.max(0, Math.min(1, yPx / dims.height)),
+        x:          Math.max(0, Math.min(1, xRaw / dims.width)),
+        y:          Math.max(0, Math.min(1, yRaw / dims.height)),
         confidence: Math.max(0, Math.min(1, score)),
       });
       confSum += score; confCount++;
