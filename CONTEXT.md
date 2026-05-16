@@ -429,10 +429,52 @@ ConsensusAgent report
 
 ---
 
+## Phase 4 — Voice (IN PROGRESS)
+
+| Item | Status |
+|---|---|
+| Voice scaffold (LiveKit + Cartesia hook) | ✅ DONE |
+| Voice coaching in Session page (TTS fallback) | ✅ DONE |
+| Gait camera fixed | ✅ DONE |
+| LiveKit real-time streaming | ⏳ NEXT |
+
+---
+
+## Autonomous Architecture (✅ DESIGNED)
+
+- Spec: `docs/AUTONOMOUS_ARCHITECTURE.md`
+- Cost model: $0.42/patient/month → 97% AI gross margin
+- Three autonomous loops:
+  - **Daily**: monitoring agent (vitals + adherence drift)
+  - **Weekly**: progression cron (load/intensity adapt)
+  - **Monthly**: assessment trigger (ROM + pain re-eval)
+
+---
+
+## Phase 5 — Autonomous Loops (STARTING)
+
+| Agent | Status |
+|---|---|
+| Daily monitoring agent | ⏳ |
+| Weekly progression cron | ⏳ |
+| Monthly assessment trigger | ⏳ |
+
+---
+
+## Phase 6 — Sapiens Precision (DESIGNED)
+
+- Spec: `docs/PHASE6_SAPIENS_PRECISION.md`
+- Three-tier pose estimation architecture
+- 308-landmark clinical accuracy for B2B tier
+- Target: clinical-grade goniometry replacing manual measurement
+
+---
+
 ## Next Build Priorities
 
-1. **Voice physiotherapist** — Cartesia or ElevenLabs TTS; real-time coaching during sessions
-2. **TreatmentOrchestrator** — wire all 5 Phase 3 agents into single orchestrator pipeline
-3. **Stripe: statement descriptor → "PhysioCore AI"** — update in Stripe dashboard settings
+1. **LiveKit real-time streaming** — complete Phase 4 voice loop
+2. **Daily monitoring agent** — Phase 5 first autonomous cron
+3. **TreatmentOrchestrator** — wire all 5 Phase 3 agents
+4. **Stripe: statement descriptor → "PhysioCore AI"**
 4. **PWA improvements** — offline mode, install prompt, push notifications
 5. **Imperial College IRB submission prep** — ethics application, consent forms, data management plan
