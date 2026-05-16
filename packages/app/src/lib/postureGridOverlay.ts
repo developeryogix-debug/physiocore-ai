@@ -20,6 +20,52 @@ export function deviationColor(deg: number): string {
   return deg <= 2 ? '#00E676' : deg <= 5 ? '#FFB830' : '#FF4444';
 }
 
+// ─── Angle annotation helper ──────────────────────────────────────────────────
+
+/**
+ * Draws text with a semi-transparent dark pill background for legibility.
+ * background: #00000088, padding: 2px 6px, borderRadius: 4px.
+ * Font is always "bold 14px 'Space Mono', monospace".
+ */
+function fillTextPill(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number, y: number,
+  textAlign: CanvasTextAlign,
+  color: string,
+  fontSize = 14,
+): void {
+  ctx.save();
+  ctx.font = `bold ${fontSize}px 'Space Mono', monospace`;
+  ctx.textAlign = textAlign;
+  ctx.textBaseline = 'alphabetic';
+  const tw  = ctx.measureText(text).width;
+  const ph  = fontSize + 4;          // pill height: font + 2px padding each side
+  const pw  = tw + 12;               // pill width:  text + 6px padding each side
+
+  let bx: number;
+  if (textAlign === 'right')  bx = x - tw - 6;
+  else if (textAlign === 'center') bx = x - pw / 2;
+  else                        bx = x - 6;
+
+  const by = y - fontSize;           // align box top to text top
+
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#00000088';
+  if (typeof (ctx as CanvasRenderingContext2D & { roundRect?: (...a: unknown[]) => void }).roundRect === 'function') {
+    (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void })
+      .roundRect(bx, by, pw, ph, 4);
+    ctx.fill();
+  } else {
+    ctx.fillRect(bx, by, pw, ph);    // fallback for older browsers
+  }
+
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.98;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
 // ─── Confidence ───────────────────────────────────────────────────────────────
 
 /**
@@ -67,9 +113,7 @@ function drawFrontalOverlay(
   ctx.setLineDash([4, 4]); ctx.globalAlpha = 1;
   ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.font = "bold 11px 'Space Mono', monospace";
-  ctx.fillStyle = plumbColor; ctx.textAlign = 'center'; ctx.globalAlpha = 0.95;
-  ctx.fillText(`▼ ${plumbDev.toFixed(1)}°`, w / 2, 16);
+  fillTextPill(ctx, `▼ ${plumbDev.toFixed(1)}°`, w / 2, 20, 'center', plumbColor);
   ctx.restore();
 
   if (!lms) return;
@@ -133,9 +177,7 @@ function drawFrontalOverlay(
     ctx.beginPath(); ctx.arc(rxS, ryS, 4, 0, Math.PI * 2); ctx.fill();
 
     // Label + angle
-    ctx.font = "bold 10px 'Space Mono', monospace";
-    ctx.fillStyle = color; ctx.textAlign = 'right'; ctx.globalAlpha = 0.95;
-    ctx.fillText(`${hl.name}  ${angleDeg.toFixed(1)}°`, w - 8, midY - 6);
+    fillTextPill(ctx, `${hl.name}  ${angleDeg.toFixed(1)}°`, w - 8, midY - 4, 'right', color);
     ctx.restore();
   }
 
@@ -156,9 +198,7 @@ function drawFrontalOverlay(
     ctx.setLineDash([]);
     ctx.fillStyle = headColor; ctx.globalAlpha = 0.9;
     ctx.beginPath(); ctx.arc(noseX, noseY, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.font = "bold 10px 'Space Mono', monospace";
-    ctx.fillStyle = headColor; ctx.textAlign = 'left'; ctx.globalAlpha = 0.95;
-    ctx.fillText(`HEAD  ${headDeg.toFixed(1)}°`, 8, noseY - 5);
+    fillTextPill(ctx, `HEAD  ${headDeg.toFixed(1)}°`, 8, noseY - 4, 'left', headColor);
     ctx.restore();
   }
 }
@@ -254,13 +294,7 @@ function drawLateralOverlay(
 
     // Label
     const isLeft = px < w / 2;
-    ctx.save();
-    ctx.font = "bold 9px 'Space Mono', monospace";
-    ctx.fillStyle = color;
-    ctx.textAlign = isLeft ? 'left' : 'right';
-    ctx.globalAlpha = 0.95;
-    ctx.fillText(`${label}  ${devDeg.toFixed(1)}°`, isLeft ? px + 8 : px - 8, py - 6);
-    ctx.restore();
+    fillTextPill(ctx, `${label}  ${devDeg.toFixed(1)}°`, isLeft ? px + 8 : px - 8, py - 4, isLeft ? 'left' : 'right', color);
   }
 
   // Ear-shoulder-hip angle (ESH) — ideal ≈ 180° straight
@@ -275,11 +309,7 @@ function drawLateralOverlay(
     if (mag > 0) {
       const esh = Math.round(Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180 / Math.PI * 10) / 10;
       const eshColor = esh >= 155 ? '#00E676' : esh >= 140 ? '#FFB830' : '#FF4444';
-      ctx.save();
-      ctx.font = "bold 10px 'Space Mono', monospace";
-      ctx.fillStyle = eshColor; ctx.textAlign = 'right'; ctx.globalAlpha = 0.95;
-      ctx.fillText(`ESH  ${esh.toFixed(1)}°`, w - 8, sY - 6);
-      ctx.restore();
+      fillTextPill(ctx, `ESH  ${esh.toFixed(1)}°`, w - 8, sY - 4, 'right', eshColor);
     }
   }
 
@@ -295,11 +325,7 @@ function drawLateralOverlay(
     if (mag > 0) {
       const hka = Math.round(Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180 / Math.PI * 10) / 10;
       const hkaColor = hka >= 170 ? '#00E676' : hka >= 155 ? '#FFB830' : '#FF4444';
-      ctx.save();
-      ctx.font = "bold 10px 'Space Mono', monospace";
-      ctx.fillStyle = hkaColor; ctx.textAlign = 'right'; ctx.globalAlpha = 0.95;
-      ctx.fillText(`HKA  ${hka.toFixed(1)}°`, w - 8, kY - 6);
-      ctx.restore();
+      fillTextPill(ctx, `HKA  ${hka.toFixed(1)}°`, w - 8, kY - 4, 'right', hkaColor);
     }
   }
 }
