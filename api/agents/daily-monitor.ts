@@ -421,12 +421,11 @@ async function processPatient(sb: any, patient: PatientRow, emailMap: Map<string
     // Target sessions/week — query treatment_plans if available, else default 3
     let targetPerWeek = 3;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      const { data: plan } = await sb.from('treatment_plans')
+      const { data: plan } = (await sb.from('treatment_plans')
         .select('session_frequency')
         .eq('patient_id', patient.user_id)
         .eq('status', 'active')
-        .single() as Promise<{ data: { session_frequency: number } | null }>;
+        .single()) as unknown as { data: { session_frequency: number } | null };
       if (plan?.session_frequency) targetPerWeek = plan.session_frequency;
     } catch { /* no treatment plan — use default */ }
 
@@ -438,12 +437,11 @@ async function processPatient(sb: any, patient: PatientRow, emailMap: Map<string
     // Skip if we already sent this patient an alert today (dedup)
     try {
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      const { data: recentAlert } = await sb.from('monitoring_alerts')
+      const { data: recentAlert } = (await sb.from('monitoring_alerts')
         .select('id')
         .eq('user_id', patient.user_id)
         .gte('created_at', todayStart.toISOString())
-        .limit(1) as Promise<{ data: unknown[] | null }>;
+        .limit(1)) as unknown as { data: unknown[] | null };
       if (recentAlert && recentAlert.length > 0) return { decision: null, error: null };
     } catch { /* table may not exist yet — continue */ }
 
