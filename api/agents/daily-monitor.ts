@@ -358,6 +358,12 @@ async function processPatient(sb: any, patient: PatientRow, emailMap: Map<string
 
     const name = profile?.name ?? profile?.first_name ?? 'there';
 
+    // Skip test / dev profiles by display name
+    if (name.includes('Doc contact') || name.includes('DevDoctor')) return { decision: null, error: null };
+
+    // Require at least 1 real session before monitoring starts
+    if (sessions.length === 0) return { decision: null, error: null };
+
     // Conditions for Haiku context (first condition name or generic)
     const conditionText = Array.isArray(profile?.conditions) && profile.conditions.length > 0
       ? String((profile.conditions[0] as Record<string, unknown>)?.name ?? 'general rehabilitation')
@@ -460,9 +466,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       const { data: { users } } = await (sb as any).auth.admin.listUsers({ perPage: 1000 }) as {
-        data: { users: Array<{ id: string; email?: string }> };
+        data: { users: Array<{ id: string; email?: string; created_at?: string }> };
       };
-      for (const u of users) { if (u.email) emailMap.set(u.id, u.email); }
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      for (const u of users) {
+        if (!u.email) continue;
+        const email = u.email.toLowerCase();
+        // Skip test / dev accounts
+        if (email.includes('test') || email.includes('dev@live')) continue;
+        // Skip accounts created in the last 24 hours
+        if (u.created_at && new Date(u.created_at).getTime() > oneDayAgo) continue;
+        emailMap.set(u.id, u.email);
+      }
     } catch (e) {
       summary.errors.push(`emailMap: ${String(e)}`);
     }
