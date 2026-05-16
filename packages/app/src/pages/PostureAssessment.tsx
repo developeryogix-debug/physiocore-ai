@@ -43,8 +43,8 @@ const VIEWS: ViewConfig[] = [
     label: 'ANTERIOR',
     displayLabel: 'FRONT VIEW',
     shortLabel: 'Front',
-    voiceCue: 'Face the camera. Feet hip-width apart. Arms relaxed.',
-    transitionCue: 'Perfect. Now turn to your right.',
+    voiceCue: 'Please stand facing the camera. Keep feet shoulder width apart.',
+    transitionCue: 'Perfect. Now turn to your left — I will capture your right side.',
     color: '#00D4AA',
   },
   {
@@ -52,8 +52,8 @@ const VIEWS: ViewConfig[] = [
     label: 'RIGHT LATERAL',
     displayLabel: 'RIGHT SIDE',
     shortLabel: 'Right Side',
-    voiceCue: 'Turn to your right. I can see your right side.',
-    transitionCue: 'Good. Now turn so your back faces the camera.',
+    voiceCue: 'Now turn to your LEFT — I will capture your right side.',
+    transitionCue: 'Good. Now turn to face away from the camera.',
     color: '#4DB8FF',
   },
   {
@@ -61,8 +61,8 @@ const VIEWS: ViewConfig[] = [
     label: 'POSTERIOR',
     displayLabel: 'BACK VIEW',
     shortLabel: 'Back',
-    voiceCue: 'Turn so your back faces the camera.',
-    transitionCue: 'Well done. Now face your right. I will see your left side.',
+    voiceCue: 'Turn to face away from the camera. Keep still.',
+    transitionCue: 'Well done. Now turn to your RIGHT — I will capture your left side.',
     color: '#FFB830',
   },
   {
@@ -70,7 +70,7 @@ const VIEWS: ViewConfig[] = [
     label: 'LEFT LATERAL',
     displayLabel: 'LEFT SIDE',
     shortLabel: 'Left Side',
-    voiceCue: 'Turn to face right. I can see your left side.',
+    voiceCue: 'Turn to your RIGHT — I will capture your left side.',
     transitionCue: 'All four views captured. Great work.',
     color: '#a78bfa',
   },
@@ -295,6 +295,7 @@ export default function PostureAssessment() {
         tick--;
         if (tick > 0) {
           setCountdown(tick); beep(false);
+          if (tick === 3) speak('Hold still. Capturing in 3, 2, 1.');
         } else {
           clearInterval(interval);
           setCountdown(null); setIsHold(true); beep(true);
