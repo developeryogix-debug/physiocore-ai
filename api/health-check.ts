@@ -91,10 +91,10 @@ async function checkSupabaseCore(): Promise<Check> {
   const t = Date.now();
   try {
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    const { error } = await sb.from('profiles').select('count').limit(1).single();
+    // maybeSingle() returns null (not error) when 0 rows — no PGRST116 special case needed
+    const { error } = await sb.from('profiles').select('count').limit(1).maybeSingle();
     const latencyMs = Date.now() - t;
-    // PGRST116 = no rows — table is accessible, that's fine
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       return { name: 'supabase_core', status: 'critical', latencyMs, detail: error.message };
     }
     return { name: 'supabase_core', status: 'ok', latencyMs };
@@ -120,10 +120,18 @@ async function checkSupabaseTables(): Promise<Check[]> {
   for (const table of tables) {
     const t = Date.now();
     try {
-      const { error } = await sb.from(table).select('count').limit(1).single();
+      // maybeSingle() returns null (not error) for 0 rows — safe for empty tables
+      const { error } = await sb.from(table).select('count').limit(1).maybeSingle();
       const latencyMs = Date.now() - t;
-      if (error && error.code !== 'PGRST116') {
-        results.push({ name: `table_${table}`, status: 'critical', latencyMs, detail: error.message });
+      if (error) {
+        // 42P01 = table does not exist (migration not yet run) — warn, not critical
+        const isMissing = error.code === '42P01' || (error.message ?? '').includes('does not exist');
+        results.push({
+          name: `table_${table}`,
+          status: isMissing ? 'warn' : 'critical',
+          latencyMs,
+          detail: isMissing ? `Table not yet created (migration pending)` : error.message,
+        });
       } else {
         results.push({ name: `table_${table}`, status: 'ok', latencyMs });
       }
@@ -184,7 +192,7 @@ async function checkCostBudget(): Promise<Check> {
       .eq('date', today)
       .order('date', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     const cost = (data as { daily_spend_usd?: number } | null)?.daily_spend_usd ?? 0;
     if (cost >= COST_CRITICAL) return { name: 'cost_budget', status: 'critical', detail: `$${cost.toFixed(2)} today (limit $${COST_CRITICAL})` };
