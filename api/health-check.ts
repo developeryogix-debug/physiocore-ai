@@ -12,7 +12,7 @@ const SUPABASE_URL = process.env['VITE_SUPABASE_URL'] ?? '';
 const SUPABASE_SERVICE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? '';
 const RESEND_KEY = process.env['RESEND_API_KEY'];
 const APP_URL = 'https://app-dteam1-mmcv.vercel.app';
-const ALERT_EMAIL = 'devkapilicloud@gmail.com';
+const ALERT_EMAIL = 'devkapiltech@gmail.com';
 
 // Haiku:  $0.25/M input, $1.25/M output
 // Sonnet: $3/M input,   $15/M output

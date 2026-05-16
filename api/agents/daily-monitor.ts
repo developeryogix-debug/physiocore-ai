@@ -27,6 +27,7 @@ const SUPABASE_SVC_KEY   = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? '';
 const RESEND_KEY         = process.env['RESEND_API_KEY'];
 const APP_URL            = 'https://app-dteam1-mmcv.vercel.app';
 const FROM_EMAIL         = 'noreply@doctoronclick.io';
+const ADMIN_EMAIL        = 'devkapiltech@gmail.com';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,8 @@ interface PatientDecision {
   actualSessions: number;
   conditionText:  string;
   clinicianEmail: string | null;
+  orgId:          string | null;
+  orgAdminEmail:  string | null;
 }
 
 interface RunSummary {
@@ -245,6 +248,7 @@ async function sendClinicianAlert(
   alertType:      AlertType,
   message:        string,
   metrics: { painTrend: number; formTrend: number; missedSessions: number },
+  orgAdminEmail?: string | null,
 ): Promise<void> {
   if (!RESEND_KEY || !clinicianEmail) return;
 
@@ -255,12 +259,15 @@ async function sendClinicianAlert(
     form_improving:  '✅ Form Improving',
   };
 
+  const ccList = orgAdminEmail ? [orgAdminEmail] : undefined;
+
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: clinicianEmail,
+      ...(ccList ? { cc: ccList } : {}),
       subject: `[PhysioCore AI] ${typeLabel[alertType]} — ${patientName}`,
       html: `
 <div style="font-family:Arial,sans-serif;max-width:560px;margin:40px auto;background:#0d1420;color:#f0f4ff;padding:28px;border-radius:12px;">
@@ -278,6 +285,37 @@ async function sendClinicianAlert(
   <p style="color:#4a5568;font-size:0.7rem;margin-top:20px;">PhysioCore AI Autonomous Monitor · ${new Date().toISOString()} · PDPA Compliant</p>
 </div>`,
     }),
+  }).catch(() => undefined);
+}
+
+// ── Admin summary email (aggregate only — PDPA compliant) ─────────────────────
+
+async function sendAdminSummary(opts: {
+  date:           string;
+  processed:      number;
+  acted:          number;
+  missedSessions: number;
+  painAlerts:     number;
+  orgNames:       string[];
+  errors:         number;
+}): Promise<void> {
+  if (!RESEND_KEY) return;
+  const subject = `PhysioCore Daily Monitor — ${opts.date}`;
+  const body = [
+    'Platform Summary:',
+    `Processed: ${opts.processed} patients`,
+    `Acted: ${opts.acted} (missed sessions: ${opts.missedSessions}, pain alerts: ${opts.painAlerts})`,
+    `Orgs affected: ${opts.orgNames.length > 0 ? opts.orgNames.join(', ') : 'none'}`,
+    `Errors: ${opts.errors}`,
+    '',
+    `Pain alerts sent to clinicians: ${opts.painAlerts}`,
+    '— No patient names or health data in this summary —',
+  ].join('\n');
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: FROM_EMAIL, to: ADMIN_EMAIL, subject, text: body }),
   }).catch(() => undefined);
 }
 
@@ -316,7 +354,7 @@ async function processPatient(sb: any, patient: PatientRow, emailMap: Map<string
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     // Batch: sessions (last 14 days for slope) + outcomes (last 6 pain scores) + user_profile
-    const [sessionsRes, outcomesRes, profileRes, clinicianRes] = await Promise.all([
+    const [sessionsRes, outcomesRes, profileRes, clinicianRes, orgAdminRes] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       sb.from('sessions')
         .select('created_at, avg_score')
@@ -349,12 +387,23 @@ async function processPatient(sb: any, patient: PatientRow, emailMap: Map<string
             .in('role', ['clinician', 'admin'])
             .limit(1) as Promise<{ data: Array<{ user_id: string }> | null }>
         : Promise.resolve({ data: null }),
+
+      // Find org admin to CC on clinician alerts
+      patient.org_id
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        ? sb.from('profiles')
+            .select('user_id')
+            .eq('org_id', patient.org_id)
+            .eq('role', 'admin')
+            .limit(1) as Promise<{ data: Array<{ user_id: string }> | null }>
+        : Promise.resolve({ data: null }),
     ]);
 
-    const sessions  = (sessionsRes.data  ?? []) as SessionRow[];
-    const outcomes  = (outcomesRes.data  ?? []) as OutcomeRow[];
-    const profile   = profileRes.data as UserProfileRow | null;
+    const sessions   = (sessionsRes.data  ?? []) as SessionRow[];
+    const outcomes   = (outcomesRes.data  ?? []) as OutcomeRow[];
+    const profile    = profileRes.data as UserProfileRow | null;
     const clinicians = clinicianRes.data as Array<{ user_id: string }> | null;
+    const orgAdmins  = (orgAdminRes as { data: Array<{ user_id: string }> | null }).data;
 
     const name = profile?.name ?? profile?.first_name ?? 'there';
 
@@ -404,6 +453,10 @@ async function processPatient(sb: any, patient: PatientRow, emailMap: Map<string
 
     const clinicianUserId = clinicians?.[0]?.user_id ?? null;
     const clinicianEmail  = clinicianUserId ? (emailMap.get(clinicianUserId) ?? null) : null;
+    const orgAdminUserId  = orgAdmins?.[0]?.user_id ?? null;
+    const orgAdminEmail   = orgAdminUserId && orgAdminUserId !== clinicianUserId
+      ? (emailMap.get(orgAdminUserId) ?? null)
+      : null;
     const patientEmail    = emailMap.get(patient.user_id) ?? null;
 
     if (!patientEmail) return { decision: null, error: `No email for ${patient.user_id}` };
@@ -426,6 +479,8 @@ async function processPatient(sb: any, patient: PatientRow, emailMap: Map<string
         actualSessions: recentSessions.length,
         conditionText,
         clinicianEmail,
+        orgId:         patient.org_id,
+        orgAdminEmail,
       },
       error: null,
     };
@@ -448,6 +503,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   const summary: RunSummary = { processed: 0, acted: 0, skipped: 0, errors: [], actions: [] };
+  const actedDecisions: PatientDecision[] = [];
 
   try {
     // 1. Fetch all active patients
@@ -507,6 +563,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           decision.alertType,
           message,
           { painTrend: decision.painTrend, formTrend: decision.formTrend, missedSessions: decision.missedSessions },
+          decision.orgAdminEmail,
         );
       }
 
@@ -514,12 +571,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await insertAlert(sb, decision, message);
 
       summary.acted++;
+      actedDecisions.push(decision);
       summary.actions.push({
         userId:    decision.userId,
         alertType: decision.alertType,
         sentTo:    decision.sentTo,
       });
     }
+
+    // Send PDPA-compliant aggregate summary to platform admin
+    const actedOrgIds = [...new Set(actedDecisions.map(d => d.orgId).filter(Boolean))] as string[];
+    let orgNames: string[] = actedOrgIds;
+    if (actedOrgIds.length > 0) {
+      try {
+        const { data: orgs } = await (sb as any)
+          .from('organisations')
+          .select('id, name')
+          .in('id', actedOrgIds) as Promise<{ data: Array<{ id: string; name: string }> | null }>;
+        if (orgs?.length) orgNames = orgs.map(o => o.name);
+      } catch { /* fallback: use org_ids */ }
+    }
+    const painAlerts = actedDecisions.filter(d => d.alertType === 'pain_worsening').length;
+    const missedCount = actedDecisions.filter(d => d.alertType === 'missed_sessions').length;
+    await sendAdminSummary({
+      date:           new Date().toISOString().split('T')[0]!,
+      processed:      summary.processed,
+      acted:          summary.acted,
+      missedSessions: missedCount,
+      painAlerts,
+      orgNames,
+      errors:         summary.errors.length,
+    }).catch(() => undefined);
 
     return res.status(200).json({
       ok: true,
