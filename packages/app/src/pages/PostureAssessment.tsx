@@ -31,6 +31,7 @@ interface ViewConfig {
 interface CapturedFrame {
   dataUrl: string;
   landmarks: MPLandmark[] | null;
+  precisionTier?: 'sapiens' | 'mediapipe';
 }
 
 type Phase = 'intro' | 'calibration' | 'capturing' | 'review';
@@ -173,7 +174,6 @@ export default function PostureAssessment() {
   const [savedToDb, setSavedToDb]     = useState(false);
   const [calibrated, setCalibrated]   = useState(false);
   const [exportingPdf, setExportingPdf] = useState<'patient' | 'clinician' | null>(null);
-  const [framePrecision, setFramePrecision] = useState<Partial<Record<ViewKey, 'sapiens' | 'mediapipe'>>>({});
 
   const countdownColor = isHold ? '#00E676'
     : countdown !== null && countdown <= 3 ? '#FF4444'
@@ -308,19 +308,18 @@ export default function PostureAssessment() {
             const captured = captureFrame();
             if (captured) {
               let finalLandmarks = captured.landmarks;
-              let precision: 'sapiens' | 'mediapipe' = 'mediapipe';
+              let precisionTier: 'sapiens' | 'mediapipe' = 'mediapipe';
               if (import.meta.env['VITE_SAPIENS_ENDPOINT']) {
                 const sapiensLms = await callSapiensLandmarks(captured.dataUrl);
-                if (sapiensLms && sapiensLms.length > 0) {
+                if (sapiensLms && sapiensLms.length >= 13) {
                   finalLandmarks = sapiensLms.map(lm => ({ ...lm, z: lm.z ?? 0 }));
-                  precision = 'sapiens';
-                  console.log('[Sapiens] Using 308-keypoint landmarks for', view.key);
+                  precisionTier = 'sapiens';
+                  console.log('[Sapiens] ✅ 308-keypoint landmarks active for', view.key);
                 } else {
                   console.log('[Sapiens] Falling back to MediaPipe for', view.key);
                 }
               }
-              setFrames(prev => ({ ...prev, [view.key]: { ...captured, landmarks: finalLandmarks } }));
-              setFramePrecision(prev => ({ ...prev, [view.key]: precision }));
+              setFrames(prev => ({ ...prev, [view.key]: { ...captured, landmarks: finalLandmarks, precisionTier } }));
             }
             timerRef.current = setTimeout(() => { setIsHold(false); onDone(); }, 1500);
           })();
@@ -770,11 +769,14 @@ export default function PostureAssessment() {
               })()}
 
               {/* Precision badge */}
-              {frames[v.key] && (
-                <div style={{ position: 'absolute', bottom: '10px', left: '10px', padding: '3px 8px', borderRadius: '6px', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', color: framePrecision[v.key] === 'sapiens' ? '#a78bfa' : 'rgba(255,255,255,0.35)', fontSize: '0.62rem', fontFamily: "'Space Mono',monospace" }}>
-                  {framePrecision[v.key] === 'sapiens' ? '✦ 308-pt Sapiens' : '33-pt MediaPipe'}
-                </div>
-              )}
+              {frames[v.key] && (() => {
+                const isSapiens = frames[v.key]?.precisionTier === 'sapiens';
+                return (
+                  <div style={{ position: 'absolute', bottom: '10px', left: '10px', padding: '3px 8px', borderRadius: '6px', backdropFilter: 'blur(8px)', fontSize: '0.62rem', fontFamily: "'Space Mono',monospace", ...(isSapiens ? { background: 'rgba(0,212,170,0.15)', border: '1px solid rgba(0,212,170,0.35)', color: '#00D4AA' } : { background: 'rgba(0,0,0,0.72)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' }) }}>
+                    {isSapiens ? '🔬 Sapiens 308pt' : '📷 MediaPipe 33pt'}
+                  </div>
+                );
+              })()}
 
               {/* Retake button */}
               <button onClick={() => { void startRetake(v.key); }} style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '5px 12px', borderRadius: '8px', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', fontFamily: "'Space Mono', monospace", cursor: 'pointer' }}>

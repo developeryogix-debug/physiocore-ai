@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@physiocore/supabase';
 import { useAuth } from '../hooks/useAuth.js';
 import { useUserProfile } from '../hooks/useUserProfile.js';
+import { callSapiensLandmarks } from '../lib/agents/postureClient.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -242,13 +243,14 @@ export default function GuidedROMAssessment() {
   const { user }   = useAuth();
   const { userProfile } = useUserProfile();
 
-  const videoRef   = useRef<HTMLVideoElement>(null);
-  const overlayRef = useRef<HTMLCanvasElement>(null);
-  const streamRef  = useRef<MediaStream | null>(null);
-  const lmRef      = useRef<Landmarker | null>(null);
-  const lastLmsRef = useRef<MPLandmark[] | null>(null);
-  const rafRef     = useRef<number>(0);
-  const tmRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoRef         = useRef<HTMLVideoElement>(null);
+  const overlayRef       = useRef<HTMLCanvasElement>(null);
+  const captureCanvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef        = useRef<MediaStream | null>(null);
+  const lmRef            = useRef<Landmarker | null>(null);
+  const lastLmsRef       = useRef<MPLandmark[] | null>(null);
+  const rafRef           = useRef<number>(0);
+  const tmRef            = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [phase, setPhase]       = useState<Phase>('intro');
   const [tidx, setTidx]         = useState(0);
@@ -257,6 +259,7 @@ export default function GuidedROMAssessment() {
   const [showGuide, setShowGuide] = useState(false);
   const [angle, setAngle]       = useState<number | null>(null);
   const [captured, setCaptured] = useState<Record<string, number>>({});
+  const [capturedPrecision, setCapturedPrecision] = useState<Record<string, 'sapiens' | 'mediapipe'>>({});
   const [lmWarn, setLmWarn]     = useState<string | null>(null);
   const [camErr, setCamErr]     = useState<string | null>(null);
   const [results, setResults]   = useState<ROMResult[]>([]);
@@ -278,6 +281,18 @@ export default function GuidedROMAssessment() {
   const stopCamera = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
     streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null;
+  }, []);
+
+  const captureFrame = useCallback((): string | null => {
+    const video  = videoRef.current;
+    const canvas = captureCanvasRef.current;
+    if (!video || !canvas) return null;
+    canvas.width  = video.videoWidth  || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.85);
   }, []);
 
   const renderLoop = useCallback((ti: number) => {

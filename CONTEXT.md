@@ -478,12 +478,15 @@ ConsensusAgent report
 | HuggingFace Space | ✅ LIVE | ZeroGPU A100 — free with HF PRO ($9/month) |
 | Endpoint | ✅ LIVE | `https://physiocoreai-physiocore-sapiens.hf.space/run/predict` |
 | `callSapiensLandmarks()` | ✅ BUILT | `packages/app/src/lib/agents/postureClient.ts` |
-| `VITE_SAPIENS_ENDPOINT` | ✅ SET | Vercel env vars + `.env.local` |
+| `VITE_SAPIENS_ENDPOINT` | ✅ SET | `.env.local` only — `https://physiocoreai-physiocore-sapiens.hf.space/run/predict` |
+| `api/sapiens-analyse.ts` | ✅ BUILT | Vercel serverless — HF Inference API, graceful MediaPipe fallback, 3 response shapes, 503 cold-start retry |
+| Vercel `HF_TOKEN` env var | ⏳ MANUAL | Add `HF_TOKEN` (HF Pro token) in Vercel dashboard → Environment Variables |
 | PostureAssessment.tsx wire-up | ⏳ IN PROGRESS | Replace MediaPipe 33 → Sapiens 308 landmarks |
-| GuidedROMAssessment.tsx wire-up | ⏳ IN PROGRESS | Clinical-grade goniometry |
+| GuidedROMAssessment.tsx wire-up | ⏳ NEXT | Clinical-grade goniometry |
 
-**Precision:** 308 keypoints vs MediaPipe 33 landmarks  
-**Cost:** FREE (ZeroGPU, cold start ~8s, warm ~200ms)  
+**Precision:** 308 keypoints (COCO WholeBody) vs MediaPipe 33 — 13-joint COCO→MediaPipe map in `api/sapiens-analyse.ts`  
+**Cost:** FREE via ZeroGPU + HF PRO ($9/month flat)  
+**Fallback:** if HF unavailable, endpoint returns `mediapipeLandmarks` unchanged — all assessment pages continue working  
 **Badge:** `🔬 Clinical grade` shown when Sapiens active
 
 ---

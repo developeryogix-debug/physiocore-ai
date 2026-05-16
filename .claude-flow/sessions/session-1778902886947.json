@@ -1,13 +1,15 @@
 {
-  "id": "session-1778933630133",
-  "startedAt": "2026-05-16T12:13:50.133Z",
+  "id": "session-1778902886947",
+  "startedAt": "2026-05-16T03:41:26.947Z",
   "platform": "darwin",
   "cwd": "/Users/devkapilicloud.com/Desktop/physiocore-ai",
   "context": {},
   "metrics": {
-    "edits": 9,
+    "edits": 4,
     "commands": 0,
     "tasks": 0,
     "errors": 0
-  }
+  },
+  "endedAt": "2026-05-16T04:25:14.028Z",
+  "duration": 2627082
 }
