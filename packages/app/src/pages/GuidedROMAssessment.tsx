@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { speak, stopSpeech } from '../lib/voiceGuide.js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@physiocore/supabase';
 import { useAuth } from '../hooks/useAuth.js';
@@ -71,13 +72,6 @@ const BONES: [number,number][] = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function speak(t: string) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(t);
-  u.rate = 0.92; u.pitch = 1.05;
-  window.speechSynthesis.speak(u);
-}
 
 function beep(isHold: boolean) {
   try {

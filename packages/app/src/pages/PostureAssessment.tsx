@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { speak, stopSpeech } from '../lib/voiceGuide.js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@physiocore/supabase';
 import { useUserProfile } from '../hooks/useUserProfile.js';
@@ -94,13 +95,6 @@ const POSE_CONNECTIONS: [number, number][] = [
 
 // ─── Audio helpers ────────────────────────────────────────────────────────────
 
-function speak(text: string) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.rate = 0.92; u.pitch = 1; u.volume = 1;
-  window.speechSynthesis.speak(u);
-}
 
 let audioCtx: AudioContext | null = null;
 function beep(double = false) {
@@ -471,7 +465,7 @@ export default function PostureAssessment() {
   useEffect(() => () => {
     stopCamera();
     landmarkerRef.current?.close();
-    window.speechSynthesis?.cancel();
+    stopSpeech();
     if (timerRef.current) clearTimeout(timerRef.current);
   }, [stopCamera]);
 
@@ -693,7 +687,7 @@ export default function PostureAssessment() {
       </div>
 
       {/* Exit */}
-      <button onClick={() => { stopCamera(); window.speechSynthesis?.cancel(); navigate('/dashboard'); }} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 20, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '8px', padding: '6px 14px', fontSize: '0.78rem', fontFamily: "'Space Mono', monospace", cursor: 'pointer' }}>
+      <button onClick={() => { stopCamera(); stopSpeech(); navigate('/dashboard'); }} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 20, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '8px', padding: '6px 14px', fontSize: '0.78rem', fontFamily: "'Space Mono', monospace", cursor: 'pointer' }}>
         ✕ Exit
       </button>
     </div>

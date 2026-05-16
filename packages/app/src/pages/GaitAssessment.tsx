@@ -16,6 +16,7 @@
 //     USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { speak } from '../lib/voiceGuide.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { supabase } from '@physiocore/supabase';
 import { runGaitAnalysis } from '../lib/agents/assessmentClient.js';
@@ -122,7 +123,6 @@ const METRICS=[
   {k:'heelStrike',    label:'Heel Strike',        normal:'Normal'},
   {k:'antalgic',      label:'Antalgic Gait',      normal:'No'},
 ];
-function speak(t:string){ if(!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.rate=0.9; window.speechSynthesis.speak(u); }
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function GaitAssessment() {

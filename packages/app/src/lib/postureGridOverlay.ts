@@ -159,16 +159,18 @@ function drawFrontalOverlay(
     const color = deviationColor(angleDeg);
     const slope = Math.abs(dx) > 1 ? dy / dx : 0;
 
-    // Layer 1: truly horizontal reference line at midY
+    // Layer 1: TRUE horizontal reference (faint dashed, perfectly level)
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(0, midY);
     ctx.lineTo(w, midY);
-    ctx.strokeStyle = '#ffffff22'; ctx.lineWidth = 1; ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.globalAlpha = 1;
+    ctx.setLineDash([6, 4]);
     ctx.stroke();
+    ctx.setLineDash([]);
 
-    // Layer 2: deviation line connecting actual landmarks (shows tilt)
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
+    // Layer 2: DEVIATION line (actual landmarks — shows tilt)
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.globalAlpha = 0.9;
     ctx.beginPath(); ctx.moveTo(lxS, lyS); ctx.lineTo(rxS, ryS); ctx.stroke();
 
     // Teal landmark dots

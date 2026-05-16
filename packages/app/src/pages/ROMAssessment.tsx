@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { speak } from '../lib/voiceGuide.js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@physiocore/supabase';
 import { useAuth } from '../hooks/useAuth.js';
@@ -49,12 +50,6 @@ const TESTS: ROMTest[] = [
 
 const BONES: [number,number][] = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[0,7],[0,8]];
 
-function speak(t: string) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(t); u.rate = 0.9; u.pitch = 1; u.volume = 1;
-  window.speechSynthesis.speak(u);
-}
 let audioCtx: AudioContext | null = null;
 function beep(dbl = false) {
   try {
