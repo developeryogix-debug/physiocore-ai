@@ -89,11 +89,11 @@ function decideAction(
   avgPain:       number,
   highPainCount: number,
 ): ProgressionAction {
-  if (highPainCount >= 2)              return 'regress';  // NRS >7 on 2+ sessions — immediate
-  if (formSlope > 1.0 && avgPain < 3)  return 'advance';
-  if (formSlope >= 0  && avgPain <= 5) return 'hold';
-  if (formSlope < 0   && avgPain <= 5) return 'modify';
-  return 'regress';                                       // slope < 0 AND pain > 5
+  if (highPainCount >= 2)                return 'regress';  // NRS >7 on 2+ sessions — immediate
+  if (formSlope > 1.0 && avgPain < 3)    return 'advance';
+  if (formSlope < -0.5 || avgPain > 6)   return 'regress';  // spec threshold
+  if (formSlope >= 0   && avgPain <= 5)  return 'hold';
+  return 'modify';
 }
 
 function resolveTrend(slope: number): 'improving' | 'plateaued' | 'declining' {
@@ -282,6 +282,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           const sessions: SessionSummary[] = ((rawSessions ?? []) as SessionSummary[]).reverse();
 
+          // Guard: need at least 4 sessions for a valid regression
+          if (sessions.length < 4) {
+            results.push({
+              patientId, email, action: 'hold', oldWeek, newWeek: oldWeek,
+              emailSent: false,
+              flags: [`Fewer than 4 sessions recorded (${sessions.length}) — insufficient data for progression decision`],
+            });
+            return;
+          }
+
           // 4. Stage-1: algorithmic decision
           const formScores   = sessions.map(s => s.avg_score);
           const painScores   = sessions.map(s => s.pain_score ?? 0);
@@ -423,8 +433,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       runDate,
       processed:  results.length,
-      advanced:   results.filter(r => r.action === 'advance').length,
-      held:       results.filter(r => r.action === 'hold').length,
+      progressed: results.filter(r => r.action === 'advance').length,
+      maintained: results.filter(r => r.action === 'hold').length,
       modified:   results.filter(r => r.action === 'modify').length,
       regressed:  results.filter(r => r.action === 'regress').length,
       emailsSent: results.filter(r => r.emailSent).length,
