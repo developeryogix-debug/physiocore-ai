@@ -55,11 +55,9 @@ export interface PostureReport {
 
 // ─── Sapiens HF Space client ──────────────────────────────────────────────────
 //
-// Supports Gradio 4.x (POST /run/predict → JSON) and
-//          Gradio 5/6.x (POST /call/fn → event_id, GET /call/fn/{id} → SSE).
-//
-// VITE_SAPIENS_ENDPOINT — full URL or base URL; trailing path stripped internally.
-// VITE_HF_TOKEN         — bearer token for ZeroGPU / private spaces.
+// Gradio 6.x /gradio_api/ two-step queue (confirmed working on RTX PRO 6000):
+//   POST /gradio_api/call/analyse_pose → { event_id }
+//   GET  /gradio_api/call/analyse_pose/{event_id} → SSE → first data line
 //
 // Returns MPLandmark[] on success, null on any failure → caller uses MediaPipe.
 
@@ -80,13 +78,13 @@ interface SapiensResponse {
  * Try Sapiens pose estimation for a single JPEG/PNG frame (base64 data-URL).
  * Returns MPLandmark[] on success, null on any failure → caller uses MediaPipe.
  *
- * Gradio 6.x queue format (confirmed working on RTX PRO 6000):
- *   Step 1: POST /call/analyse_pose → { event_id }
- *   Step 2: GET  /call/analyse_pose/{event_id} → SSE stream
- *           Await "process_completed" message → output.data[0] → landmarks
+ * Gradio 6.x /gradio_api/ two-step queue (confirmed working on RTX PRO 6000):
+ *   Step 1: POST /gradio_api/call/analyse_pose → { event_id }
+ *   Step 2: GET  /gradio_api/call/analyse_pose/{event_id} → SSE
+ *           First "data:" line → JSON array → [0] → landmarks
  */
 export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandmark[] | null> {
-  const BASE = 'https://physiocoreai-physiocore-sapiens.hf.space';
+  const BASE = 'https://physiocoreai-physiocore-sapiens.hf.space/gradio_api';
 
   // ── Step 1: Submit job ──────────────────────────────────────────────────────
   let event_id: string;
@@ -106,49 +104,29 @@ export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandm
     return null;
   }
 
-  // ── Step 2: Read SSE stream ─────────────────────────────────────────────────
+  // ── Step 2: SSE stream — read full text, find first data line ──────────────
   try {
     const streamRes = await fetch(`${BASE}/call/analyse_pose/${event_id}`, {
       signal: AbortSignal.timeout(120_000),
     });
     if (!streamRes.ok) return null;
 
-    const reader = streamRes.body?.getReader();
-    if (!reader) return null;
+    const text = await streamRes.text();
 
-    const decoder = new TextDecoder();
-    let buffer = '';
+    const dataLine = text.split('\n').find(l => l.startsWith('data:'));
+    if (!dataLine) return null;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+    const arr   = JSON.parse(dataLine.slice(5).trim()) as unknown[];
+    const inner = arr[0];
+    const result = (typeof inner === 'string' ? JSON.parse(inner) : inner) as SapiensResponse | null;
 
-      const lines = buffer.split('\n');
-      // Keep last partial line in buffer
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        const data = line.slice(5).trim();
-        try {
-          const parsed = JSON.parse(data) as {
-            msg?: string;
-            output?: { data?: unknown[] };
-          };
-          if (parsed?.msg === 'process_completed') {
-            const inner = parsed?.output?.data?.[0];
-            const res = typeof inner === 'string' ? JSON.parse(inner) : inner;
-            if (res?.sapiensAvailable && Array.isArray(res.landmarks) && res.landmarks.length > 0) {
-              return (res.landmarks as SapiensLandmark[])
-                .filter(lm => lm.confidence >= 0.3)
-                .map(lm => ({ x: lm.x, y: lm.y, z: 0, visibility: lm.confidence }));
-            }
-            return null;
-          }
-        } catch { /* ignore malformed SSE lines */ }
-      }
+    if (!result?.sapiensAvailable || !Array.isArray(result.landmarks) || result.landmarks.length === 0) {
+      return null;
     }
+
+    return result.landmarks
+      .filter(lm => lm.confidence >= 0.3)
+      .map(lm => ({ x: lm.x, y: lm.y, z: 0, visibility: lm.confidence }));
   } catch (e) {
     console.log('[Sapiens] Stream failed, falling back to MediaPipe:', e);
   }
