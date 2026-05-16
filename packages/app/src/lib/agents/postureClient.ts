@@ -75,93 +75,82 @@ interface SapiensResponse {
   sapiensAvailable: boolean;
 }
 
-const SAPIENS_BASE = (
-  (import.meta.env['VITE_SAPIENS_ENDPOINT'] as string | undefined)
-  ?? 'https://physiocoreai-physiocore-sapiens.hf.space'
-).replace(/\/(run\/predict|call\/[\w-]+)\/?$/, '');  // strip any trailing path
-
-const HF_TOKEN = import.meta.env['VITE_HF_TOKEN'] as string | undefined;
-
-function sapiensHeaders(): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    ...(HF_TOKEN ? { Authorization: `Bearer ${HF_TOKEN}` } : {}),
-  };
-}
-
-/** Unwrap and validate a parsed Gradio result object. */
-function parseSapiensResult(result: unknown): MPLandmark[] | null {
-  const r = result as SapiensResponse | null;
-  if (!r?.sapiensAvailable || !Array.isArray(r.landmarks) || r.landmarks.length === 0) return null;
-  const lms = r.landmarks
-    .filter(lm => lm.confidence >= 0.3)
-    .map(lm => ({ x: lm.x, y: lm.y, z: lm.z ?? 0, visibility: lm.confidence }));
-  return lms.length > 0 ? lms : null;
-}
-
-/** Unwrap a Gradio data[0] value (may be a JSON string or plain object). */
-function unwrapGradioData(raw: unknown): SapiensResponse | null {
-  try {
-    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return obj as SapiensResponse;
-  } catch { return null; }
-}
 
 /**
  * Try Sapiens pose estimation for a single JPEG/PNG frame (base64 data-URL).
  * Returns MPLandmark[] on success, null on any failure → caller uses MediaPipe.
  *
- * Strategy:
- *   1. Gradio 4.x — POST /run/predict → { data: ["<json string>"] }
- *   2. Gradio 5/6.x — POST /call/analyse_pose → { event_id }
- *                   → GET /call/analyse_pose/{event_id} → SSE stream
+ * Gradio 6.x queue format (confirmed working on RTX PRO 6000):
+ *   Step 1: POST /call/analyse_pose → { event_id }
+ *   Step 2: GET  /call/analyse_pose/{event_id} → SSE stream
+ *           Await "process_completed" message → output.data[0] → landmarks
  */
 export async function callSapiensLandmarks(imageBase64: string): Promise<MPLandmark[] | null> {
-  const body = JSON.stringify({ data: [imageBase64] });
-  const h    = sapiensHeaders();
+  const BASE = 'https://physiocoreai-physiocore-sapiens.hf.space';
 
-  // ── Strategy 1: Gradio 4.x /run/predict ────────────────────────────────────
+  // ── Step 1: Submit job ──────────────────────────────────────────────────────
+  let event_id: string;
   try {
-    const r1 = await fetch(`${SAPIENS_BASE}/run/predict`, {
-      method: 'POST', headers: h, body,
-      signal: AbortSignal.timeout(15_000),
+    const submitRes = await fetch(`${BASE}/call/analyse_pose`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ data: [imageBase64] }),
+      signal:  AbortSignal.timeout(10_000),
     });
-    if (r1.ok) {
-      const j = await r1.json() as { data?: unknown[] };
-      const result = unwrapGradioData(j.data?.[0]);
-      const lms    = parseSapiensResult(result);
-      if (lms) return lms;
-    }
-  } catch { /* fall through to strategy 2 */ }
-
-  // ── Strategy 2: Gradio 5/6.x /call/{fn} + SSE poll ─────────────────────────
-  try {
-    const r2 = await fetch(`${SAPIENS_BASE}/call/analyse_pose`, {
-      method: 'POST', headers: h, body,
-      signal: AbortSignal.timeout(5_000),
-    });
-    if (!r2.ok) return null;
-
-    const { event_id } = await r2.json() as { event_id: string };
-    if (!event_id) return null;
-
-    const r3 = await fetch(`${SAPIENS_BASE}/call/analyse_pose/${event_id}`, {
-      headers: { ...(HF_TOKEN ? { Authorization: `Bearer ${HF_TOKEN}` } : {}) },
-      signal:  AbortSignal.timeout(30_000),
-    });
-    if (!r3.ok) return null;
-
-    // SSE body: one or more "data: <json>\n\n" lines; last one carries the result
-    const text  = await r3.text();
-    const match = text.match(/data:\s*(\[.+\]|\{.+\})\s*$/ms);
-    if (!match) return null;
-
-    const parsed = JSON.parse(match[1] ?? '');
-    // Gradio 5/6 wraps fn return in an array: [result] or ["json string"]
-    const inner  = Array.isArray(parsed) ? parsed[0] : parsed;
-    return parseSapiensResult(unwrapGradioData(inner));
+    if (!submitRes.ok) return null;
+    const json = await submitRes.json() as { event_id?: string };
+    if (!json.event_id) return null;
+    event_id = json.event_id;
   } catch (e) {
-    console.log('[Sapiens] Falling back to MediaPipe:', e);
+    console.log('[Sapiens] Submit failed:', e);
+    return null;
+  }
+
+  // ── Step 2: Read SSE stream ─────────────────────────────────────────────────
+  try {
+    const streamRes = await fetch(`${BASE}/call/analyse_pose/${event_id}`, {
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (!streamRes.ok) return null;
+
+    const reader = streamRes.body?.getReader();
+    if (!reader) return null;
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      // Keep last partial line in buffer
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        try {
+          const parsed = JSON.parse(data) as {
+            msg?: string;
+            output?: { data?: unknown[] };
+          };
+          if (parsed?.msg === 'process_completed') {
+            const inner = parsed?.output?.data?.[0];
+            const res = typeof inner === 'string' ? JSON.parse(inner) : inner;
+            if (res?.sapiensAvailable && Array.isArray(res.landmarks) && res.landmarks.length > 0) {
+              return (res.landmarks as SapiensLandmark[])
+                .filter(lm => lm.confidence >= 0.3)
+                .map(lm => ({ x: lm.x, y: lm.y, z: 0, visibility: lm.confidence }));
+            }
+            return null;
+          }
+        } catch { /* ignore malformed SSE lines */ }
+      }
+    }
+  } catch (e) {
+    console.log('[Sapiens] Stream failed, falling back to MediaPipe:', e);
   }
 
   return null;
