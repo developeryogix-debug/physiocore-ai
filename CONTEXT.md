@@ -1,5 +1,5 @@
 # PhysioCore AI — Session Context
-Last updated: 17 May 2026 (Phase 6 Sapiens dual API deployed — PostureAssessment + ROM wired)
+Last updated: 17 May 2026 (Phase 6 Sapiens /gradio_api/ confirmed active — RTX PRO 6000, confidence gate deployed)
 
 This file is read at the start of every Claude Code session to restore full context.
 Keep it updated after every significant change.
@@ -466,7 +466,7 @@ ConsensusAgent report
 
 ---
 
-## Phase 6 — Sapiens Precision (ACTIVE)
+## Phase 6 — Sapiens Precision (✅ ACTIVE)
 
 - Spec: `docs/PHASE6_SAPIENS_PRECISION.md`
 - Three-tier pose estimation architecture
@@ -475,17 +475,18 @@ ConsensusAgent report
 
 | Item | Status | Notes |
 |---|---|---|
-| HuggingFace Space | ✅ LIVE | Gradio 4.x (downgraded from 6.x for /run/predict compat) |
-| Endpoint | ✅ LIVE | `https://physiocoreai-physiocore-sapiens.hf.space` |
-| `callSapiensLandmarks()` | ✅ BUILT | Dual format: Gradio 4.x sync + Gradio 5/6.x SSE fallback |
-| `VITE_SAPIENS_ENDPOINT` | ✅ SET | Vercel env var — base URL, path stripped internally |
-| `VITE_HF_TOKEN` | ✅ SET | Vercel env var — Bearer auth for ZeroGPU/private spaces |
+| HuggingFace Space | ✅ LIVE | Gradio 6.x, RTX PRO 6000 Blackwell (48 GB) |
+| Endpoint | ✅ CONFIRMED | `https://physiocoreai-physiocore-sapiens.hf.space/gradio_api` |
+| `callSapiensLandmarks()` | ✅ UPDATED | Gradio 6.x only — `POST /gradio_api/call/analyse_pose` → `event_id` → SSE stream → first `data:` line → landmarks |
 | PostureAssessment.tsx | ✅ WIRED | `precisionTier` in frame, `🔬 Sapiens 308pt` / `📷 MediaPipe 33pt` badge |
 | GuidedROMAssessment.tsx | ✅ WIRED | Sapiens landmarks at ROM hold-capture point |
-| End-to-end test | ⏳ PENDING | Space rebuild needed — confirm landmark output format |
+| Confidence gate | ✅ DEPLOYED | `postureGridOverlay.ts`: deviation lines suppressed when confidence < 75%; amber warning banner in review UI |
+| Voice (voiceGuide) | ✅ DEPLOYED | All 4 assessment pages use `speak()`/`stopSpeech()` from `lib/voiceGuide.ts` |
+| End-to-end test | ⏳ PENDING | First real posture capture needed to confirm landmark output |
 
-**API flow:** Strategy 1 → `POST /run/predict` (Gradio 4.x, 15s timeout) → Strategy 2 → `POST /call/analyse_pose` + SSE poll (Gradio 5/6.x, 30s timeout)  
-**Precision:** Sapiens 308 keypoints → MediaPipe-compatible output via `parseSapiensResult()`  
+**API flow:** `POST /gradio_api/call/analyse_pose` → `{ event_id }` → `GET /gradio_api/call/analyse_pose/{event_id}` → SSE text → first `data:` line → `JSON.parse` → `arr[0]` → `SapiensResponse`  
+**GPU:** NVIDIA RTX PRO 6000 Blackwell, 48 GB VRAM  
+**Precision:** Sapiens 308 keypoints → MediaPipe-compatible `{ x, y, z, visibility }` output  
 **Cost:** FREE via ZeroGPU + HF PRO ($9/month flat)  
 **Fallback:** any failure → MediaPipe 33pt continues — all assessment pages unaffected  
 **Badge:** `🔬 Sapiens 308pt` (teal) when active, `📷 MediaPipe 33pt` (grey) on fallback
@@ -494,7 +495,7 @@ ConsensusAgent report
 
 ## Next Build Priorities
 
-1. **Sapiens E2E test** — confirm landmark output after Space rebuild (Phase 6 final)
+1. **Sapiens E2E test** — run posture capture, verify `🔬 Sapiens 308pt` badge appears (Phase 6 final)
 2. **LiveKit real-time streaming** — complete Phase 4 voice loop
 3. **TreatmentOrchestrator** — wire all 5 Phase 3 agents
 4. **Stripe: statement descriptor → "PhysioCore AI"**
