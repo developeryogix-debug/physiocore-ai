@@ -25,6 +25,7 @@ import OnboardingWizard from './components/OnboardingWizard.js';
 import Admin from './pages/Admin.js';
 import OrgDashboard from './pages/OrgDashboard.js';
 import Pricing from './pages/Pricing.js';
+import SkillsGuide from './pages/SkillsGuide.js';
 
 function LoadingScreen() {
   return (
@@ -104,6 +105,7 @@ function AppContent() {
           {/* Public */}
           <Route path="/" element={<Landing />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/skills" element={<SkillsGuide />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
           <Route path="/signup" element={<SignupRedirect />} />
 
