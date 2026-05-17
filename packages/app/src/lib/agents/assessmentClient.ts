@@ -217,6 +217,51 @@ export interface GaitAnalysisOutput {
   clinicalSummary: string;
 }
 
+// ─── ROM AI suggestions (Haiku only) ─────────────────────────────────────────
+
+export interface ROMSuggestion {
+  region:        string;
+  reasoning:     string;
+  evidenceGrade: 'A' | 'B';
+  citation:      string;
+  sourceBadge:   'Posture' | 'Last ROM' | 'Check-in';
+}
+
+export async function suggestROMTests(ctx: {
+  painRegions:     string[];
+  postureFindings: string;
+  lastROMDeficits: string;
+}): Promise<ROMSuggestion[]> {
+  const parts: string[] = [];
+  if (ctx.painRegions.length)   parts.push(`Pain regions: ${ctx.painRegions.join(', ')}`);
+  if (ctx.postureFindings)      parts.push(`Posture findings: ${ctx.postureFindings}`);
+  if (ctx.lastROMDeficits)      parts.push(`Last ROM deficits: ${ctx.lastROMDeficits}`);
+  const context = parts.length ? parts.join('\n') : 'No prior data available — suggest general screening.';
+
+  const raw = await callClaude({
+    system: 'You are a physiotherapy clinical decision support AI. Return concise JSON only.',
+    messages: [{
+      role: 'user',
+      content: `Based on patient context, suggest 3 ROM body regions to assess.
+${context}
+
+Available regions: Head/Neck, Shoulder, Elbow, Trunk, Hip, Knee, Ankle.
+sourceBadge must be one of: Posture, Last ROM, Check-in.
+evidenceGrade: A (RCT/systematic review) or B (controlled study).
+
+Return JSON array only:
+[{"region":"...","reasoning":"1 sentence clinical rationale","evidenceGrade":"A","citation":"Norkin CC & White DJ 2016","sourceBadge":"Posture"}]`,
+    }],
+    maxTokens: 500,
+    model: 'claude-haiku-4-5-20251001',
+  });
+
+  try {
+    const parsed = extractJson<ROMSuggestion[]>(raw);
+    return Array.isArray(parsed) ? parsed.slice(0, 3) : [];
+  } catch { return []; }
+}
+
 export async function runGaitAnalysis(m: GaitMetricsSummary): Promise<GaitAnalysisOutput> {
   const key = (import.meta.env as Record<string,string|undefined>)['VITE_ANTHROPIC_KEY'] ?? '';
   const prompt =
