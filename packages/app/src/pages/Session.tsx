@@ -11,6 +11,7 @@ import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 import { PainCheckIn } from '../components/PainCheckIn.js';
 import { StopSessionModal } from '../components/StopSessionModal.js';
+import { ExerciseAnimator } from '../components/ExerciseAnimator.js';
 import type { UserProfile } from '@physiocore/types';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
 import { EXERCISE_LIBRARY, EXERCISE_KEYS_BY_CATEGORY } from '../lib/exerciseLibrary.js';
@@ -1251,6 +1252,16 @@ export default function Session() {
           </div>
 
           <div style={{ flex: '0 0 188px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* F5 — Kaia-style live exercise animation (gym only) */}
+            {!isYogaMode && !isPilatesMode && isRunning && cfg && (
+              <ExerciseAnimator
+                exercise={exercise}
+                currentAngle={liveAngle}
+                targetRange={cfg.targetRange}
+                inRange={inRange}
+                isRunning={isRunning}
+              />
+            )}
             {isYogaMode ? (
               <div className="metric-card" style={{ border: `1px solid ${holdComplete ? 'var(--success)' : 'rgba(167,139,250,0.3)'}`, textAlign: 'center' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>Hold Time</div>
