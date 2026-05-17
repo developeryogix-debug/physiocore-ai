@@ -32,6 +32,13 @@ export type {
   McKenzieSyndrome,
 } from './phase3/conservativeAgent.js';
 export { EarlyMobAgent }             from './treatment/EarlyMobAgent.js';
+export { TreatmentArbiterPhase3Agent } from './phase3/treatmentArbiterAgent.js';
+export type {
+  Phase3ArbiterInput,
+  Phase3ArbiterVerdict,
+  ArbiterWinner,
+  Phase3EvidGrade,
+} from './phase3/treatmentArbiterAgent.js';
 export { EarlyMobProtocolAgent }     from './phase3/earlyMobAgent.js';
 export type {
   EarlyMobProtocol,
