@@ -8,7 +8,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { db } from './_lib/db.js';
 import { callClaude, extractJson } from './_lib/claude.js';
-import type { SOAPNote } from './generate-soap.js';
+
+interface SOAPNote { subjective: string; objective: string; assessment: string; plan: string; }
 
 type DateRange = 'today' | '7d' | '30d';
 type Format    = 'pdf' | 'csv' | 'fhir';
