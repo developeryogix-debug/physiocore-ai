@@ -8,7 +8,6 @@
  * Returns: { insight: string, pmid: string }
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import Anthropic from '@anthropic-ai/sdk';
 
 const ANTHROPIC_KEY = process.env['VITE_ANTHROPIC_KEY'] ?? '';
 
@@ -54,21 +53,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const client = new Anthropic({ apiKey: ANTHROPIC_KEY });
     const conditionText = condition ? `, ${condition.replace(/_/g, ' ')}` : '';
 
-    const resp = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 80,
-      messages: [{
-        role: 'user',
-        content: `Nutrient: ${nutrient}. Recovery phase: ${phase}${conditionText}. ` +
-          'Write one evidence-informed sentence (max 28 words) explaining why this nutrient is relevant now. ' +
-          'Clinical tone. No dosing numbers. No brand names. No exclamation marks.',
-      }],
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 80,
+        messages: [{
+          role: 'user',
+          content: `Nutrient: ${nutrient}. Recovery phase: ${phase}${conditionText}. ` +
+            'Write one evidence-informed sentence (max 28 words) explaining why this nutrient is relevant now. ' +
+            'Clinical tone. No dosing numbers. No brand names. No exclamation marks.',
+        }],
+      }),
     });
 
-    const block = resp.content[0];
+    if (!resp.ok) throw new Error(`Anthropic ${resp.status}`);
+    const data = await resp.json() as { content: Array<{ type: string; text: string }> };
+    const block = data.content[0];
     const insight = block?.type === 'text'
       ? block.text.replace(/^["']|["']$/g, '').trim()
       : '';
