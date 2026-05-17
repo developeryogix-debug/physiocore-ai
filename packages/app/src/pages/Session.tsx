@@ -9,6 +9,8 @@ import { saveSessionSummary } from '../lib/sessionMemory.js';
 import { scopedKey } from '../lib/storage.js';
 import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
+import { PainCheckIn } from '../components/PainCheckIn.js';
+import type { UserProfile } from '@physiocore/types';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
 import { EXERCISE_LIBRARY, EXERCISE_KEYS_BY_CATEGORY } from '../lib/exerciseLibrary.js';
 import type { ExerciseMeta } from '../lib/exerciseLibrary.js';
@@ -346,6 +348,7 @@ export default function Session() {
   const [error, setError] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportStatus, setExportStatus] = useState<'idle' | 'downloaded'>('idle');
+  const [showPainCheckIn, setShowPainCheckIn] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -982,6 +985,17 @@ export default function Session() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 48px' }}>
+      {/* Pain check-in modal — shown before session starts */}
+      {showPainCheckIn && (
+        <PainCheckIn
+          userProfile={profile as UserProfile}
+          userId={user?.id}
+          onProceed={(_score) => { setShowPainCheckIn(false); void startSession(); }}
+          onBlock={(_score, _alerts) => { /* blocked state shown inside PainCheckIn */ }}
+          onDismiss={() => setShowPainCheckIn(false)}
+        />
+      )}
+
       <div style={{ marginBottom: 28 }}>
         <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.75rem', color: 'var(--teal-500)', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Live Session</p>
         <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 0 }}>Exercise Session</h1>
@@ -1023,7 +1037,7 @@ export default function Session() {
                   })}
               </optgroup>
             </select>
-            <button onClick={() => { void startSession(); }} className="btn-primary">
+            <button onClick={() => setShowPainCheckIn(true)} className="btn-primary">
               Start Session
             </button>
             <button

@@ -6,6 +6,7 @@ import { useUserProfile } from '../hooks/useUserProfile.js';
 import { extractMeasurements, analysePosture, callSapiensLandmarks } from '../lib/agents/postureClient.js';
 import type { PostureReport } from '../lib/agents/postureClient.js';
 import PostureReportCard from '../components/PostureReportCard.js';
+import { PostureGhostGuide } from '../components/PostureGhostGuide.js';
 import {
   drawGridOverlay,
   drawIdealComparison,
@@ -610,6 +611,13 @@ export default function PostureAssessment() {
       <canvas ref={overlayCanvasRef}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', pointerEvents: 'none' }} />
       <canvas ref={captureCanvasRef} style={{ display: 'none' }} />
+
+      {/* Ghost guide — visible while waiting for cue/countdown */}
+      <PostureGhostGuide
+        viewKey={currentView.key}
+        visible={countdown === null && !showCue && !isHold}
+        color={currentView.color}
+      />
 
       {/* Progress dots */}
       <div style={{ position: 'absolute', top: '1.5rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', alignItems: 'center', zIndex: 10 }}>
