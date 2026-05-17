@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { SlidingTabs } from '../components/ui/SlidingTabs.js';
 import { useLocation } from 'react-router-dom';
 import type { PoseFrame, PoseLandmark, AgentResult, FeedbackResponse } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
@@ -328,10 +329,21 @@ export default function Session() {
   const BAND_PHYSIO = hasBands ? ['monster_walk', 'clamshell'] : [];
 
   const location = useLocation();
+  const [exerciseTab, setExerciseTab] = useState<'gym' | 'yoga' | 'pilates'>('gym');
   const [exercise, setExercise] = useState<SessionKey>(() => {
     const p = new URLSearchParams(location.search).get('exercise');
     return (p && (EXERCISES as string[]).includes(p) ? p : 'squat') as SessionKey;
   });
+
+  // When tab changes, reset to first available exercise in that category
+  const firstInTab = useMemo(() => {
+    if (exerciseTab === 'yoga')    return availableYoga[0]    ?? availableGym[0] ?? 'squat';
+    if (exerciseTab === 'pilates') return availablePilates[0] ?? availableGym[0] ?? 'squat';
+    return availableGym[0] ?? 'squat';
+  }, [exerciseTab, availableGym, availableYoga, availablePilates]);
+
+  useEffect(() => { setExercise(firstInTab as SessionKey); }, [firstInTab]);
+
   const [holdTime, setHoldTime] = useState(0);
   const [holdComplete, setHoldComplete] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(false);
@@ -1085,24 +1097,44 @@ export default function Session() {
 
       {mode === 'idle' && (
         <div style={{ marginBottom: '28px' }}>
+          {/* Category tabs */}
+          <div style={{ marginBottom: 16 }}>
+            <SlidingTabs
+              tabs={[
+                { key: 'gym',     label: 'Gym / Strength' },
+                { key: 'yoga',    label: 'Yoga'           },
+                { key: 'pilates', label: 'Pilates'        },
+              ]}
+              active={exerciseTab}
+              onChange={(k) => setExerciseTab(k as typeof exerciseTab)}
+            />
+          </div>
+
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
             <select value={exercise} onChange={(e) => { setExercise(e.target.value as SessionKey); }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '0.85rem', minWidth: '260px', background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none', fontFamily: "'Figtree', sans-serif" }}>
-              <optgroup label="Exercises">
-                {availableGym.map((ex) => <option key={ex} value={ex}>{ex.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
-              </optgroup>
-              {availableYoga.length > 0 && (
+              {exerciseTab === 'gym' && (
+                <optgroup label="Exercises">
+                  {availableGym.map((ex) => <option key={ex} value={ex}>{ex.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                </optgroup>
+              )}
+              {exerciseTab === 'yoga' && availableYoga.length > 0 && (
                 <optgroup label="Yoga">
                   {availableYoga.map((key) => <option key={key} value={key}>{YOGA_CONFIG[key].englishName} — {YOGA_CONFIG[key].sanskritName}</option>)}
                 </optgroup>
               )}
-              <optgroup label={hasYogaMat ? 'Pilates' : 'Pilates (add Yoga Mat to unlock more)'}>
-                {availablePilates.map((key) => {
-                  const pc = PILATES_CONFIG[key];
-                  const name = key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
-                  return <option key={key} value={key}>{name} — {pc.targetLabel}</option>;
-                })}
-              </optgroup>
-              {BAND_PHYSIO.length > 0 && (
+              {exerciseTab === 'yoga' && availableYoga.length === 0 && (
+                <option disabled>Add a yoga mat in Settings to unlock yoga poses</option>
+              )}
+              {exerciseTab === 'pilates' && (
+                <optgroup label={hasYogaMat ? 'Pilates' : 'Pilates (add Yoga Mat to unlock more)'}>
+                  {availablePilates.map((key) => {
+                    const pc = PILATES_CONFIG[key];
+                    const name = key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+                    return <option key={key} value={key}>{name} — {pc.targetLabel}</option>;
+                  })}
+                </optgroup>
+              )}
+              {exerciseTab === 'gym' && BAND_PHYSIO.length > 0 && (
                 <optgroup label="Resistance Band (tracking coming soon)">
                   {BAND_PHYSIO.map((key) => {
                     const meta = EXERCISE_LIBRARY[key];
@@ -1110,14 +1142,16 @@ export default function Session() {
                   })}
                 </optgroup>
               )}
-              <optgroup label="Physiotherapy (prescription only)">
-                {EXERCISE_KEYS_BY_CATEGORY.physiotherapy
-                  .filter(k => !BAND_PHYSIO.includes(k))
-                  .map((key) => {
-                    const meta = EXERCISE_LIBRARY[key]!;
-                    return <option key={key} value={key} disabled>{meta.displayName}</option>;
-                  })}
-              </optgroup>
+              {exerciseTab === 'gym' && (
+                <optgroup label="Physiotherapy (prescription only)">
+                  {EXERCISE_KEYS_BY_CATEGORY.physiotherapy
+                    .filter(k => !BAND_PHYSIO.includes(k))
+                    .map((key) => {
+                      const meta = EXERCISE_LIBRARY[key]!;
+                      return <option key={key} value={key} disabled>{meta.displayName}</option>;
+                    })}
+                </optgroup>
+              )}
             </select>
             <button onClick={() => setShowPainCheckIn(true)} className="btn-primary">
               Start Session

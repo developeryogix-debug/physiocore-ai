@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { supabase } from '@physiocore/supabase';
+import { ElevationCard } from '../components/ui/ElevationCard.js';
+import { EmptyState } from '../components/ui/EmptyState.js';
+import { SlidingTabs } from '../components/ui/SlidingTabs.js';
+import { PageTransition } from '../components/ui/PageTransition.js';
 
 interface StoredSession {
   id: string; exercise: string; date: string;
@@ -138,6 +142,14 @@ export default function Dashboard() {
   const [insightLoading, setInsightLoading] = useState(false);
   const [quoteInsight, setQuoteInsight] = useState<QuoteInsight | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+
+  const filteredSessions = useMemo(() => {
+    if (timeRange === 'all') return sessions;
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const cutoff = Date.now() - days * 86400000;
+    return sessions.filter(s => new Date(s.date).getTime() >= cutoff);
+  }, [sessions, timeRange]);
 
   useEffect(() => {
     if (!user) return;
@@ -281,8 +293,8 @@ User context: goal=${goal}, conditions=${conditions}.`,
     Math.min(1, sessions.length > 1 ? 0.7 : 0.3),
   ];
 
-  // Regression
-  const recentScores = [...sessions].sort((a,b)=>a.date.localeCompare(b.date)).slice(-5).map(s=>s.formScore);
+  // Regression — uses filteredSessions so time range affects trend card
+  const recentScores = [...filteredSessions].sort((a,b)=>a.date.localeCompare(b.date)).slice(-5).map(s=>s.formScore);
   const reg = linReg(recentScores);
 
   // Biometrics per metric
@@ -297,22 +309,43 @@ User context: goal=${goal}, conditions=${conditions}.`,
   const lastSession = sessions.length ? [...sessions].sort((a,b)=>b.date.localeCompare(a.date))[0] : null;
   const daysSinceLast = lastSession ? Math.floor((Date.now()-new Date(lastSession.date).getTime())/86400000) : Infinity;
 
-  const card: React.CSSProperties = {background:'var(--bg-surface)',border:'1px solid var(--border-subtle)',borderRadius:16,padding:20};
+  // Elevation-based card style — no border, shadow ring replaces it
+  const card: React.CSSProperties = {
+    background: 'var(--bg-surface)',
+    borderRadius: 12,
+    boxShadow: '0 1px 4px rgba(0,0,0,0.32), 0 0 0 1px rgba(255,255,255,0.04)',
+    padding: 20,
+    transition: 'box-shadow 220ms cubic-bezier(0.4,0,0.2,1)',
+  };
   const pTitle: React.CSSProperties = {fontSize:'0.75rem',fontWeight:600,color:'var(--text-tertiary)',textTransform:'uppercase',letterSpacing:'0.1em',fontFamily:"'Space Mono', monospace",marginBottom:14};
   const sil = '#1a2438';
+  const [bottomTab, setBottomTab] = useState<'progress' | 'prescription'>('progress');
 
   return (
+    <PageTransition direction="none">
     <div style={{maxWidth:1100,margin:'0 auto',padding:'100px 24px 48px'}}>
       {/* Header */}
-      <div style={{marginBottom:32}}>
-        <p style={{fontFamily:"'Space Mono', monospace",fontSize:'0.75rem',color:'var(--teal-500)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:6}}>
-          {sessions.length===0?'Welcome':'Welcome back'}
-        </p>
-        <h1 style={{fontFamily:"'Syne', sans-serif",fontSize:'var(--text-3xl)',fontWeight:600,letterSpacing:'-0.02em',marginBottom:4}}>{firstName}</h1>
-        <p style={{color:'var(--text-secondary)',fontSize:'0.85rem'}}>
-          {userProfile.primaryGoal.replace(/_/g,' ')} · {userProfile.fitnessLevel} ·{' '}
-          <span style={{color:'var(--teal-500)',fontFamily:"'Space Mono', monospace",fontSize:'0.75rem'}}>{(userProfile.subscription??'free').toUpperCase()}</span>
-        </p>
+      <div style={{marginBottom:32,display:'flex',alignItems:'flex-end',justifyContent:'space-between',flexWrap:'wrap',gap:16}}>
+        <div>
+          <p style={{fontFamily:"'Space Mono', monospace",fontSize:'0.75rem',color:'var(--teal-500)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:6}}>
+            {sessions.length===0?'Welcome':'Welcome back'}
+          </p>
+          <h1 style={{fontFamily:"'Syne', sans-serif",fontSize:'var(--text-3xl)',fontWeight:600,letterSpacing:'-0.02em',marginBottom:4}}>{firstName}</h1>
+          <p style={{color:'var(--text-secondary)',fontSize:'0.85rem'}}>
+            {userProfile.primaryGoal.replace(/_/g,' ')} · {userProfile.fitnessLevel} ·{' '}
+            <span style={{color:'var(--teal-500)',fontFamily:"'Space Mono', monospace",fontSize:'0.75rem'}}>{(userProfile.subscription??'free').toUpperCase()}</span>
+          </p>
+        </div>
+        <SlidingTabs
+          tabs={[
+            { key: '7d',  label: '7 days'  },
+            { key: '30d', label: '30 days' },
+            { key: '90d', label: '90 days' },
+            { key: 'all', label: 'All time' },
+          ]}
+          active={timeRange}
+          onChange={(k) => setTimeRange(k as typeof timeRange)}
+        />
       </div>
 
       {/* Daily Insight card */}
@@ -485,13 +518,12 @@ User context: goal=${goal}, conditions=${conditions}.`,
               </button>
             </div>
           ) : (
-            <div style={{textAlign:'center',paddingTop:12}}>
-              <div style={{fontSize:'2rem',marginBottom:8}}>🎯</div>
-              <div style={{fontSize:'0.85rem',color:'var(--text-secondary)',marginBottom:16}}>No sessions yet</div>
-              <button onClick={() => navigate('/session')} className="btn-primary" style={{padding:'9px 20px',fontSize:'0.82rem'}}>
-                Start first session →
-              </button>
-            </div>
+            <EmptyState
+              icon="◎"
+              title="No sessions yet"
+              description="Complete your first session to unlock progress tracking."
+              action={{ label: 'Start first session', onClick: () => navigate('/session') }}
+            />
           )}
         </div>
 
@@ -527,9 +559,11 @@ User context: goal=${goal}, conditions=${conditions}.`,
               </div>
             </div>
           ) : (
-            <div style={{textAlign:'center',paddingTop:20,color:'var(--text-tertiary)',fontSize:'0.82rem'}}>
-              Complete 2+ sessions to see trend
-            </div>
+            <EmptyState
+              icon="⬡"
+              title="Need 2+ sessions"
+              description="Complete more sessions to see your form trend."
+            />
           )}
         </div>
       </div>
@@ -770,5 +804,6 @@ User context: goal=${goal}, conditions=${conditions}.`,
         ))}
       </div>
     </div>
+  </PageTransition>
   );
 }

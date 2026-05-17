@@ -1,4 +1,7 @@
+import './styles/design-system.css';
 import { Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
+import { PageTransition } from './components/ui/PageTransition.js';
+import { useKeyboardNav } from './lib/useKeyboardNav.js';
 import { AuthProvider, useAuth } from './hooks/useAuth.js';
 import { UserProfileProvider, useUserProfile } from './hooks/useUserProfile.js';
 import Navigation from './components/Navigation.js';
@@ -92,6 +95,7 @@ function AppContent() {
   const { user, isLoading } = useAuth();
   const { onboardingDone } = useUserProfile();
   const location = useLocation();
+  useKeyboardNav();
 
   if (isLoading) return <LoadingScreen />;
 
@@ -101,6 +105,7 @@ function AppContent() {
     <>
       {!hideNav && user && onboardingDone && <Navigation />}
       <main>
+        <PageTransition key={location.pathname} direction="up">
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
@@ -142,6 +147,7 @@ function AppContent() {
 
           <Route path="*" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
         </Routes>
+        </PageTransition>
       </main>
     </>
   );
