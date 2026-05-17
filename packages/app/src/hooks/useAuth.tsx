@@ -92,7 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return error.message;
     if (data.user) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      await db.from('profiles').upsert({ user_id: data.user.id, full_name: fullName, role: 'patient' });
+      await db.from('profiles').upsert(
+        { user_id: data.user.id, full_name: fullName, role: 'patient' },
+        { onConflict: 'user_id' },
+      );
       if (inviteToken) {
         const result = await acceptInvite(inviteToken, data.user.id);
         if (result) {
@@ -125,12 +128,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function recordConsent(fullName: string): Promise<void> {
     if (!user) return;
-    await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      db.from('consents').upsert({ user_id: user.id, version: '1.0', full_name: fullName, signed_at: new Date().toISOString() }),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      db.from('profiles').upsert({ user_id: user.id, full_name: fullName, role: 'patient' }),
-    ]);
+    try {
+      await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        db.from('consents').upsert(
+          { user_id: user.id, version: '1.0', full_name: fullName, signed_at: new Date().toISOString() },
+          { onConflict: 'user_id' },
+        ),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        db.from('profiles').upsert(
+          { user_id: user.id, full_name: fullName, role: 'patient' },
+          { onConflict: 'user_id' },
+        ),
+      ]);
+    } catch (err) {
+      console.error('[recordConsent] upsert error (continuing):', err);
+    }
     setHasConsented(true);
   }
 
