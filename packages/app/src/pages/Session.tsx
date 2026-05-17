@@ -10,6 +10,7 @@ import { scopedKey } from '../lib/storage.js';
 import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 import { PainCheckIn } from '../components/PainCheckIn.js';
+import { StopSessionModal } from '../components/StopSessionModal.js';
 import type { UserProfile } from '@physiocore/types';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
 import { EXERCISE_LIBRARY, EXERCISE_KEYS_BY_CATEGORY } from '../lib/exerciseLibrary.js';
@@ -349,6 +350,9 @@ export default function Session() {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportStatus, setExportStatus] = useState<'idle' | 'downloaded'>('idle');
   const [showPainCheckIn, setShowPainCheckIn] = useState(false);
+  const [timePreset, setTimePreset] = useState<'15' | '30' | 'full'>('full');
+  const [showStopModal, setShowStopModal] = useState(false);
+  const [sessionElapsed, setSessionElapsed] = useState(0); // seconds
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -896,6 +900,70 @@ export default function Session() {
     } finally { setLoadingFeedback(false); setMode('idle'); }
   }, [exercise, profile, stopLoop]);
 
+  // ── Partial save: keeps reps, skips AI feedback ─────────────────────────────
+  const stopPartial = useCallback(() => {
+    setShowStopModal(false);
+    setMode('stopping');
+    stopLoop();
+    setLiveAngle(null);
+    const durSec = (Date.now() - sessionStartRef.current) / 1000;
+    setSessionDuration(durSec);
+    const reps = repCountRef.current;
+    try {
+      const newSession = {
+        id: `s-${Date.now()}`,
+        exercise,
+        date: new Date().toISOString(),
+        reps,
+        formScore: 0,
+        durationMin: Math.round(durSec / 60),
+        status: 'partial' as const,
+      };
+      const sessKey = scopedKey('physiocore_sessions', user?.id);
+      const existing = JSON.parse(localStorage.getItem(sessKey) ?? '[]') as unknown[];
+      localStorage.setItem(sessKey, JSON.stringify([newSession, ...existing]));
+    } catch { /* storage unavailable */ }
+    void saveSessionSummary({
+      date: new Date().toISOString(),
+      exercise,
+      reps,
+      avg_score: 0,
+      top_deviation: '',
+      ai_feedback_summary: 'Partial session — ended early by user.',
+      status: 'partial',
+      time_preset: timePreset,
+    });
+    setRepCount(0); repRecordsRef.current = []; setRepRecords([]);
+    setMode('idle');
+  }, [exercise, stopLoop, timePreset, user?.id]);
+
+  // ── Discard: no save, clean reset ───────────────────────────────────────────
+  const discardSession = useCallback(() => {
+    setShowStopModal(false);
+    stopLoop();
+    setLiveAngle(null);
+    setRepCount(0); repRecordsRef.current = []; setRepRecords([]);
+    setSessionDuration(0); setSessionElapsed(0);
+    setMode('idle');
+  }, [stopLoop]);
+
+  // ── Elapsed timer + preset auto-trigger ─────────────────────────────────────
+  useEffect(() => {
+    if (mode !== 'running') { setSessionElapsed(0); return; }
+    let triggered = false;
+    const iv = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      setSessionElapsed(elapsed);
+      if (timePreset !== 'full' && !triggered) {
+        if (elapsed >= Number(timePreset) * 60) {
+          triggered = true;
+          setShowStopModal(true);
+        }
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [mode, timePreset]);
+
   useEffect(() => () => { stopLoop(); landmarkerRef.current?.close(); }, [stopLoop]);
 
   const isRunning = mode === 'running';
@@ -985,6 +1053,19 @@ export default function Session() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 48px' }}>
+      {/* Stop / partial-save modal */}
+      {showStopModal && (
+        <StopSessionModal
+          repCount={repCount}
+          durationSec={sessionElapsed}
+          exercise={exercise}
+          timePreset={timePreset}
+          onContinue={() => setShowStopModal(false)}
+          onSavePartial={stopPartial}
+          onDiscard={discardSession}
+        />
+      )}
+
       {/* Pain check-in modal — shown before session starts */}
       {showPainCheckIn && (
         <PainCheckIn
@@ -1066,6 +1147,33 @@ export default function Session() {
               style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--border-default)', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             >?</button>
           </div>
+
+          {/* Time preset selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.68rem', color: 'var(--text-secondary)', letterSpacing: '0.08em' }}>SESSION LENGTH:</span>
+            {(['15', '30', 'full'] as const).map(p => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setTimePreset(p)}
+                style={{
+                  padding: '5px 13px',
+                  borderRadius: '8px',
+                  border: `1px solid ${timePreset === p ? 'var(--border-teal)' : 'var(--border-default)'}`,
+                  background: timePreset === p ? 'rgba(0,212,170,0.1)' : 'transparent',
+                  color: timePreset === p ? 'var(--teal-500)' : 'var(--text-secondary)',
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: '0.75rem',
+                  fontWeight: timePreset === p ? 600 : 400,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {p === 'full' ? '∞' : `${p}m`}
+              </button>
+            ))}
+          </div>
+
           {exercise === 'lunge' && (
             <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,212,170,0.07)', border: '1px solid var(--border-teal)', fontSize: '0.82rem', color: 'var(--teal-500)', lineHeight: 1.5 }}>
               <strong>Lunge tip:</strong> Stand 2–3 m from camera so your full body is visible. Step one foot forward — the app auto-detects your front knee. Alternate sides each set.
@@ -1214,9 +1322,37 @@ export default function Session() {
               {isPlankMode && <div style={{ fontSize: '0.75rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Alignment scored/sec</div>}
             </div>
             {isRunning && (
-              <button onClick={() => { void stopSession(); }} style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(255,68,68,0.3)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s' }}>
-                Stop Session
-              </button>
+              <>
+                {/* Remaining time pill */}
+                {timePreset !== 'full' && (() => {
+                  const remaining = Math.max(0, Number(timePreset) * 60 - sessionElapsed);
+                  const mm = Math.floor(remaining / 60);
+                  const ss = String(Math.floor(remaining % 60)).padStart(2, '0');
+                  const urgent = remaining <= 60;
+                  return (
+                    <div style={{
+                      textAlign: 'center',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: urgent ? '#f97316' : 'var(--text-secondary)',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${urgent ? 'rgba(249,115,22,0.35)' : 'var(--border-subtle)'}`,
+                      background: urgent ? 'rgba(249,115,22,0.07)' : 'transparent',
+                      transition: 'all 0.5s',
+                    }}>
+                      {remaining === 0 ? '⏱ Time up' : `⏱ ${mm}:${ss}`}
+                    </div>
+                  );
+                })()}
+                <button
+                  onClick={() => setShowStopModal(true)}
+                  style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(255,68,68,0.3)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s' }}
+                >
+                  Stop Session
+                </button>
+              </>
             )}
           </div>
         </div>

@@ -12,6 +12,9 @@ export interface SessionSummary {
   ai_feedback_summary: string;
   pain_before?: number;
   pain_after?: number;
+  /** Phase 2.5 F3 — partial save support */
+  status?: 'complete' | 'partial' | 'discarded';
+  time_preset?: '15' | '30' | 'full';
 }
 
 export async function saveSessionSummary(summary: SessionSummary): Promise<void> {
