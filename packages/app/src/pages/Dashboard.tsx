@@ -383,7 +383,7 @@ User context: goal=${goal}, conditions=${conditions}.`,
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>
 
         {/* Panel 1: Health Score */}
-        <div style={card}>
+        <ElevationCard level={1} padding={20}>
           <div style={pTitle}>Health Score</div>
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <HealthGauge score={healthScore}/>
@@ -396,10 +396,10 @@ User context: goal=${goal}, conditions=${conditions}.`,
               ))}
             </div>
           </div>
-        </div>
+        </ElevationCard>
 
         {/* Panel 2: Pain Trend Map */}
-        <div style={card}>
+        <ElevationCard level={1} padding={20}>
           <div style={pTitle}>Pain Trend Map</div>
           {painParts.size===0 ? (
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,paddingTop:8}}>
@@ -439,10 +439,10 @@ User context: goal=${goal}, conditions=${conditions}.`,
               <div style={{fontSize:'0.72rem',color:'var(--warning)',fontWeight:600}}>{painParts.size} area{painParts.size!==1?'s':''} flagged</div>
             </div>
           )}
-        </div>
+        </ElevationCard>
 
         {/* Panel 6: AI Daily Insight */}
-        <div style={card}>
+        <ElevationCard level={1} padding={20}>
           <div style={pTitle}>AI Daily Insight</div>
           {insightLoading ? (
             <div style={{display:'flex',alignItems:'center',gap:10,color:'var(--text-tertiary)',fontSize:'0.8rem',padding:'8px 0'}}>
@@ -465,14 +465,14 @@ User context: goal=${goal}, conditions=${conditions}.`,
           ) : (
             <div style={{color:'var(--text-tertiary)',fontSize:'0.8rem',lineHeight:1.6}}>Log biometrics or complete a session to unlock your daily AI insight.</div>
           )}
-        </div>
+        </ElevationCard>
       </div>
 
       {/* Row 2: Next Workout + Progress Tracker */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
 
         {/* Panel: Next Session */}
-        <div style={card}>
+        <ElevationCard level={1} padding={20}>
           <div style={pTitle}>Next Session</div>
           {lastSession ? (
             <div>
@@ -525,10 +525,10 @@ User context: goal=${goal}, conditions=${conditions}.`,
               action={{ label: 'Start first session', onClick: () => navigate('/session') }}
             />
           )}
-        </div>
+        </ElevationCard>
 
         {/* Panel: Form Trend */}
-        <div style={card}>
+        <ElevationCard level={1} padding={20}>
           <div style={pTitle}>Form Trend (last 5)</div>
           {recentScores.length >= 2 ? (
             <div>
@@ -565,11 +565,11 @@ User context: goal=${goal}, conditions=${conditions}.`,
               description="Complete more sessions to see your form trend."
             />
           )}
-        </div>
+        </ElevationCard>
       </div>
 
       {/* Panel 3: Biometrics Tracker */}
-      <div style={{...card,marginBottom:16}}>
+      <ElevationCard level={1} padding={20} style={{marginBottom:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
           <div style={pTitle}>Biometrics Tracker</div>
           <button onClick={()=>navigate('/settings')} style={{fontSize:'0.72rem',color:'var(--teal-500)',background:'none',border:'none',cursor:'pointer',fontFamily:"'Space Mono', monospace"}}>+ Log reading →</button>
@@ -592,7 +592,7 @@ User context: goal=${goal}, conditions=${conditions}.`,
             </div>
           ))}
         </div>
-      </div>
+      </ElevationCard>
 
       {/* Weekly Streak Banner */}
       {sessions.length > 0 && (
@@ -664,7 +664,7 @@ User context: goal=${goal}, conditions=${conditions}.`,
       {/* Row 3: Heatmap + Radar */}
       <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:16,marginBottom:16,alignItems:'start'}}>
         {/* Panel 4: Exercise Heatmap */}
-        <div style={card}>
+        <ElevationCard level={1} padding={20}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
             <div style={pTitle}>Exercise Heatmap · 52 weeks</div>
             <button onClick={()=>navigate('/history')} style={{fontSize:'0.72rem',color:'var(--teal-500)',background:'none',border:'none',cursor:'pointer',fontFamily:"'Space Mono', monospace"}}>View history →</button>
@@ -677,10 +677,10 @@ User context: goal=${goal}, conditions=${conditions}.`,
               </div>
             ))}
           </div>
-        </div>
+        </ElevationCard>
 
         {/* Panel 5: Performance Radar */}
-        <div style={{...card,width:218}}>
+        <ElevationCard level={1} padding={20} style={{width:218}}>
           <div style={pTitle}>Performance Radar</div>
           <RadarChart axes={['STR','FLEX','BAL','END','POST','REC']} vals={radarVals}/>
           <div style={{display:'flex',flexDirection:'column',gap:4,marginTop:6}}>
@@ -691,15 +691,23 @@ User context: goal=${goal}, conditions=${conditions}.`,
               </div>
             ))}
           </div>
-        </div>
+        </ElevationCard>
       </div>
 
-      {/* Row 4: Predictive Progress + Next Session */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-        {/* Panel 7: Predictive Progress */}
-        <div style={card}>
-          <div style={pTitle}>Predictive Progress</div>
-          {recentScores.length < 3 ? (
+      {/* Row 4: Predictive Progress + Next Session — tabbed */}
+      <ElevationCard level={1} padding={20}>
+        <SlidingTabs
+          tabs={[
+            { key: 'progress',     label: 'Predictive Progress'    },
+            { key: 'prescription', label: 'Next Session Prescription' },
+          ]}
+          active={bottomTab}
+          onChange={(k) => setBottomTab(k as typeof bottomTab)}
+          style={{ marginBottom: 20 }}
+        />
+
+        {bottomTab === 'progress' && (
+          recentScores.length < 3 ? (
             <div style={{color:'var(--text-tertiary)',fontSize:'0.82rem',lineHeight:1.6}}>
               Need at least 3 sessions to predict your trajectory. ({recentScores.length}/3 recorded)
             </div>
@@ -709,7 +717,7 @@ User context: goal=${goal}, conditions=${conditions}.`,
                 {reg.slope > 0 && isFinite(reg.weeksToGoal) && reg.current < 85
                   ? <>At your current rate, you'll reach <strong style={{color:'var(--teal-500)'}}>85% form score</strong> in <strong style={{color:'var(--teal-500)'}}>{reg.weeksToGoal} session{reg.weeksToGoal!==1?'s':''}</strong>.</>
                   : reg.current >= 85
-                    ? <span style={{color:'var(--teal-500)'}}>🎯 85% form score milestone achieved! Keep it up.</span>
+                    ? <span style={{color:'var(--teal-500)'}}>85% form score milestone achieved. Keep it up.</span>
                     : <span style={{color:'var(--warning)'}}>Form score trending down — consider a recovery day.</span>
                 }
               </div>
@@ -725,13 +733,11 @@ User context: goal=${goal}, conditions=${conditions}.`,
                 Trend: {reg.slope>0?'+':''}{reg.slope.toFixed(1)} pts/session · last {recentScores.length} sessions
               </div>
             </div>
-          )}
-        </div>
+          )
+        )}
 
-        {/* Panel 8: Next Session Prescription */}
-        <div style={card}>
-          <div style={pTitle}>Next Session Prescription</div>
-          {!lastSession ? (
+        {bottomTab === 'prescription' && (
+          !lastSession ? (
             <div style={{display:'flex',flexDirection:'column',gap:12}}>
               <div style={{color:'var(--text-secondary)',fontSize:'0.82rem',lineHeight:1.6}}>No sessions recorded yet. Start your first session to get AI prescriptions.</div>
               <button className="btn-primary" onClick={()=>navigate('/session')}>Begin first session →</button>
@@ -740,7 +746,7 @@ User context: goal=${goal}, conditions=${conditions}.`,
             <div style={{display:'flex',flexDirection:'column',gap:12}}>
               {daysSinceLast >= 2 && (
                 <div style={{background:'var(--teal-dim)',border:'1px solid var(--border-teal)',borderRadius:10,padding:'8px 12px',fontSize:'0.78rem',color:'var(--teal-500)'}}>
-                  {daysSinceLast>=5?'🔥 It\'s been a while — great time to return!':'✓ You\'re due for a session today'}
+                  {daysSinceLast>=5?'It\'s been a while — great time to return.':'You\'re due for a session today.'}
                 </div>
               )}
               <div>
@@ -762,9 +768,9 @@ User context: goal=${goal}, conditions=${conditions}.`,
               <div style={{fontSize:'0.75rem',color:'var(--text-tertiary)'}}>Last: {new Date(lastSession.date).toLocaleDateString()} · score {lastSession.formScore}%</div>
               <button className="btn-primary" onClick={()=>navigate('/session')}>Start Session →</button>
             </div>
-          )}
-        </div>
-      </div>
+          )
+        )}
+      </ElevationCard>
 
       {/* Quick Links */}
       <div style={{marginTop:16,display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10}}>
