@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { SlidingTabs } from '../components/ui/SlidingTabs.js';
+import { ElevationCard } from '../components/ui/ElevationCard.js';
 import { useLocation } from 'react-router-dom';
 import type { PoseFrame, PoseLandmark, AgentResult, FeedbackResponse } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
@@ -12,7 +13,7 @@ import { AgentStatusCard } from '../components/AgentStatusCard.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
 import { PainCheckIn } from '../components/PainCheckIn.js';
 import { StopSessionModal } from '../components/StopSessionModal.js';
-import { ExerciseAnimator } from '../components/ExerciseAnimator.js';
+import { ExerciseAnimationGuide } from '../components/ExerciseAnimationGuide.js';
 import type { UserProfile } from '@physiocore/types';
 import { MOCK_PROFILE } from '../lib/mockProfile.js';
 import { EXERCISE_LIBRARY, EXERCISE_KEYS_BY_CATEGORY } from '../lib/exerciseLibrary.js';
@@ -1184,29 +1185,17 @@ export default function Session() {
           </div>
 
           {/* Time preset selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.68rem', color: 'var(--text-secondary)', letterSpacing: '0.08em' }}>SESSION LENGTH:</span>
-            {(['15', '30', 'full'] as const).map(p => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setTimePreset(p)}
-                style={{
-                  padding: '5px 13px',
-                  borderRadius: '8px',
-                  border: `1px solid ${timePreset === p ? 'var(--border-teal)' : 'var(--border-default)'}`,
-                  background: timePreset === p ? 'rgba(0,212,170,0.1)' : 'transparent',
-                  color: timePreset === p ? 'var(--teal-500)' : 'var(--text-secondary)',
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: '0.75rem',
-                  fontWeight: timePreset === p ? 600 : 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {p === 'full' ? '∞' : `${p}m`}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.68rem', color: 'var(--text-secondary)', letterSpacing: '0.08em', flexShrink: 0 }}>SESSION LENGTH:</span>
+            <SlidingTabs
+              tabs={[
+                { key: '15',   label: '15m' },
+                { key: '30',   label: '30m' },
+                { key: 'full', label: '∞'   },
+              ]}
+              active={timePreset}
+              onChange={(k) => setTimePreset(k as typeof timePreset)}
+            />
           </div>
 
           {exercise === 'lunge' && (
@@ -1286,14 +1275,13 @@ export default function Session() {
           </div>
 
           <div style={{ flex: '0 0 188px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* F5 — Kaia-style live exercise animation (gym only) */}
-            {!isYogaMode && !isPilatesMode && isRunning && cfg && (
-              <ExerciseAnimator
+            {/* F5 — Kaia-style live exercise animation guide */}
+            {isRunning && (
+              <ExerciseAnimationGuide
                 exercise={exercise}
-                currentAngle={liveAngle}
-                targetRange={cfg.targetRange}
-                inRange={inRange}
-                isRunning={isRunning}
+                repCount={repCount}
+                poseConfidence={lowConfWarning ? 0.3 : 0.9}
+                formOk={inRange}
               />
             )}
             {isYogaMode ? (
@@ -1358,14 +1346,14 @@ export default function Session() {
                 {liveAngle === null ? 'DETECTING' : inRange ? 'IN RANGE ✓' : 'ADJUST'}
               </div>
             </div>
-            <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '12px', textAlign: 'center' as const }}>
+            <ElevationCard level={2} padding="12px" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                 {isYogaMode ? yogaCfgUI!.englishName : exercise.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}
               </div>
               {isYogaMode && <div style={{ fontSize: '0.75rem', color: '#a78bfa', fontStyle: 'italic', marginTop: '2px', fontFamily: "'Noto Serif', serif" }}>{yogaCfgUI!.sanskritName}</div>}
               {isPilatesMode && pilateCfgUI && !isPlankMode && <div style={{ fontSize: '0.75rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Target: {pilateCfgUI.targetLabel}</div>}
               {isPlankMode && <div style={{ fontSize: '0.75rem', color: '#f472b6', fontWeight: 600, marginTop: '2px' }}>Alignment scored/sec</div>}
-            </div>
+            </ElevationCard>
             {isRunning && (
               <>
                 {/* Remaining time pill */}
