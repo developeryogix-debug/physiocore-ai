@@ -31,7 +31,18 @@ export type {
   MaitlandGrade,
   McKenzieSyndrome,
 } from './phase3/conservativeAgent.js';
-export { EarlyMobAgent }          from './treatment/EarlyMobAgent.js';
+export { EarlyMobAgent }             from './treatment/EarlyMobAgent.js';
+export { EarlyMobProtocolAgent }     from './phase3/earlyMobAgent.js';
+export type {
+  EarlyMobProtocol,
+  FearAvoidanceProfile,
+  FearLadderStep,
+  GradedActivityQuota,
+  LoadingProtocol,
+  ReturnToActivityMilestone,
+  PainNeurosciencePoint,
+  FearAvoidanceCategory,
+} from './phase3/earlyMobAgent.js';
 export { TreatmentArbiterAgent }  from './treatment/TreatmentArbiterAgent.js';
 export { ProgressionAgent }       from './treatment/ProgressionAgent.js';
 export { PrescriptionAgent }      from './treatment/PrescriptionAgent.js';
