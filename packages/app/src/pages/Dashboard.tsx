@@ -17,6 +17,7 @@ interface DailyInsight { readiness: string; focus: string; action: string; }
 interface QuoteInsight { quote: string; citation: string; }
 
 import { scopedKey } from '../lib/storage.js';
+import { ProgressHub } from '../components/ProgressHub.js';
 
 function loadSessions(userId?: string): StoredSession[] {
   try { return JSON.parse(localStorage.getItem(scopedKey('physiocore_sessions', userId)) ?? '[]'); }
@@ -771,6 +772,8 @@ User context: goal=${goal}, conditions=${conditions}.`,
           )
         )}
       </ElevationCard>
+
+      <ProgressHub />
 
       {/* Quick Links */}
       <div style={{marginTop:16,display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10}}>

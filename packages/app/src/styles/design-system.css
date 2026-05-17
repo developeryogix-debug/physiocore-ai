@@ -45,6 +45,10 @@
   to   { opacity: 1; }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── Elevation card ────────────────────────────────────────────────────────── */
 
 .pc-elev-card {
