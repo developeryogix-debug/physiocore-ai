@@ -10,7 +10,7 @@ Last updated: 17 May 2026
 ## Identity
 
 - **App name:** PhysioCore AI
-- **Current phase:** 2.5 — UX Upgrade (in progress)
+- **Current phase:** 3 — Treatment Planning
 - **Stack:** Vite + React 18 + TypeScript SPA (**NOT Next.js** — never add "use client")
 - **Monorepo:** pnpm workspaces (11 packages, Turbo)
 - **Supabase project:** `qbrrugglfdwcapqrnahw` (Singapore ap-southeast-1)
@@ -44,8 +44,8 @@ Shorthand in commit messages: `[COUNCIL: APPROVED]` or `[COUNCIL: CSO-CONCERN: <
 |---|---|---|
 | 1 | Core Platform | ✅ COMPLETE |
 | 2 | Assessment Swarm (8 agents) | ✅ COMPLETE |
-| **2.5** | **UX Upgrade** | 🔶 CURRENT |
-| 3 | Treatment Planning (ConservativeAgent → TreatmentOrchestrator) | 🔜 NEXT |
+| **2.5** | **UX Upgrade** | ✅ COMPLETE |
+| **3** | **Treatment Planning (ConservativeAgent → TreatmentOrchestrator)** | 🔶 CURRENT |
 | 4 | Enterprise Agent Layer | ⏳ PLANNED |
 | 5 | Multi-model Router + RAG | ⏳ PLANNED |
 | 6 | Compliance Automation Engine | ⏳ PLANNED |
@@ -176,15 +176,23 @@ Shorthand in commit messages: `[COUNCIL: APPROVED]` or `[COUNCIL: CSO-CONCERN: <
 
 ---
 
-## Phase 2.5 — UX Upgrade (Current)
+## Phase 2.5 — UX Upgrade ✅ COMPLETE
 
-Priority order:
+Features shipped (17 May 2026):
 
-| # | Feature | Status |
-|---|---|---|
-| 1 | **Pre-session pain check-in** (0–10 modal, blocks if >7) | ⏳ NEXT |
-| 2 | **Stop + partial session save** (abandon mid-session, keep reps) | ⏳ NEXT |
-| 3 | Phase 3 **TreatmentOrchestrator** wire-up to /assessment UI | ⏳ NEXT |
+| Feature | Status |
+|---|---|
+| F1 Ghost Guide | ✅ |
+| F2 Pain Check-in | ✅ |
+| F3 Stop + Partial Sessions | ✅ |
+| F4 ROM Redesign + 14 new Norkin tests | ✅ |
+| F5 Kaia-style Live Animation | ✅ |
+| F6 Combined Download | ✅ |
+| F7 Clinical Nutrition | ✅ |
+| F8 Progress + Gamification | ✅ |
+| F9 Modern Design System | ✅ |
+
+## Phase 3 — Treatment Planning (Current)
 
 ---
 
