@@ -183,25 +183,25 @@ export default function Gym() {
   // ── Session complete ────────────────────────────────────────────────────────
   if (sessionDone && today && program) {
     return (
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 16px' }}>
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: '28px 24px' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '5.5rem 16px 32px' }}>
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-teal)', borderRadius: 16, padding: '28px 24px' }}>
           <div style={{ fontSize: '2rem', marginBottom: 8 }}>🎉</div>
-          <h2 style={{ margin: '0 0 4px', color: '#166534', fontSize: '1.3rem' }}>Workout Complete!</h2>
-          <p style={{ margin: '0 0 20px', color: '#16a34a', fontSize: '0.85rem' }}>{program.name} · {today.label}</p>
+          <h2 style={{ margin: '0 0 4px', color: 'var(--teal-500)', fontSize: '1.3rem' }}>Workout Complete!</h2>
+          <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{program.name} · {today.label}</p>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #dcfce7' }}>
-                <th style={{ textAlign: 'left', padding: '6px 4px', color: '#15803d' }}>Exercise</th>
-                <th style={{ textAlign: 'right', padding: '6px 4px', color: '#15803d' }}>Sets done</th>
-                <th style={{ textAlign: 'right', padding: '6px 4px', color: '#15803d' }}>Reps / set</th>
+              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <th style={{ textAlign: 'left', padding: '6px 4px', color: 'var(--teal-500)' }}>Exercise</th>
+                <th style={{ textAlign: 'right', padding: '6px 4px', color: 'var(--teal-500)' }}>Sets done</th>
+                <th style={{ textAlign: 'right', padding: '6px 4px', color: 'var(--teal-500)' }}>Reps / set</th>
               </tr>
             </thead>
             <tbody>
               {today.exs.map(ex => {
                 const exLogs = logs[ex.key] ?? [];
                 return (
-                  <tr key={ex.key} style={{ borderBottom: '1px solid #f0fdf4' }}>
-                    <td style={{ padding: '6px 4px', color: '#166534' }}>{ex.label}</td>
+                  <tr key={ex.key} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '6px 4px', color: 'var(--text-primary)' }}>{ex.label}</td>
                     <td style={{ textAlign: 'right', padding: '6px 4px' }}>{exLogs.length}/{ex.sets}</td>
                     <td style={{ textAlign: 'right', padding: '6px 4px' }}>
                       {exLogs.map(s => s.reps).join(', ') || '—'}
@@ -213,11 +213,11 @@ export default function Gym() {
           </table>
           <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
             <button onClick={() => { completeSession(); setLogs({}); setSessionDone(false); }}
-              style={{ flex: 1, padding: '10px 0', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+              style={{ flex: 1, padding: '10px 0', background: 'var(--teal-500)', color: 'var(--bg-void)', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
               Save & Next Session
             </button>
             <button onClick={() => navigate('/dashboard')}
-              style={{ flex: 1, padding: '10px 0', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+              style={{ flex: 1, padding: '10px 0', background: 'var(--bg-elevated)', color: 'var(--teal-500)', border: '1px solid var(--border-teal)', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
               Dashboard
             </button>
           </div>
@@ -230,18 +230,18 @@ export default function Gym() {
   // ── Program selector ────────────────────────────────────────────────────────
   if (!gymSt.programId) {
     return (
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 16px' }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: '1.5rem', color: '#0f172a' }}>Gym Workout</h1>
-        <p style={{ margin: '0 0 28px', color: '#64748b', fontSize: '0.9rem' }}>Select a program to get started</p>
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: '5.5rem 16px 32px' }}>
+        <h1 style={{ margin: '0 0 4px', fontSize: '1.5rem', color: 'var(--text-primary)' }}>Gym Workout</h1>
+        <p style={{ margin: '0 0 28px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Select a program to get started</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {programs.map(p => (
             <button key={p.id} onClick={() => selectProgram(p.id)}
-              style={{ textAlign: 'left', padding: '18px 20px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-              <div style={{ fontWeight: 600, fontSize: '1rem', color: '#0f172a', marginBottom: 4 }}>{p.name}</div>
-              <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 8 }}>{p.freq}</div>
+              style={{ textAlign: 'left', padding: '18px 20px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 14, cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}>
+              <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: 4 }}>{p.name}</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8 }}>{p.freq}</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {p.days.map(d => (
-                  <span key={d.label} style={{ background: '#f1f5f9', padding: '2px 9px', borderRadius: 20, fontSize: '0.75rem', color: '#475569' }}>{d.label}</span>
+                  <span key={d.label} style={{ background: 'var(--bg-elevated)', padding: '2px 9px', borderRadius: 20, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{d.label}</span>
                 ))}
               </div>
             </button>
@@ -258,25 +258,25 @@ export default function Gym() {
   const nextDayLabel = program.days[(gymSt.dayIdx + 1) % program.days.length]?.label ?? '';
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '100px 16px 80px' }}>
+    <div style={{ maxWidth: 680, margin: '0 auto', padding: '5.5rem 16px 80px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--teal-500)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
             {program.name}
           </div>
-          <h1 style={{ margin: '0 0 2px', fontSize: '1.4rem', color: '#0f172a' }}>Today: {today.label}</h1>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '0.82rem' }}>Next up: {nextDayLabel} · Session {gymSt.dayIdx + 1}</p>
+          <h1 style={{ margin: '0 0 2px', fontSize: '1.4rem', color: 'var(--text-primary)' }}>Today: {today.label}</h1>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.82rem' }}>Next up: {nextDayLabel} · Session {gymSt.dayIdx + 1}</p>
         </div>
         <button onClick={() => { setGymSt(s => { const n = { ...s, programId: null }; saveSt(n, gymUserId); return n; }); }}
-          style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', fontSize: '0.78rem' }}>
+          style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.78rem' }}>
           Change program
         </button>
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 6, background: '#e2e8f0', borderRadius: 99, marginBottom: 22, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: '#6366f1', borderRadius: 99, transition: 'width 0.3s' }} />
+      <div style={{ height: 6, background: 'var(--bg-elevated)', borderRadius: 99, marginBottom: 22, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: 'var(--teal-500)', borderRadius: 99, transition: 'width 0.3s' }} />
       </div>
 
       {/* Exercise cards */}
@@ -292,42 +292,42 @@ export default function Gym() {
 
           return (
             <div key={ex.key} onClick={() => !done && setActiveKey(k => k === ex.key ? null : ex.key)}
-              style={{ background: done ? '#f0fdf4' : '#fff', border: `1px solid ${done ? '#bbf7d0' : isActive ? '#6366f1' : '#e2e8f0'}`, borderRadius: 14, overflow: 'hidden', cursor: done ? 'default' : 'pointer', boxShadow: isActive ? '0 0 0 3px rgba(99,102,241,0.12)' : '0 1px 4px rgba(0,0,0,0.06)' }}>
+              style={{ background: done ? 'var(--teal-dim)' : 'var(--bg-surface)', border: `1px solid ${done ? 'var(--border-teal)' : isActive ? 'var(--teal-500)' : 'var(--border-subtle)'}`, borderRadius: 14, overflow: 'hidden', cursor: done ? 'default' : 'pointer', boxShadow: isActive ? '0 0 0 3px var(--teal-dim)' : '0 1px 4px rgba(0,0,0,0.2)' }}>
               {/* Card header */}
               <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: done ? '#16a34a' : '#0f172a' }}>{ex.label}</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: done ? 'var(--teal-500)' : 'var(--text-primary)' }}>{ex.label}</span>
                     {done && <span style={{ fontSize: '0.8rem' }}>✅</span>}
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>{targetTxt}</div>
-                  {hint && <div style={{ fontSize: '0.73rem', color: '#6366f1', marginTop: 2 }}>{hint}</div>}
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 2 }}>{targetTxt}</div>
+                  {hint && <div style={{ fontSize: '0.73rem', color: 'var(--teal-500)', marginTop: 2 }}>{hint}</div>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {/* Progress dots */}
                   <div style={{ display: 'flex', gap: 4 }}>
                     {Array.from({ length: ex.sets }).map((_, i) => (
-                      <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: i < exLogs.length ? '#6366f1' : '#e2e8f0' }} />
+                      <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: i < exLogs.length ? 'var(--teal-500)' : 'var(--bg-elevated)' }} />
                     ))}
                   </div>
-                  {!done && <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{isActive ? '▲' : '▼'}</span>}
+                  {!done && <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem' }}>{isActive ? '▲' : '▼'}</span>}
                 </div>
               </div>
 
               {/* Expanded panel */}
               {isActive && !done && (
-                <div style={{ borderTop: '1px solid #f1f5f9', padding: '14px 16px', background: '#fafbff' }}
+                <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '14px 16px', background: 'var(--bg-elevated)' }}
                   onClick={e => e.stopPropagation()}>
                   {/* Form cue */}
-                  <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.5, background: '#f1f5f9', padding: '8px 10px', borderRadius: 8 }}>
+                  <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5, background: 'var(--bg-surface)', padding: '8px 10px', borderRadius: 8 }}>
                     💡 {ex.formCue}
-                    {ex.progressTo && <span style={{ display: 'block', marginTop: 4, color: '#6366f1' }}>Progress to: {ex.progressTo}</span>}
+                    {ex.progressTo && <span style={{ display: 'block', marginTop: 4, color: 'var(--teal-500)' }}>Progress to: {ex.progressTo}</span>}
                   </p>
 
                   {/* Start camera */}
                   {ex.sessionKey && (
                     <button onClick={() => navigate(`/session?exercise=${ex.sessionKey}`)}
-                      style={{ width: '100%', padding: '9px 0', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 9, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', marginBottom: 10 }}>
+                      style={{ width: '100%', padding: '9px 0', background: 'var(--teal-500)', color: 'var(--bg-void)', border: 'none', borderRadius: 9, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', marginBottom: 10 }}>
                       📷 Start Camera Session
                     </button>
                   )}
@@ -338,31 +338,31 @@ export default function Gym() {
                       <input type="number" min={0} max={50} placeholder={`Reps (target ${ex.reps})`}
                         value={repInput[ex.key] ?? ''}
                         onChange={e => setRepInput(prev => ({ ...prev, [ex.key]: e.target.value }))}
-                        style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.85rem', outline: 'none' }} />
+                        style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }} />
                     ) : (
-                      <div style={{ flex: 1, padding: '8px 10px', borderRadius: 8, background: '#f1f5f9', fontSize: '0.82rem', color: '#64748b' }}>
+                      <div style={{ flex: 1, padding: '8px 10px', borderRadius: 8, background: 'var(--bg-surface)', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                         Held for 30 s
                       </div>
                     )}
                     <button onClick={() => logSet(ex)}
-                      style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', flexShrink: 0 }}>
+                      style={{ padding: '8px 16px', background: 'var(--text-primary)', color: 'var(--bg-void)', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', flexShrink: 0 }}>
                       Log Set {exLogs.length + 1}/{ex.sets}
                     </button>
                   </div>
 
                   {/* Rest timer */}
                   {isResting && (
-                    <div style={{ marginTop: 10, padding: '10px 14px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.82rem', color: '#c2410c', fontWeight: 600 }}>⏱ Rest {restLeft}s</span>
+                    <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--blue-dim)', border: '1px solid var(--blue-400)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--blue-400)', fontWeight: 600 }}>⏱ Rest {restLeft}s</span>
                       <div style={{ display: 'flex', gap: 6 }}>
                         {[60, 90, 120].map(s => (
                           <button key={s} onClick={() => startRest(ex.key, s)}
-                            style={{ padding: '3px 8px', borderRadius: 6, border: `1px solid ${restLeft === s ? '#f97316' : '#fed7aa'}`, background: 'transparent', color: '#c2410c', cursor: 'pointer', fontSize: '0.72rem' }}>
+                            style={{ padding: '3px 8px', borderRadius: 6, border: `1px solid var(--blue-400)`, background: 'transparent', color: 'var(--blue-400)', cursor: 'pointer', fontSize: '0.72rem' }}>
                             {s}s
                           </button>
                         ))}
                         <button onClick={() => { clearInterval(restRef.current!); setRestKey(null); }}
-                          style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #fed7aa', background: 'transparent', color: '#c2410c', cursor: 'pointer', fontSize: '0.72rem' }}>
+                          style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--blue-400)', background: 'transparent', color: 'var(--blue-400)', cursor: 'pointer', fontSize: '0.72rem' }}>
                           Skip
                         </button>
                       </div>
@@ -370,7 +370,7 @@ export default function Gym() {
                   )}
                   {!isResting && setsLeft > 0 && exLogs.length > 0 && (
                     <button onClick={() => startRest(ex.key, ex.restSecs)}
-                      style={{ marginTop: 8, width: '100%', padding: '7px 0', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', cursor: 'pointer', fontSize: '0.78rem' }}>
+                      style={{ marginTop: 8, width: '100%', padding: '7px 0', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 8, color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.78rem' }}>
                       Start {ex.restSecs}s rest timer
                     </button>
                   )}

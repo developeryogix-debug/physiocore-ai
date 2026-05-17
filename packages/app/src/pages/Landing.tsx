@@ -98,6 +98,8 @@ export default function Landing() {
             WebkitBackgroundClip: 'text',
             backgroundClip: 'text',
             color: 'transparent',
+            display: 'inline',
+            paddingBottom: '0.1em',
           }}>
             explains its reasoning
           </span>
@@ -137,6 +139,42 @@ export default function Landing() {
         }}>
           NO CREDIT CARD · NO ACCOUNT · RUNS IN-BROWSER
         </p>
+      </div>
+
+      {/* ── Live Stats ─────────────────────────────────────────────────────── */}
+      <div style={{
+        borderTop: '1px solid var(--border-subtle)',
+        borderBottom: '1px solid var(--border-subtle)',
+        padding: '20px 32px',
+        background: 'rgba(0,212,170,0.02)',
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 48,
+        flexWrap: 'wrap' as const,
+      }}>
+        {[
+          { val: '33', label: 'Pose landmarks tracked', unit: '' },
+          { val: '298', label: 'Competitors analyzed', unit: '+' },
+          { val: '0', label: 'Data leaves your device', unit: 'KB' },
+          { val: 'FHIR R4', label: 'EHR standard compliant', unit: '' },
+        ].map(s => (
+          <div key={s.label} style={{ textAlign: 'center' as const }}>
+            <div style={{
+              fontFamily: "'Space Mono', monospace",
+              fontSize: '1.4rem',
+              fontWeight: 700,
+              color: 'var(--teal-400)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1,
+              marginBottom: 4,
+            }}>
+              {s.val}{s.unit && <span style={{ fontSize: '0.9rem', color: 'var(--teal-600)' }}>{s.unit}</span>}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>
+              {s.label}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ── 7 Gaps strip ──────────────────────────────────────────────────── */}
@@ -241,6 +279,103 @@ export default function Landing() {
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.6 }}>{s.desc}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── Feature Showcase ──────────────────────────────────────────────── */}
+      <div style={{
+        background: 'var(--bg-void)',
+        padding: '80px 32px',
+        borderTop: '1px solid var(--border-subtle)',
+      }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center' as const, marginBottom: 56 }}>
+            <p style={{
+              fontSize: '0.7rem', fontWeight: 600, color: 'var(--teal-500)',
+              letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+              marginBottom: 12, fontFamily: "'Space Mono', monospace",
+            }}>PLATFORM CAPABILITIES</p>
+            <h2 className="font-display" style={{
+              fontSize: 'var(--text-2xl)', fontWeight: 600, letterSpacing: '-0.02em',
+              color: 'var(--text-primary)', marginBottom: 12,
+            }}>Every feature a clinician needs</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: 480, margin: '0 auto' }}>
+              Designed to bridge AI-powered exercise guidance with clinical accountability standards.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            {[
+              {
+                icon: '⬡',
+                title: 'Real-time pose analysis',
+                desc: 'MediaPipe detects 33 anatomical landmarks at 30fps. Front and side views with automatic landmark fallback when one view fails.',
+                tag: 'Lugaresi et al., 2019',
+                color: 'var(--teal-500)',
+              },
+              {
+                icon: '⬡',
+                title: 'Explainable AI feedback',
+                desc: 'Every form score comes with annotated reasoning — not a black box. Clinicians can audit AI decisions before acting on them.',
+                tag: 'Grade A evidence',
+                color: 'var(--blue-400)',
+              },
+              {
+                icon: '⬡',
+                title: 'FHIR R4 clinical export',
+                desc: 'One-click export of SOAP notes, CPT codes, and a valid FHIR R4 Bundle ready for any EHR system.',
+                tag: 'HL7 R4 compliant',
+                color: 'var(--teal-500)',
+              },
+              {
+                icon: '⬡',
+                title: 'Injury-aware exercise gating',
+                desc: 'Cross-references your active conditions against exercise contraindications. Dangerous combinations are blocked automatically.',
+                tag: 'Safety-first design',
+                color: 'var(--amber-400)',
+              },
+              {
+                icon: '⬡',
+                title: 'Evidence-based nutrition',
+                desc: 'TDEE via Mifflin-St Jeor equation. Protein targets at 1.6–2.2 g/kg. Every supplement recommendation carries a Grade A–D badge.',
+                tag: 'Stokes T et al., 2018',
+                color: 'var(--blue-400)',
+              },
+              {
+                icon: '⬡',
+                title: 'Retention engine',
+                desc: 'Churn prediction model tracks adherence. Personalized re-engagement nudges fire at optimal intervals using Tiny Habits principles.',
+                tag: 'Fogg, 2019',
+                color: 'var(--teal-500)',
+              },
+            ].map(f => (
+              <div key={f.title} className="card" style={{
+                border: '1px solid var(--border-subtle)',
+                transition: 'border-color 0.15s, transform 0.15s',
+              }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-teal)';
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-subtle)';
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                  <span style={{ color: f.color, fontSize: '1.1rem' }}>{f.icon}</span>
+                  <span style={{
+                    fontSize: '0.6rem', color: f.color, fontFamily: "'Space Mono', monospace",
+                    letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+                    background: f.color === 'var(--amber-400)' ? 'var(--amber-dim)' : f.color === 'var(--blue-400)' ? 'var(--blue-dim)' : 'var(--teal-dim)',
+                    padding: '3px 8px', borderRadius: 99,
+                  }}>{f.tag}</span>
+                </div>
+                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: 8, color: 'var(--text-primary)' }}>{f.title}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.65 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -399,31 +534,52 @@ export default function Landing() {
       <div style={{
         position: 'relative',
         overflow: 'hidden',
-        padding: '80px 32px',
+        padding: '100px 32px',
         textAlign: 'center' as const,
         background: 'var(--bg-surface)',
         borderTop: '1px solid var(--border-subtle)',
       }}>
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse 60% 60% at 50% 100%, rgba(0,212,170,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse 70% 50% at 50% 100%, rgba(0,212,170,0.08) 0%, transparent 70%)',
         }} />
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse 40% 30% at 30% 20%, rgba(77,184,255,0.04) 0%, transparent 60%)',
+        }} />
+        <p style={{
+          fontSize: '0.7rem', fontWeight: 600, color: 'var(--teal-500)',
+          letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+          marginBottom: 16, fontFamily: "'Space Mono', monospace",
+        }}>
+          GET STARTED FREE
+        </p>
         <h2 className="font-display" style={{
           fontSize: 'var(--text-3xl)',
           fontWeight: 600,
           letterSpacing: '-0.02em',
           marginBottom: 16,
           color: 'var(--text-primary)',
+          maxWidth: 640,
+          margin: '0 auto 16px',
         }}>
-          Start your assessment now — free, in 5 minutes
+          Your camera is all the equipment you need
         </h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 36, fontSize: '1rem', maxWidth: 480, margin: '0 auto 36px' }}>
-          No wearable required. Works on any laptop or desktop with a webcam.
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', maxWidth: 440, margin: '0 auto 16px', lineHeight: 1.7 }}>
+          No wearable. No subscription. No app download. Full clinical-grade AI physio in your browser in 5 minutes.
         </p>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 36, flexWrap: 'wrap' as const }}>
+          {['✓ Free forever', '✓ No account needed', '✓ Data never leaves device'].map(t => (
+            <span key={t} style={{
+              fontSize: '0.75rem', color: 'var(--text-tertiary)',
+              fontFamily: "'Space Mono', monospace",
+            }}>{t}</span>
+          ))}
+        </div>
         <button
           className="btn-primary"
           onClick={() => { navigate('/onboard'); }}
-          style={{ fontSize: '1rem', padding: '14px 36px' }}
+          style={{ fontSize: '1.05rem', padding: '15px 42px' }}
         >
           Start Free Assessment →
         </button>

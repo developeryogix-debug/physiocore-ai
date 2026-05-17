@@ -435,6 +435,105 @@ User context: goal=${goal}, conditions=${conditions}.`,
         </div>
       </div>
 
+      {/* Row 2: Next Workout + Progress Tracker */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+
+        {/* Panel: Next Session */}
+        <div style={card}>
+          <div style={pTitle}>Next Session</div>
+          {lastSession ? (
+            <div>
+              <div style={{
+                display:'flex', alignItems:'center', gap:12, marginBottom:16,
+                padding:'12px 14px', borderRadius:10,
+                background: daysSinceLast > 2 ? 'rgba(255,184,48,0.06)' : 'rgba(0,212,170,0.06)',
+                border: `1px solid ${daysSinceLast > 2 ? 'rgba(255,184,48,0.2)' : 'rgba(0,212,170,0.2)'}`,
+              }}>
+                <span style={{fontSize:'1.2rem'}}>{daysSinceLast > 2 ? '⚠️' : '✓'}</span>
+                <div>
+                  <div style={{fontSize:'0.8rem',fontWeight:600,color: daysSinceLast > 2 ? 'var(--warning)' : 'var(--teal-500)'}}>
+                    {daysSinceLast === 0 ? 'Trained today' : daysSinceLast === 1 ? 'Last session: yesterday' : `${daysSinceLast} days since last session`}
+                  </div>
+                  <div style={{fontSize:'0.72rem',color:'var(--text-tertiary)',fontFamily:"'Space Mono',monospace"}}>
+                    {lastSession.exercise.replace(/_/g,' ')} · {lastSession.formScore}% form
+                  </div>
+                </div>
+              </div>
+              <div style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text-secondary)',marginBottom:8}}>
+                Recommended next:
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {[
+                  { ex: userProfile.primaryGoal === 'rehabilitation' || userProfile.primaryGoal === 'pain_management' ? 'Physiotherapy protocol' : userProfile.primaryGoal === 'flexibility' ? 'Yoga / mobility flow' : 'Strength session', icon: '⬡' },
+                  { ex: daysSinceLast > 1 ? 'Active recovery walk (15 min)' : 'Mobility warm-up', icon: '◎' },
+                ].map(r => (
+                  <div key={r.ex} style={{
+                    display:'flex', alignItems:'center', gap:10,
+                    fontSize:'0.78rem', color:'var(--text-secondary)',
+                  }}>
+                    <span style={{color:'var(--teal-500)',fontSize:'0.65rem'}}>{r.icon}</span>
+                    {r.ex}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => navigate('/session')}
+                className="btn-primary"
+                style={{width:'100%',marginTop:16,padding:'9px 0',fontSize:'0.82rem'}}
+              >
+                Start session →
+              </button>
+            </div>
+          ) : (
+            <div style={{textAlign:'center',paddingTop:12}}>
+              <div style={{fontSize:'2rem',marginBottom:8}}>🎯</div>
+              <div style={{fontSize:'0.85rem',color:'var(--text-secondary)',marginBottom:16}}>No sessions yet</div>
+              <button onClick={() => navigate('/session')} className="btn-primary" style={{padding:'9px 20px',fontSize:'0.82rem'}}>
+                Start first session →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Panel: Form Trend */}
+        <div style={card}>
+          <div style={pTitle}>Form Trend (last 5)</div>
+          {recentScores.length >= 2 ? (
+            <div>
+              <div style={{display:'flex',alignItems:'baseline',gap:8,marginBottom:12}}>
+                <span style={{fontFamily:"'Space Mono',monospace",fontSize:'2rem',fontWeight:700,color: reg.slope >= 0 ? 'var(--teal-400)' : 'var(--danger)', lineHeight:1}}>
+                  {Math.round(reg.current ?? 0)}%
+                </span>
+                <span style={{fontSize:'0.78rem',color: reg.slope >= 0 ? 'var(--teal-500)' : 'var(--danger)', fontFamily:"'Space Mono',monospace"}}>
+                  {reg.slope >= 0 ? '↗' : '↘'} {Math.abs(reg.slope * 100).toFixed(0)}/session
+                </span>
+              </div>
+              <Sparkline data={recentScores} color={reg.slope >= 0 ? '#00D4AA' : '#ef4444'} w={200} h={50} />
+              <div style={{marginTop:12,display:'flex',gap:12}}>
+                <div style={{flex:1,padding:'8px 10px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:'1px solid var(--border-subtle)'}}>
+                  <div style={{fontSize:'0.65rem',color:'var(--text-tertiary)',fontFamily:"'Space Mono',monospace",marginBottom:3}}>BEST</div>
+                  <div style={{fontSize:'0.9rem',fontWeight:600,color:'var(--teal-500)',fontFamily:"'Space Mono',monospace"}}>{Math.max(...recentScores)}%</div>
+                </div>
+                <div style={{flex:1,padding:'8px 10px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:'1px solid var(--border-subtle)'}}>
+                  <div style={{fontSize:'0.65rem',color:'var(--text-tertiary)',fontFamily:"'Space Mono',monospace",marginBottom:3}}>AVG</div>
+                  <div style={{fontSize:'0.9rem',fontWeight:600,color:'var(--text-primary)',fontFamily:"'Space Mono',monospace"}}>{Math.round(recentScores.reduce((a,b)=>a+b,0)/recentScores.length)}%</div>
+                </div>
+                {reg.weeksToGoal !== Infinity && (
+                  <div style={{flex:1,padding:'8px 10px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:'1px solid var(--border-subtle)'}}>
+                    <div style={{fontSize:'0.65rem',color:'var(--text-tertiary)',fontFamily:"'Space Mono',monospace",marginBottom:3}}>85% IN</div>
+                    <div style={{fontSize:'0.9rem',fontWeight:600,color:'var(--blue-400)',fontFamily:"'Space Mono',monospace"}}>{reg.weeksToGoal}wk</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div style={{textAlign:'center',paddingTop:20,color:'var(--text-tertiary)',fontSize:'0.82rem'}}>
+              Complete 2+ sessions to see trend
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Panel 3: Biometrics Tracker */}
       <div style={{...card,marginBottom:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
@@ -460,6 +559,73 @@ User context: goal=${goal}, conditions=${conditions}.`,
           ))}
         </div>
       </div>
+
+      {/* Weekly Streak Banner */}
+      {sessions.length > 0 && (
+        <div style={{
+          marginBottom:16,
+          padding:'16px 20px',
+          borderRadius:14,
+          background:'rgba(0,212,170,0.04)',
+          border:'1px solid var(--border-teal)',
+          display:'flex',
+          alignItems:'center',
+          justifyContent:'space-between',
+          flexWrap:'wrap' as const,
+          gap:12,
+        }}>
+          <div style={{display:'flex',alignItems:'center',gap:16}}>
+            <div>
+              <div style={{fontFamily:"'Space Mono',monospace",fontSize:'0.65rem',letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--teal-500)',marginBottom:4}}>
+                THIS WEEK
+              </div>
+              <div style={{display:'flex',alignItems:'baseline',gap:6}}>
+                <span style={{fontFamily:"'Space Mono',monospace",fontSize:'1.8rem',fontWeight:700,color:'var(--teal-400)',lineHeight:1}}>
+                  {weekSess.length}
+                </span>
+                <span style={{fontSize:'0.8rem',color:'var(--text-secondary)'}}>/ 3 sessions</span>
+              </div>
+            </div>
+            <div style={{width:'1px',height:36,background:'var(--border-subtle)'}}/>
+            <div>
+              <div style={{fontFamily:"'Space Mono',monospace",fontSize:'0.65rem',letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-tertiary)',marginBottom:4}}>
+                TOTAL SESSIONS
+              </div>
+              <div style={{fontFamily:"'Space Mono',monospace",fontSize:'1.8rem',fontWeight:700,color:'var(--text-primary)',lineHeight:1}}>
+                {sessions.length}
+              </div>
+            </div>
+            <div style={{width:'1px',height:36,background:'var(--border-subtle)'}}/>
+            <div>
+              <div style={{fontFamily:"'Space Mono',monospace",fontSize:'0.65rem',letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text-tertiary)',marginBottom:4}}>
+                AVG FORM
+              </div>
+              <div style={{fontFamily:"'Space Mono',monospace",fontSize:'1.8rem',fontWeight:700,color: (sessions.reduce((s,x)=>s+x.formScore,0)/sessions.length) >= 75 ? 'var(--success)' : 'var(--warning)',lineHeight:1}}>
+                {Math.round(sessions.reduce((s,x)=>s+x.formScore,0)/sessions.length)}%
+              </div>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            {Array.from({length:7},(_,i)=>{
+              const d=new Date(); d.setDate(d.getDate()-6+i);
+              const iso=d.toISOString().slice(0,10);
+              const hasSession=sessions.some(s=>s.date.slice(0,10)===iso);
+              return (
+                <div key={i} title={iso} style={{
+                  width:28,height:28,borderRadius:6,
+                  background:hasSession?'var(--teal-500)':'rgba(255,255,255,0.04)',
+                  border:`1px solid ${hasSession?'var(--teal-500)':'var(--border-subtle)'}`,
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  fontSize:'0.6rem',color:hasSession?'#000':'var(--text-tertiary)',
+                  fontFamily:"'Space Mono',monospace",fontWeight:hasSession?700:400,
+                }}>
+                  {['S','M','T','W','T','F','S'][d.getDay()]}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Row 3: Heatmap + Radar */}
       <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:16,marginBottom:16,alignItems:'start'}}>
@@ -564,6 +730,44 @@ User context: goal=${goal}, conditions=${conditions}.`,
             </div>
           )}
         </div>
+      </div>
+
+      {/* Quick Links */}
+      <div style={{marginTop:16,display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10}}>
+        {[
+          {label:'Session',icon:'▶',path:'/session',desc:'Start exercise'},
+          {label:'Assessment',icon:'⬡',path:'/assessment',desc:'Full body eval'},
+          {label:'Nutrition',icon:'◉',path:'/nutrition',desc:'TDEE + meal plan'},
+          {label:'Clinician',icon:'✦',path:'/clinician',desc:'SOAP notes + CPT'},
+          {label:'History',icon:'◎',path:'/history',desc:'Session timeline'},
+        ].map(q=>(
+          <button
+            key={q.label}
+            onClick={()=>navigate(q.path)}
+            style={{
+              background:'var(--bg-surface)',
+              border:'1px solid var(--border-subtle)',
+              borderRadius:12,
+              padding:'14px 16px',
+              textAlign:'left' as const,
+              cursor:'pointer',
+              transition:'border-color 0.15s,transform 0.1s',
+              color:'var(--text-primary)',
+            }}
+            onMouseEnter={e=>{
+              (e.currentTarget as HTMLButtonElement).style.borderColor='var(--border-teal)';
+              (e.currentTarget as HTMLButtonElement).style.transform='translateY(-1px)';
+            }}
+            onMouseLeave={e=>{
+              (e.currentTarget as HTMLButtonElement).style.borderColor='var(--border-subtle)';
+              (e.currentTarget as HTMLButtonElement).style.transform='translateY(0)';
+            }}
+          >
+            <div style={{fontSize:'0.9rem',color:'var(--teal-500)',marginBottom:4}}>{q.icon}</div>
+            <div style={{fontSize:'0.82rem',fontWeight:600,marginBottom:2}}>{q.label}</div>
+            <div style={{fontSize:'0.7rem',color:'var(--text-tertiary)'}}>{q.desc}</div>
+          </button>
+        ))}
       </div>
     </div>
   );

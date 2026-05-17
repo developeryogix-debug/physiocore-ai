@@ -377,10 +377,10 @@ export default function SkillsGuide() {
             fontSize: 'clamp(2rem, 5vw, 2.75rem)',
             fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem',
           }}>
-            Claude <span style={{ color: 'var(--teal-500)' }}>Skills</span> Guide
+            AI <span style={{ color: 'var(--teal-500)' }}>Capabilities</span> Reference
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.6, maxWidth: 540, margin: '0 auto 0.5rem' }}>
-            19 specialised skills — know when to trigger each one.
+            A reference guide to AI-powered capabilities. Learn what each feature does and when to use it.
           </p>
 
           {/* Stat pills */}
@@ -501,7 +501,7 @@ export default function SkillsGuide() {
               { color: '#4DB8FF', label: 'Match triggers', tip: 'Each skill has specific trigger phrases — if your request matches these, the skill activates automatically.' },
               { color: '#00E676', label: 'Combine skills', tip: 'Many tasks benefit from chaining skills, e.g. pdf-reading + docx to extract then reformat.' },
               { color: '#a78bfa', label: 'Be explicit', tip: "Mention a skill by name to guarantee activation: \"Use the frontend-design skill to…\"" },
-              { color: '#FFB830', label: 'Check references', tip: 'Consult product-self-knowledge, dev-kapil-profile, and brand-guidelines before content that references them.' },
+              { color: '#FFB830', label: 'Check references', tip: 'Consult product-self-knowledge and brand-guidelines before content that references them.' },
               { color: '#FF6B6B', label: 'Chain workflows', tip: 'doc-coauthoring → structure → docx → output → theme-factory → brand.' },
             ].map(({ color, label, tip }) => (
               <div key={label} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>

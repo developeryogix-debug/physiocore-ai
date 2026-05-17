@@ -148,6 +148,25 @@ export default function History() {
     return Array.from(map.values()).sort((a, b) => b.avg_score - a.avg_score);
   }, [sessions]);
 
+  const exportCSV = () => {
+    const headers = ['Date', 'Exercise', 'Reps', 'Form Score (%)', 'AI Feedback'];
+    const rows = sessions.map(s => [
+      new Date(s.date).toLocaleDateString(),
+      s.exercise.replace(/_/g, ' '),
+      String(s.reps),
+      String(s.avg_score),
+      s.ai_feedback_summary ?? '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `physiocore-history-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!userProfile) return null;
 
   const card: React.CSSProperties = {
@@ -158,9 +177,32 @@ export default function History() {
   return (
     <div style={{ padding: '100px 24px 80px', maxWidth: 900, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <p style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Session History</p>
-        <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, margin: 0 }}>Your Training Record</h1>
+      <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <p style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.68rem', color: 'var(--teal-500)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>Session History</p>
+          <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, margin: 0 }}>Your Training Record</h1>
+        </div>
+        {sessions.length > 0 && (
+          <button
+            onClick={exportCSV}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border-teal)',
+              borderRadius: 8,
+              padding: '8px 18px',
+              fontSize: '0.75rem',
+              color: 'var(--teal-500)',
+              cursor: 'pointer',
+              fontFamily: "'Space Mono', monospace",
+              letterSpacing: '0.05em',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-dim)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          >
+            Export CSV ↓
+          </button>
+        )}
       </div>
 
       {/* Stats row */}
