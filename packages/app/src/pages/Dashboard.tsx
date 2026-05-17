@@ -18,6 +18,7 @@ interface QuoteInsight { quote: string; citation: string; }
 
 import { scopedKey } from '../lib/storage.js';
 import { ProgressHub } from '../components/ProgressHub.js';
+import { DownloadReport } from '../components/DownloadReport.js';
 
 function loadSessions(userId?: string): StoredSession[] {
   try { return JSON.parse(localStorage.getItem(scopedKey('physiocore_sessions', userId)) ?? '[]'); }
@@ -337,16 +338,19 @@ User context: goal=${goal}, conditions=${conditions}.`,
             <span style={{color:'var(--teal-500)',fontFamily:"'Space Mono', monospace",fontSize:'0.75rem'}}>{(userProfile.subscription??'free').toUpperCase()}</span>
           </p>
         </div>
-        <SlidingTabs
-          tabs={[
-            { key: '7d',  label: '7 days'  },
-            { key: '30d', label: '30 days' },
-            { key: '90d', label: '90 days' },
-            { key: 'all', label: 'All time' },
-          ]}
-          active={timeRange}
-          onChange={(k) => setTimeRange(k as typeof timeRange)}
-        />
+        <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+          <SlidingTabs
+            tabs={[
+              { key: '7d',  label: '7 days'  },
+              { key: '30d', label: '30 days' },
+              { key: '90d', label: '90 days' },
+              { key: 'all', label: 'All time' },
+            ]}
+            active={timeRange}
+            onChange={(k) => setTimeRange(k as typeof timeRange)}
+          />
+          <DownloadReport patientId={userProfile.id} compact label="↓ Export" />
+        </div>
       </div>
 
       {/* Daily Insight card */}

@@ -3,6 +3,7 @@ import { useUserProfile } from '../hooks/useUserProfile.js';
 import { supabase } from '@physiocore/supabase';
 import { scopedKey } from '../lib/storage.js';
 import { AiChatPanel } from '../components/AiChatPanel.js';
+import { DownloadReport } from '../components/DownloadReport.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -183,25 +184,12 @@ export default function History() {
           <h1 className="font-display" style={{ fontSize: 'var(--text-3xl)', fontWeight: 600, margin: 0 }}>Your Training Record</h1>
         </div>
         {sessions.length > 0 && (
-          <button
-            onClick={exportCSV}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--border-teal)',
-              borderRadius: 8,
-              padding: '8px 18px',
-              fontSize: '0.75rem',
-              color: 'var(--teal-500)',
-              cursor: 'pointer',
-              fontFamily: "'Space Mono', monospace",
-              letterSpacing: '0.05em',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-dim)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-          >
-            Export CSV ↓
-          </button>
+          <DownloadReport
+            patientId={userProfile.id}
+            compact
+            defaultFormat="csv"
+            label="↓ Export"
+          />
         )}
       </div>
 
