@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { UserProfile, BodyPart, Equipment } from '@physiocore/types';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import { scopedKey } from '../lib/storage.js';
@@ -234,7 +235,7 @@ export default function OnboardingWizard() {
     cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.15s',
   });
 
-  return (
+  return createPortal(
     <div style={overlay}>
       <div style={card}>
         {/* Progress dots + bar */}
@@ -427,6 +428,7 @@ export default function OnboardingWizard() {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
