@@ -156,6 +156,38 @@ Block dangerous combos with modification suggestions
 ### Next Prompt — AI Trainer Chat (/trainer):
 Full streaming chat page (NOT the floating panel - a dedicated page)
 [paste full trainer spec from original prompt]
+## Available Claude Skills (invoke by name or trigger phrase)
+
+| Skill | Category | When to use |
+|---|---|---|
+| `frontend-design` | Web Dev | UI components, landing pages, dashboards, visual design |
+| `web-artifacts-builder` | Web Dev | Multi-component apps with routing/state |
+| `docx` | Documents | Word docs, letters, reports with tables/headers |
+| `pdf` | Documents | Read, merge, fill, encrypt PDFs |
+| `pdf-reading` | Files | Extract text/tables/images from PDFs |
+| `pptx` | Documents | Slide decks, pitch decks, presentations |
+| `xlsx` | Data | Spreadsheets, CSV, data cleaning, financial models |
+| `doc-coauthoring` | Writing | Technical specs, proposals, formal documentation |
+| `internal-comms` | Writing | Status reports, newsletters, incident reports |
+| `canvas-design` | Visual | Posters, illustrations, graphic design |
+| `theme-factory` | Visual | Apply colour themes to slides/docs/web pages |
+| `algorithmic-art` | Visual | Generative art with p5.js |
+| `brand-guidelines` | Visual | Anthropic brand colours & typography |
+| `mcp-builder` | Advanced | MCP servers for external API integrations |
+| `skill-creator` | Advanced | Build/optimise new Claude skills |
+| `product-self-knowledge` | AI | Accurate Claude API facts, pricing, limits |
+| `dev-kapil-profile` | Context | Dev Kapil's professional background & expertise |
+| `file-reading` | Files | Router — determines correct handler for any file type |
+
+### Skill Combinations
+- **Branded deck**: `pptx` + `theme-factory` + `brand-guidelines`
+- **PDF → report**: `pdf-reading` → `docx`
+- **Full web app**: `frontend-design` + `web-artifacts-builder`
+- **Project docs**: `doc-coauthoring` + `docx` + `canvas-design`
+- **PDF insights**: `pdf-reading` + `doc-coauthoring` + `docx`
+
+> **Tip**: Name the skill explicitly — "Use the `frontend-design` skill to…" — to guarantee activation.
+
 ## Global Vision — Read Before Every Session
 Read VISION.md and CONTEXT.md at the start of every session.
 Read POSTURE_SYSTEM.md before any posture or assessment work.

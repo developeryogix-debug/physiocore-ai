@@ -493,6 +493,22 @@ ConsensusAgent report
 
 ---
 
+## Claude Skills Reference
+
+> Full skill table is in `CLAUDE.md`. Quick reference for common build tasks:
+
+| Goal | Invoke |
+|---|---|
+| Build UI page / component | `frontend-design` skill |
+| Create Word/PDF report export | `docx` + `pdf` skills |
+| Build multi-component web app | `web-artifacts-builder` skill |
+| Write technical spec / proposal | `doc-coauthoring` skill |
+| Generate branded presentation | `pptx` + `theme-factory` + `brand-guidelines` |
+| Extract data from uploaded PDF | `pdf-reading` skill |
+| Create MCP server integration | `mcp-builder` skill |
+
+---
+
 ## Next Build Priorities
 
 1. **Sapiens E2E test** — run posture capture, verify `🔬 Sapiens 308pt` badge appears (Phase 6 final)
