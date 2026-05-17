@@ -19,7 +19,18 @@ export type { PainMapInput, PainMapReport, PainRegion, PainQuality, PainBehaviou
 export { SpecialTestsAgent, createSpecialTestsAgent } from './specialTests/SpecialTestsAgent.js';
 
 // Phase 3 — Treatment Planning
-export { ConservativeAgent }      from './treatment/ConservativeAgent.js';
+export { ConservativeAgent }         from './treatment/ConservativeAgent.js';
+export { ConservativeProtocolAgent } from './phase3/conservativeAgent.js';
+export type {
+  ConservativeProtocol,
+  McKenzieClassification,
+  ManualTherapyTechnique,
+  ActivityModification,
+  RestProtocol,
+  McKenzieExercise,
+  MaitlandGrade,
+  McKenzieSyndrome,
+} from './phase3/conservativeAgent.js';
 export { EarlyMobAgent }          from './treatment/EarlyMobAgent.js';
 export { TreatmentArbiterAgent }  from './treatment/TreatmentArbiterAgent.js';
 export { ProgressionAgent }       from './treatment/ProgressionAgent.js';
