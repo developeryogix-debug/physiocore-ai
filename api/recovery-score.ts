@@ -134,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('patient_id', patientId).order('computed_at', { ascending: false }).limit(1),
   ]);
 
-  const existingTypes = (existingMs ?? []).map(m => m.type as MilestoneType);
+  const existingTypes = (existingMs ?? []).map((m: { type: string }) => m.type as MilestoneType);
   const previousScore: number | null = prevScores?.[0]?.score ?? null;
 
   // Compute deterministic score
@@ -165,7 +165,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Build full milestone list for response
   const milestones = (Object.entries(MILESTONE_META) as Array<[MilestoneType, { label: string; desc: string }]>)
     .map(([type, meta]) => {
-      const ex = existingMs?.find(m => m.type === type);
+      const ex = existingMs?.find((m: { type: string; unlocked_at: string }) => m.type === type);
       const isNew = newMilestones.includes(type);
       return {
         type, label: meta.label, desc: meta.desc,
