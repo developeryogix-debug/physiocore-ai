@@ -1,5 +1,5 @@
 # PhysioCore AI — Master Constitution
-Last updated: 17 May 2026
+Last updated: 18 May 2026
 
 > This document is the single source of truth for architecture decisions, build rules,
 > phase status, and LLM council governance. Read before every session and before any
@@ -10,7 +10,7 @@ Last updated: 17 May 2026
 ## Identity
 
 - **App name:** PhysioCore AI
-- **Current phase:** 3 — Treatment Planning
+- **Current phase:** 4 — Enterprise Agent Layer
 - **Stack:** Vite + React 18 + TypeScript SPA (**NOT Next.js** — never add "use client")
 - **Monorepo:** pnpm workspaces (11 packages, Turbo)
 - **Supabase project:** `qbrrugglfdwcapqrnahw` (Singapore ap-southeast-1)
@@ -45,8 +45,8 @@ Shorthand in commit messages: `[COUNCIL: APPROVED]` or `[COUNCIL: CSO-CONCERN: <
 | 1 | Core Platform | ✅ COMPLETE |
 | 2 | Assessment Swarm (8 agents) | ✅ COMPLETE |
 | **2.5** | **UX Upgrade** | ✅ COMPLETE |
-| **3** | **Treatment Planning (ConservativeAgent → TreatmentOrchestrator)** | 🔶 CURRENT |
-| 4 | Enterprise Agent Layer | ⏳ PLANNED |
+| 3 | Treatment Planning (ConservativeAgent → TreatmentOrchestrator) | ✅ COMPLETE |
+| **4** | **Enterprise Agent Layer** | 🔶 CURRENT |
 | 5 | Multi-model Router + RAG | ⏳ PLANNED |
 | 6 | Compliance Automation Engine | ⏳ PLANNED |
 | 7 | Full DevOps (Kubernetes) | ⏳ PLANNED |
@@ -96,6 +96,7 @@ Shorthand in commit messages: `[COUNCIL: APPROVED]` or `[COUNCIL: CSO-CONCERN: <
 | `PainMap.tsx` | `/pain-map` | Interactive body map, NPRS, quality/behaviour chips, Supabase sync |
 | `FunctionalAssessment.tsx` | `/functional` | PSFS + TUG + 30s Chair Stand, Haiku summary, age-adjusted norms |
 | `GaitAssessment.tsx` | `/gait-assessment` | Live MediaPipe gait — cadence, symmetry, trunk sway, Trendelenburg |
+| `TreatmentPlan.tsx` | `/treatment-plan` | Phase 3 UI — ArbiterVerdict ring, protocol summary, today's exercises, progression |
 | `ROMAssessment.tsx` | `/rom-assessment` | (legacy, kept for reference) |
 | `Pricing.tsx` | `/pricing` | 3 tiers (Free / Pro / Clinical), Stripe checkout stubs |
 | `Admin.tsx` | `/admin` | Multi-tenant org panel |
@@ -130,16 +131,16 @@ Shorthand in commit messages: `[COUNCIL: APPROVED]` or `[COUNCIL: CSO-CONCERN: <
 | ConsensusAgent | claude-sonnet-4-6 | `consensus/ConsensusAgent.ts` |
 | AssessmentOrchestrator | orchestrator | `orchestrator/AssessmentOrchestrator.ts` |
 
-### AI Agents — Treatment Planning (`packages/agents/assessment/src/treatment/`)
+### AI Agents — Treatment Planning Phase 3 (`packages/agents/assessment/src/phase3/`)
 
 | Agent | Model | File | Status |
 |---|---|---|---|
-| ConservativeAgent | claude-sonnet-4-6 | `treatment/ConservativeAgent.ts` | ✅ BUILT |
-| EarlyMobAgent | claude-sonnet-4-6 | `treatment/EarlyMobAgent.ts` | ✅ BUILT |
-| TreatmentArbiterAgent | claude-opus-4-6 | `treatment/TreatmentArbiterAgent.ts` | ✅ BUILT |
-| ProgressionAgent | claude-haiku-4-5-20251001 | `treatment/ProgressionAgent.ts` | ✅ BUILT |
-| PrescriptionAgent | claude-haiku-4-5-20251001 | `treatment/PrescriptionAgent.ts` | ✅ BUILT |
-| TreatmentOrchestrator | orchestrator | `treatment/TreatmentOrchestrator.ts` | ✅ BUILT |
+| ConservativeProtocolAgent | claude-sonnet-4-20250514 | `phase3/conservativeAgent.ts` | ✅ BUILT |
+| EarlyMobProtocolAgent | claude-sonnet-4-20250514 | `phase3/earlyMobAgent.ts` | ✅ BUILT |
+| TreatmentArbiterPhase3Agent | claude-opus-4-6 | `phase3/treatmentArbiterAgent.ts` | ✅ BUILT |
+| ProgressionAgent | claude-haiku-4-5-20251001 | `phase3/progressionAgent.ts` | ✅ BUILT |
+| PrescriptionAgentPhase3 | claude-sonnet-4-20250514 | `phase3/prescriptionAgent.ts` | ✅ BUILT |
+| TreatmentOrchestrator | orchestrator | `phase3/treatmentOrchestrator.ts` | ✅ BUILT |
 
 ### AI Clients (`packages/app/src/lib/agents/`)
 
@@ -192,7 +193,23 @@ Features shipped (17 May 2026):
 | F8 Progress + Gamification | ✅ |
 | F9 Modern Design System | ✅ |
 
-## Phase 3 — Treatment Planning (Current)
+## Phase 3 — Treatment Planning ✅ COMPLETE
+
+Shipped 18 May 2026:
+
+| Deliverable | File | Status |
+|---|---|---|
+| ConservativeProtocolAgent (McKenzie MDT + Maitland) | `phase3/conservativeAgent.ts` | ✅ |
+| EarlyMobProtocolAgent (fear-avoidance + graded exposure) | `phase3/earlyMobAgent.ts` | ✅ |
+| TreatmentArbiterPhase3Agent (Opus 3-round debate) | `phase3/treatmentArbiterAgent.ts` | ✅ |
+| ProgressionAgent (Haiku, every 4 sessions, 2-for-2 rule) | `phase3/progressionAgent.ts` | ✅ |
+| PrescriptionAgentPhase3 (Sonnet → FHIR R4 CarePlan) | `phase3/prescriptionAgent.ts` | ✅ |
+| TreatmentOrchestrator (parallel Step 1, Supabase save) | `phase3/treatmentOrchestrator.ts` | ✅ |
+| Treatment Plan UI (confidence ring, tabs, download PDF) | `pages/TreatmentPlan.tsx` | ✅ |
+
+---
+
+## Phase 4 — Enterprise Agent Layer (Current)
 
 ---
 
