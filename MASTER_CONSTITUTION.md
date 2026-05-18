@@ -211,6 +211,13 @@ Shipped 18 May 2026:
 
 ## Phase 4 — Enterprise Agent Layer (Current)
 
+| Deliverable | File | Status |
+|---|---|---|
+| ResearchAgent (PubMed weekly digest, Mon 1am UTC / 9am SGT) | `api/agents/research-digest.ts` | ✅ BUILT |
+| ComplianceAgent (MOH/PDPA monthly check, 1st of month 0am UTC) | `api/agents/compliance-check.ts` | ✅ BUILT |
+| SecurityAgent (weekly scan cron, Sun 6pm UTC) | `api/agents/security-scan.ts` | 🔶 BUILDING |
+| Admin Governance Dashboard | `pages/AdminGovernance.tsx` | 🔶 BUILDING |
+
 ---
 
 ## Phase 6 — Sapiens Precision (In Progress)
