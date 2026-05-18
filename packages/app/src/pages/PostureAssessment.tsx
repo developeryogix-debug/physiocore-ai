@@ -342,10 +342,10 @@ export default function PostureAssessment() {
 
   const handleBeginCapture = useCallback(async () => {
     setPhase('capturing'); setViewIndex(0); setFrames({}); setIsRetake(false);
+    speak('Starting posture assessment. Stand 2 to 3 metres from the camera.');
     await startCamera();
     loadLandmarker().then(lm => { landmarkerRef.current = lm; }).catch(() => {});
     rafRef.current = requestAnimationFrame(renderLoop);
-    speak('Starting posture assessment. Stand 2 to 3 metres from the camera.');
     timerRef.current = setTimeout(() => runAllViews(0), 3000);
   }, [startCamera, renderLoop, runAllViews]);
 
@@ -361,10 +361,10 @@ export default function PostureAssessment() {
   const startRetake = useCallback(async (viewKey: ViewKey) => {
     const viewIdx = VIEWS.findIndex(v => v.key === viewKey);
     setIsRetake(true); setPhase('capturing'); setViewIndex(viewIdx);
+    speak('Retaking this view. Get ready.');
     await startCamera();
     loadLandmarker().then(lm => { landmarkerRef.current = lm; }).catch(() => {});
     rafRef.current = requestAnimationFrame(renderLoop);
-    speak('Retaking this view. Get ready.');
     timerRef.current = setTimeout(() => {
       runCountdown(viewIdx, () => {
         speak('View captured.');
@@ -461,6 +461,23 @@ export default function PostureAssessment() {
       setExportingPdf(null);
     }
   }, [postureReport, frames, userProfile]);
+
+  // ── Camera stream → video element (race-condition fix) ───────────────────────
+  // startCamera() fires before React re-renders phase → 'capturing', so videoRef
+  // is null at assignment time. This effect runs after the render, finds the
+  // mounted <video> element, and wires the stream.
+
+  useEffect(() => {
+    if (phase !== 'capturing') return;
+    const video = videoRef.current;
+    if (!video || !streamRef.current) return;
+    if (video.srcObject !== streamRef.current) {
+      video.srcObject = streamRef.current;
+      void video.play().catch(() => {});
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(renderLoop);
+    }
+  }, [phase, renderLoop]);
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
 
