@@ -28,6 +28,7 @@ import OnboardingWizard from './components/OnboardingWizard.js';
 import Admin from './pages/Admin.js';
 import OrgDashboard from './pages/OrgDashboard.js';
 import Pricing from './pages/Pricing.js';
+import TreatmentPlan from './pages/TreatmentPlan.js';
 
 function LoadingScreen() {
   return (
@@ -140,8 +141,9 @@ function AppContent() {
           <Route path="/pain-map"  element={<ProtectedRoute><PainMap /></ProtectedRoute>} />
           <Route path="/rom-assessment"    element={<ProtectedRoute><GuidedROMAssessment /></ProtectedRoute>} />
           <Route path="/gait-assessment"  element={<ProtectedRoute><GaitAssessment /></ProtectedRoute>} />
-          <Route path="/functional"       element={<ProtectedRoute><FunctionalAssessment /></ProtectedRoute>} />
+          <Route path="/functional"        element={<ProtectedRoute><FunctionalAssessment /></ProtectedRoute>} />
           <Route path="/gait-assessment"  element={<ProtectedRoute><GaitAssessment /></ProtectedRoute>} />
+          <Route path="/treatment-plan"   element={<ProtectedRoute><TreatmentPlan /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
         </Routes>

@@ -29,14 +29,15 @@ const MOBILE_TABS = [
 ];
 
 const DESKTOP_LINKS = [
-  {to:'/dashboard', label:'Dashboard', end:true},
-  {to:'/session',   label:'Session'},
-  {to:'/history',   label:'History'},
-  {to:'/trainer',   label:'Trainer'},
-  {to:'/nutrition', label:'Nutrition'},
-  {to:'/outcomes',  label:'Outcomes'},
-  {to:'/gym',       label:'Gym'},
-  {to:'/settings',  label:'Settings'},
+  {to:'/dashboard',      label:'Dashboard', end:true},
+  {to:'/session',        label:'Session'},
+  {to:'/history',        label:'History'},
+  {to:'/trainer',        label:'Trainer'},
+  {to:'/nutrition',      label:'Nutrition'},
+  {to:'/treatment-plan', label:'Treatment'},
+  {to:'/outcomes',       label:'Outcomes'},
+  {to:'/gym',            label:'Gym'},
+  {to:'/settings',       label:'Settings'},
 ];
 
 const ASSESSMENT_ITEMS = [
