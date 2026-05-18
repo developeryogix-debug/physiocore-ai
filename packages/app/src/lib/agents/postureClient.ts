@@ -330,7 +330,39 @@ Output ONLY valid JSON matching exactly:
 export async function analysePosture(
   measurements: PostureMeasurements,
   userConditions: string[],
+  imageBase64?: string,
 ): Promise<PostureReport> {
+  // ── Sapiens 308-keypoint precision fallback ──────────────────────────────────
+  // If VITE_SAPIENS_ENDPOINT is configured and a frame image is provided, try
+  // Sapiens first (8 s timeout). On success, re-derive measurements from the
+  // higher-density landmarks. Any failure falls through to MediaPipe measurements.
+  const sapiensEndpoint = (import.meta.env['VITE_SAPIENS_ENDPOINT'] as string | undefined) ?? '';
+  if (imageBase64 && sapiensEndpoint) {
+    try {
+      const sRes = await fetch(sapiensEndpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ data: [imageBase64] }),
+        signal:  AbortSignal.timeout(8_000),
+      });
+      if (sRes.ok) {
+        const payload = await sRes.json() as {
+          data: [{ landmarks: SapiensLandmark[]; sapiensAvailable: boolean; processingMs: number }];
+        };
+        const hit = payload.data?.[0];
+        if (hit?.sapiensAvailable && Array.isArray(hit.landmarks) && hit.landmarks.length > 0) {
+          console.log('[Sapiens] Using Sapiens 308-keypoint precision');
+          measurements = extractMeasurements(
+            hit.landmarks.map(lm => ({ x: lm.x, y: lm.y, z: 0, visibility: lm.confidence })),
+            null,
+          );
+        }
+      }
+    } catch {
+      // Fall through to MediaPipe-derived measurements
+    }
+  }
+
   const condStr = userConditions.length > 0
     ? `Patient conditions: ${userConditions.join(', ')}.`
     : 'No known conditions reported.';
