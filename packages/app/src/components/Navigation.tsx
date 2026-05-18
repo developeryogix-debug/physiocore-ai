@@ -298,6 +298,21 @@ export default function Navigation() {
         </NavLink>
       )}
 
+      {/* Governance — admin + org_admin */}
+      {(userRole === 'admin' || userRole === 'org_admin') && (
+        <NavLink to="/admin/governance"
+          style={({isActive})=>({
+            padding:'5px 12px',borderRadius:'50px',textDecoration:'none',
+            fontSize:'0.8rem',fontWeight:isActive?600:500,
+            background:isActive?'rgba(139,92,246,0.15)':'transparent',
+            color:isActive?'#a78bfa':'var(--text-secondary)',
+            border:isActive?'1px solid rgba(139,92,246,0.25)':'1px solid transparent',
+            transition:'all 0.15s',
+          })}>
+          Governance
+        </NavLink>
+      )}
+
       {/* Avatar + dropdown */}
       {user&&(
         <div ref={menuRef} style={{position:'relative',marginLeft:'6px',paddingLeft:'8px',borderLeft:'1px solid rgba(255,255,255,0.06)'}}>

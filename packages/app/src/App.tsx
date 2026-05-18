@@ -26,6 +26,7 @@ import FunctionalAssessment from './pages/FunctionalAssessment.js';
 import GaitAssessment from './pages/GaitAssessment.js';
 import OnboardingWizard from './components/OnboardingWizard.js';
 import Admin from './pages/Admin.js';
+import AdminGovernance from './pages/AdminGovernance.js';
 import OrgDashboard from './pages/OrgDashboard.js';
 import Pricing from './pages/Pricing.js';
 import TreatmentPlan from './pages/TreatmentPlan.js';
@@ -84,6 +85,13 @@ function AdminRoute() {
   return <Admin />;
 }
 
+/** Guards /admin/governance — admin + org_admin */
+function GovernanceRoute() {
+  const { userRole } = useAuth();
+  if (userRole !== 'admin' && userRole !== 'org_admin') return <Navigate to="/dashboard" replace />;
+  return <AdminGovernance />;
+}
+
 /** Guards /org-dashboard — org_admin or admin */
 function OrgAdminRoute() {
   const { userRole } = useAuth();
@@ -130,7 +138,8 @@ function AppContent() {
           <Route path="/nutrition"  element={<ProtectedRoute><Nutrition /></ProtectedRoute>} />
           <Route path="/clinician"      element={<ProtectedRoute><ClinicianRoute /></ProtectedRoute>} />
           <Route path="/org-dashboard"  element={<ProtectedRoute><OrgAdminRoute /></ProtectedRoute>} />
-          <Route path="/admin"          element={<ProtectedRoute><AdminRoute /></ProtectedRoute>} />
+          <Route path="/admin"            element={<ProtectedRoute><AdminRoute /></ProtectedRoute>} />
+          <Route path="/admin/governance" element={<ProtectedRoute><GovernanceRoute /></ProtectedRoute>} />
           <Route path="/behavior"   element={<ProtectedRoute><Behavior /></ProtectedRoute>} />
           <Route path="/gym"        element={<ProtectedRoute><Gym /></ProtectedRoute>} />
           <Route path="/history"   element={<ProtectedRoute><History /></ProtectedRoute>} />
