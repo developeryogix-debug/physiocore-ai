@@ -5,11 +5,12 @@
  * SaMD Class II: output is decision support, never autonomous clinical action.
  *
  * Body: { nutrient: string, phase: string, condition?: string }
- * Returns: { insight: string, pmid: string }
+ * Returns: { insight: string, pmid: string, model: string, fallback: boolean }
+ *
+ * Phase 5 router: non-clinical call, can fallback to GPT-4o-mini on Claude 529.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-const ANTHROPIC_KEY = process.env['VITE_ANTHROPIC_KEY'] ?? '';
+import { routedFetch } from '../packages/app/src/lib/modelRouter.js';
 
 const PMID_MAP: Record<string, string> = {
   'omega-3':             '28965053',
@@ -44,48 +45,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const pmid = lookupPmid(nutrient);
-
-  if (!ANTHROPIC_KEY) {
-    return res.status(200).json({
-      insight: `${nutrient} supports recovery in the ${phase} phase. Consult a registered dietitian for personalised dosing.`,
-      pmid,
-    });
-  }
+  const conditionText = condition ? `, ${condition.replace(/_/g, ' ')}` : '';
 
   try {
-    const conditionText = condition ? `, ${condition.replace(/_/g, ' ')}` : '';
-
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
+    const result = await routedFetch(
+      `Nutrient: ${nutrient}. Recovery phase: ${phase}${conditionText}. ` +
+      'Write one evidence-informed sentence (max 28 words) explaining why this nutrient is relevant now. ' +
+      'Clinical tone. No dosing numbers. No brand names. No exclamation marks.',
+      {
+        tier:      'haiku',
+        clinical:  false,
+        maxTokens: 80,
       },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 80,
-        messages: [{
-          role: 'user',
-          content: `Nutrient: ${nutrient}. Recovery phase: ${phase}${conditionText}. ` +
-            'Write one evidence-informed sentence (max 28 words) explaining why this nutrient is relevant now. ' +
-            'Clinical tone. No dosing numbers. No brand names. No exclamation marks.',
-        }],
-      }),
-    });
+    );
 
-    if (!resp.ok) throw new Error(`Anthropic ${resp.status}`);
-    const data = await resp.json() as { content: Array<{ type: string; text: string }> };
-    const block = data.content[0];
-    const insight = block?.type === 'text'
-      ? block.text.replace(/^["']|["']$/g, '').trim()
-      : '';
+    const insight = result.text.replace(/^["']|["']$/g, '').trim();
+    return res.status(200).json({ insight, pmid, model: result.model, fallback: result.fallback });
 
-    return res.status(200).json({ insight, pmid });
   } catch {
     return res.status(200).json({
-      insight: `${nutrient} plays a key role in ${phase} phase recovery. Consult your healthcare provider for guidance.`,
+      insight:  `${nutrient} plays a key role in ${phase} phase recovery. Consult your healthcare provider for guidance.`,
       pmid,
+      model:    'fallback-static',
+      fallback: true,
     });
   }
 }

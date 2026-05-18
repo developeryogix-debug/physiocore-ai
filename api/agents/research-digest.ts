@@ -34,6 +34,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient }                        from '@supabase/supabase-js';
 import { ResearchAgent }                       from '../../packages/agents/research/src/researchAgent.js';
 import type { PubMedPaper, ResearchDigest }    from '../../packages/agents/research/src/researchAgent.js';
+import { routedFetch }                         from '../../packages/app/src/lib/modelRouter.js';
 
 // ── Env ────────────────────────────────────────────────────────────────────────
 
@@ -181,6 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const weekOf = new Date().toISOString().slice(0, 10);
 
+  const t0 = Date.now();
   try {
     console.log('[ResearchDigest] Starting PubMed fetch…');
     const agent  = new ResearchAgent(ANTHROPIC_KEY);
@@ -198,16 +200,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (rowId && emailSent) await markEmailSent(rowId);
 
     return res.status(200).json({
-      ok:           true,
+      ok:            true,
       weekOf,
-      paperCount:   output.papers.length,
-      weeklyTheme:  output.digest.weeklyTheme,
+      paperCount:    output.papers.length,
+      weeklyTheme:   output.digest.weeklyTheme,
       emailSent,
       supabaseRowId: rowId,
-      processingMs: output.processingMs,
+      processingMs:  output.processingMs,
     });
+
   } catch (err) {
-    console.error('[ResearchDigest] Fatal error:', err);
-    return res.status(500).json({ error: String(err) });
+    // Phase 5 router fallback: if Claude overloaded or agent fails, use routedFetch
+    // (non-clinical digest — can route to GPT-4o-mini)
+    console.warn('[ResearchDigest] agent.run() failed, attempting routedFetch fallback:', String(err));
+    try {
+      const fallback = await routedFetch(
+        'Generate a brief weekly MSK physiotherapy research digest. ' +
+        'No specific papers available this week. Provide 2 sentences of general clinical insight ' +
+        'and a weekly theme phrase. Respond in plain text.',
+        { tier: 'haiku', clinical: false, maxTokens: 200 },
+      );
+
+      return res.status(200).json({
+        ok:           true,
+        weekOf,
+        paperCount:   0,
+        weeklyTheme:  'Fallback digest (primary agent unavailable)',
+        fallbackModel: fallback.model,
+        fallbackText:  fallback.text,
+        emailSent:    false,
+        processingMs: Date.now() - t0,
+      });
+    } catch (fallbackErr) {
+      console.error('[ResearchDigest] Fatal error (fallback also failed):', fallbackErr);
+      return res.status(500).json({ error: String(err), fallbackError: String(fallbackErr) });
+    }
   }
 }
