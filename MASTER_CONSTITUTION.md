@@ -1,5 +1,5 @@
 # PhysioCore AI — Master Constitution
-Last updated: 18 May 2026
+Last updated: 19 May 2026
 
 > This document is the single source of truth for architecture decisions, build rules,
 > phase status, and LLM council governance. Read before every session and before any
@@ -10,7 +10,7 @@ Last updated: 18 May 2026
 ## Identity
 
 - **App name:** PhysioCore AI
-- **Current phase:** 4 — Enterprise Agent Layer
+- **Current phase:** 6 — Compliance Automation Engine
 - **Stack:** Vite + React 18 + TypeScript SPA (**NOT Next.js** — never add "use client")
 - **Monorepo:** pnpm workspaces (11 packages, Turbo)
 - **Supabase project:** `qbrrugglfdwcapqrnahw` (Singapore ap-southeast-1)
@@ -46,9 +46,9 @@ Shorthand in commit messages: `[COUNCIL: APPROVED]` or `[COUNCIL: CSO-CONCERN: <
 | 2 | Assessment Swarm (8 agents) | ✅ COMPLETE |
 | **2.5** | **UX Upgrade** | ✅ COMPLETE |
 | 3 | Treatment Planning (ConservativeAgent → TreatmentOrchestrator) | ✅ COMPLETE |
-| **4** | **Enterprise Agent Layer** | 🔶 CURRENT |
-| 5 | Multi-model Router + RAG | ⏳ PLANNED |
-| 6 | Compliance Automation Engine | ⏳ PLANNED |
+| 4 | Enterprise Agent Layer | ✅ COMPLETE |
+| 5 | Multi-model Router + RAG + Sapiens | ✅ COMPLETE |
+| **6** | **Compliance Automation Engine** | 🔶 CURRENT |
 | 7 | Full DevOps (Kubernetes) | ⏳ PLANNED |
 | 8 | Self-improving World Model | ⏳ PLANNED |
 
@@ -209,30 +209,41 @@ Shipped 18 May 2026:
 
 ---
 
-## Phase 4 — Enterprise Agent Layer (Current)
+## Phase 4 — Enterprise Agent Layer ✅ COMPLETE
+
+Shipped 18 May 2026:
 
 | Deliverable | File | Status |
 |---|---|---|
-| ResearchAgent (PubMed weekly digest, Mon 1am UTC / 9am SGT) | `api/agents/research-digest.ts` | ✅ BUILT |
-| ComplianceAgent (MOH/PDPA monthly check, 1st of month 0am UTC) | `api/agents/compliance-check.ts` | ✅ BUILT |
-| SecurityAgent (weekly scan cron, Sun 6pm UTC) | `api/agents/security-scan.ts` | 🔶 BUILDING |
-| Admin Governance Dashboard | `pages/AdminGovernance.tsx` | 🔶 BUILDING |
+| ResearchAgent (PubMed weekly digest, Mon 1am UTC / 9am SGT) | `api/agents/research-digest.ts` | ✅ |
+| ComplianceAgent (MOH/PDPA monthly check, 1st of month 0am UTC) | `api/agents/compliance-check.ts` | ✅ |
+| SecurityAgent (weekly scan cron, Sun 6pm UTC) | `api/agents/security-scan.ts` | ✅ |
+| Admin Governance Dashboard | `pages/AdminGovernance.tsx` | ✅ |
 
 ---
 
-## Phase 6 — Sapiens Precision (In Progress)
+## Phase 5 — Multi-model Router + RAG ✅ COMPLETE
 
-| Item | Status |
-|---|---|
-| HuggingFace Space (`PHYSIOCOREAI/physiocore-sapiens`) | ✅ LIVE |
-| Gradio endpoint (`https://physiocoreai-physiocore-sapiens.hf.space/run/predict`) | ✅ LIVE |
-| `callSapiensLandmarks()` in `postureClient.ts` | ✅ BUILT |
-| `VITE_SAPIENS_ENDPOINT` in `.env.local` | ✅ SET |
-| `api/sapiens-analyse.ts` (HF Inference API, graceful fallback) | ✅ BUILT |
-| `HF_TOKEN` in Vercel dashboard | ⏳ MANUAL STEP |
-| PostureAssessment.tsx wire-up | ⏳ IN PROGRESS |
+Shipped 18 May 2026:
 
-**Precision:** 308 keypoints vs MediaPipe 33 | **Cost:** FREE via ZeroGPU + HF PRO ($9/month)
+| Deliverable | File | Status |
+|---|---|---|
+| Multi-model router (Haiku / Sonnet / Opus tier routing) | `packages/app/src/lib/agents/` | ✅ |
+| RAG layer — pgvector embeddings + semantic retrieval | `api/` | ✅ |
+| Sapiens 308-keypoint HF Space (`PHYSIOCOREAI/physiocore-sapiens`) | HuggingFace | ✅ LIVE |
+| `callSapiensLandmarks()` + `analysePosture()` Sapiens fallback | `postureClient.ts` | ✅ |
+| `api/sapiens-analyse.ts` (graceful fallback) | `api/sapiens-analyse.ts` | ✅ |
+| `VITE_SAPIENS_ENDPOINT` wired (8s timeout, `/run/predict`) | env var | ✅ |
+
+**Sapiens precision:** 308 keypoints vs MediaPipe 33 | **Cost:** FREE via ZeroGPU + HF PRO ($9/month)
+
+---
+
+## Phase 6 — Compliance Automation Engine (Current)
+
+| Deliverable | File | Status |
+|---|---|---|
+| — | — | ⏳ PLANNED |
 
 ---
 
