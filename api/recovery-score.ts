@@ -11,12 +11,11 @@
  *             insight, delta, previousScore, milestones }
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { callClaude } from './_lib/claude.js';
 
 const SUPABASE_URL    = process.env['VITE_SUPABASE_URL'] ?? '';
 const SUPABASE_SVC    = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? '';
-const ANTHROPIC_KEY   = process.env['VITE_ANTHROPIC_KEY'] ?? '';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -96,20 +95,14 @@ function detectNewMilestones(
 
 // ── Haiku insight — motivational text ONLY, no clinical data ──────────────────
 async function generateInsight(score: number, delta: number): Promise<string> {
-  if (!ANTHROPIC_KEY) return '';
   try {
-    const client = new Anthropic({ apiKey: ANTHROPIC_KEY });
-    const resp = await client.messages.create({
+    const text = await callClaude({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 80,
-      messages: [{
-        role: 'user',
-        content: `Recovery score ${score}/100 (${delta >= 0 ? '+' : ''}${delta} vs last week). ` +
-          `Write one short motivating sentence (max 18 words). Positive tone. No clinical claims or numbers.`,
-      }],
+      maxTokens: 80,
+      system: 'You write brief motivational messages for physiotherapy patients. No clinical claims or numbers.',
+      userMessage: `Recovery score ${score}/100 (${delta >= 0 ? '+' : ''}${delta} vs last week). Write one short motivating sentence (max 18 words). Positive tone.`,
     });
-    const b = resp.content[0];
-    return b?.type === 'text' ? b.text.replace(/^["']|["']$/g, '').trim() : '';
+    return text.replace(/^["']|["']$/g, '').trim();
   } catch {
     return '';
   }
@@ -163,11 +156,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ]);
 
   // Persist recovery score (fire-and-forget, non-fatal)
-  sb.from('recovery_scores').insert({
+  void Promise.resolve(sb.from('recovery_scores').insert({
     patient_id: patientId, score,
     pain_component: pain, adherence_component: adherence, rom_component: rom,
     insight: insightText,
-  }).then().catch(() => undefined);
+  })).catch(() => undefined);
 
   // Build full milestone list for response
   const milestones = (Object.entries(MILESTONE_META) as Array<[MilestoneType, { label: string; desc: string }]>)
